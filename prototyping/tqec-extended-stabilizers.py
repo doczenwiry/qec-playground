@@ -125,10 +125,67 @@ def produce_template() -> np.ndarray:
 def pretty(array, r, c):
     cell = array[r, c]
 
-    if 12 <= cell <= 15 and 12 <= array[r-1,c] <= 15:
-        return '+'
+    if 0 <= cell <= 11:
+        return hex(cell)[2:]
+    elif 12 <= cell <= 15:
+        return hex(cell)[2:] if not (r == 0 or 12 <= array[r-1,c] <= 15) else '+'
     else:
-        return hex(cell)[2:] if cell != 255 else '.'
+        return '.'
+
+regular_forward_schedules = {
+    0: [3, 5, 1, 2],
+    1: [1, 4, 3, 5],
+    2: [1, 2, 3, 5],
+    3: [4, 1, 5, 3],
+    4: [3, 5, 1, 2],
+    5: [1, 4, 3, 5],
+    6: [1, 2, 3, 5],
+    7: [4, 1, 5, 3],
+}
+
+regular_reverse_schedules = {
+    0: [5, 3, 2, 1],
+    1: [4, 1, 5, 3],
+    2: [2, 1, 5, 3],
+    3: [1, 4, 3, 5],
+    4: [5, 3, 2, 1],
+    5: [4, 1, 5, 3],
+    6: [2, 1, 5, 3],
+    7: [1, 4, 3, 5],
+}
+
+def append_regular_stabilizers(
+        circuit, junction, locations_mq, mq_locations, locations_dq, dq_locations,
+        moment, forward
+):
+    if moment == 0:
+        circuit.append("RX", mq_locations.keys())
+    elif 1 <= moment <= 5:
+        for row, col in itertools.product(range(16), range(16)):
+            ptype = junction[row, col]
+
+            if junction[row, col] == 255:
+                continue
+
+            regular_schedules = regular_forward_schedules if forward else regular_reverse_schedules
+
+            if 0 <= ptype <= 7:
+                vertices_d = [ (0,0) , (1,0) , (0,1), (1,1) ]
+                try:
+                    dx, dy = vertices_d[regular_schedules[ptype].index(moment)]
+                    dq = locations_dq[col + dx, row + dy]
+                    mq = locations_mq[col + 0.5, row + 0.5]
+                    circuit.append(f"C{'X' if 0 <= ptype <= 3 else 'Z'}", [ mq, dq ])
+                except ValueError:
+                    # The current plaquette doesn't do anything in the current moment.
+                    pass
+            elif 8 <= ptype <= 11:
+                pass
+            elif 12 <= ptype <= 13:
+                pass
+
+    elif moment == 6:
+        circuit.append("MX", mq_locations.keys())
 
 if __name__ == "__main__":
     junction = produce_template()
@@ -179,11 +236,26 @@ if __name__ == "__main__":
 
     circuit.append("TICK")
 
-    circuit.append("RX", mq_locations.keys())
+    # Populate the forward round
+    for moment in range(7):
+        append_regular_stabilizers(
+            circuit, junction, locations_mq, mq_locations, locations_dq, dq_locations,
+            moment, forward=True
+        )
+        circuit.append("TICK")
+
+    # Populate the reverse round
+    for moment in range(7):
+        append_regular_stabilizers(
+            circuit, junction, locations_mq, mq_locations, locations_dq, dq_locations,
+            moment, forward=False
+        )
+        circuit.append("TICK")
 
     circuit_file = "../assets/tqec-extended-stabilizers.stim"
     circuit.to_file(circuit_file)
 
+    # Insert all the polygons into the Stim file for readability.
     with open(circuit_file, "r", encoding="utf-8") as file:
         circuit_lines = file.readlines()
         insertion = 0
