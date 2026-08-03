@@ -13,10 +13,9 @@
 #   limitations under the License.
 
 import itertools
-from collections import defaultdict
 
-import numpy
 import numpy as np
+import stim
 
 plaquettes = {
     0 : 'X4T',
@@ -33,15 +32,42 @@ plaquettes = {
     11 : 'Z2L',
     12 : 'X5B',
     13 : 'Z5B',
-    14 : 'X3B',
+    14 : 'Z3B',
     15 : 'Z3T',
 }
 
-# X2L, X2R, X2T, X2B
-# X4L, X4R, X4T, X4B
-#
-# XXXX, ZZZZ, XXEEXX, ZZEEZZ, XX, ZZ
-# T, B, L, R
+def vertices(junction, row, col):
+    """Returns the coordinates of data qubits and measurement qubits touched by this plaquette type."""
+    ptype = junction[row, col]
+    if 0 <= ptype <= 7:
+        vd = [(0.0, 0.0) , (0.0, 1.0), (1.0, 1.0), (1.0, 0.0)]
+        vm = [(0.5, 0.5)]
+    elif 8 <= ptype <= 11:
+        if ptype == 8:
+            vd = [(1.0, 0.0) , (1.0, 1.0)]
+            vm = [(0.5, 0.5)]
+        elif ptype == 9:
+            vd = [(0.0, 0.0), (1.0, 0.0)]
+            vm = [(0.5, 0.5)]
+        elif ptype == 10:
+            vd = [(0.0, 0.0), (0.0, 1.0)]
+            vm = [(0.5, 0.5)]
+        else: # ptype == 11:
+            vd = [(0.0, 1.0), (1.0, 1.0)]
+            vm = [(0.5, 0.5)]
+    elif 12 <= ptype <= 13 and (row == 0 or junction[row-1, col] not in [12, 13]):
+        vd = [(0.0, 0.0), (0.0, 1.0), (2.0, 1.0), (2.0, 0.0), (1.0, 0.0)]
+        vm = [(0.5, 0.5), (1.5, 0.5)]
+    elif ptype == 14 and (row == 0 or junction[row-1, col] != 14):
+        vd = [(0.0, 1.0), (2.0, 1.0), (2.0, 0.0), (1.0, 0.0) ]
+        vm = [(0.5, 0.5), (1.5, 0.5)]
+    elif ptype == 15 and (row == 0 or junction[row-1, col] != 15):
+        vd = [(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (2.0, 0.0)]
+        vm = [(0.5, 0.5), (1.5, 0.5)]
+    else:
+        vd = []
+        vm = []
+    return vd, vm
 
 def produce_template() -> np.ndarray:
     template = np.full(shape=(16, 16), fill_value=255, dtype=np.uint8)
@@ -115,5 +141,69 @@ if __name__ == "__main__":
         print(f"{hex(idx)[2:]} : {plq}")
 
     # All the positions in the array correspond to measurement qubits, with the data qubits surrounding them.
-    # The number encodes a specific stabilizer circuit that must be properly inserted :)
+    # The number encodes a specific stabiliser circuit that must be properly inserted :)
     # Have fun !
+    stabilizers = dict()
+    locations_mq = dict()
+    mq_locations = dict()
+    locations_dq = dict()
+    dq_locations = dict()
+
+    circuit = stim.Circuit()
+
+    qubit_id = 0
+    for row, col in itertools.product(range(16), range(16)):
+        vertices_d, vertices_m = vertices(junction, row, col)
+
+        for dr, dc in vertices_d:
+            location = col + dc, row + dr
+            if location[0] == 10 and location[1] == 5:
+                print(f"FOUND ! {location} from {row},{col}")
+            if location not in locations_dq:
+                circuit.append("QUBIT_COORDS", [qubit_id], location)
+                locations_dq[location] = qubit_id
+                dq_locations[qubit_id] = location
+                qubit_id += 1
+
+        for dr, dc in vertices_m:
+            location = col + dc, row + dr
+            if location not in locations_mq:
+                locations_mq[location] = qubit_id
+                mq_locations[qubit_id] = location
+                circuit.append("QUBIT_COORDS", [qubit_id], location)
+                qubit_id += 1
+
+    circuit.append("TICK")
+
+    circuit.append("RX", mq_locations.keys())
+
+    circuit.append("TICK")
+
+    circuit.append("RX", dq_locations.keys())
+
+    circuit_file = "../assets/tqec-extended-stabilizers.stim"
+    circuit.to_file(circuit_file)
+
+    with open(circuit_file, "r", encoding="utf-8") as file:
+        circuit_lines = file.readlines()
+        insertion = 0
+        while circuit_lines[insertion].startswith("QUBIT_COORDS"):
+            insertion += 1
+        for row, col in itertools.product(range(16), range(16)):
+            # Determine vertices
+            vertices_d, _ = vertices(junction, row, col)
+
+            if not vertices_d:
+                continue
+
+            # Determine color
+            stabilizer_type = junction[row, col]
+            plaquette_type = plaquettes[stabilizer_type][0]
+            x, z = int(plaquette_type == 'X'), int(plaquette_type == 'Z')
+
+            polygon = [str(locations_dq[col+dc, row+dr]) for dr, dc in vertices_d]
+            circuit_lines.insert(insertion, f"#!pragma POLYGON({x},0,{z},0.5) {" ".join(polygon)}\n")
+            insertion += 1
+
+    with open("../assets/tqec-extended-stabilizers.stim", "w", encoding="utf-8") as file:
+        file.writelines(circuit_lines)
