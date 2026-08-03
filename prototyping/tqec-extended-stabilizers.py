@@ -56,14 +56,14 @@ def vertices(junction, row, col):
             vd = [(0.0, 1.0), (1.0, 1.0)]
             vm = [(0.5, 0.5)]
     elif 12 <= ptype <= 13 and (row == 0 or junction[row-1, col] not in [12, 13]):
-        vd = [(0.0, 0.0), (0.0, 1.0), (2.0, 1.0), (2.0, 0.0), (1.0, 0.0)]
-        vm = [(0.5, 0.5), (1.5, 0.5)]
+        vd = [(0.0, 0.0), (0.0, 1.0), (2.0, 1.0), (2.0, 0.0)]
+        vm = [(0.5, 0.5), (1.5, 0.5), (1.0, 0.0)]
     elif ptype == 14 and (row == 0 or junction[row-1, col] != 14):
-        vd = [(0.0, 1.0), (2.0, 1.0), (2.0, 0.0), (1.0, 0.0) ]
-        vm = [(0.5, 0.5), (1.5, 0.5)]
+        vd = [(0.0, 1.0), (2.0, 1.0), (2.0, 0.0) ]
+        vm = [(0.5, 0.5), (1.5, 0.5), (1.0, 0.0)]
     elif ptype == 15 and (row == 0 or junction[row-1, col] != 15):
-        vd = [(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (2.0, 0.0)]
-        vm = [(0.5, 0.5), (1.5, 0.5)]
+        vd = [(0.0, 0.0), (0.0, 1.0), (2.0, 0.0)]
+        vm = [(0.5, 0.5), (1.5, 0.5), (1.0, 1.0)]
     else:
         vd = []
         vm = []
@@ -175,11 +175,11 @@ if __name__ == "__main__":
 
     circuit.append("TICK")
 
-    circuit.append("RX", mq_locations.keys())
+    circuit.append("R", dq_locations.keys())
 
     circuit.append("TICK")
 
-    circuit.append("RX", dq_locations.keys())
+    circuit.append("RX", mq_locations.keys())
 
     circuit_file = "../assets/tqec-extended-stabilizers.stim"
     circuit.to_file(circuit_file)
