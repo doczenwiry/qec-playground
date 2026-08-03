@@ -141,6 +141,10 @@ regular_forward_schedules = {
     5: [1, 4, 3, 5],
     6: [1, 2, 3, 5],
     7: [4, 1, 5, 3],
+    8: [0, 0, 4, 2],
+    9: [4, 0, 2, 0],
+    10: [2, 4, 0, 0],
+    11: [0, 4, 0, 2],
 }
 
 regular_reverse_schedules = {
@@ -152,6 +156,10 @@ regular_reverse_schedules = {
     5: [4, 1, 5, 3],
     6: [2, 1, 5, 3],
     7: [1, 4, 3, 5],
+    8: [0, 0, 2, 4],
+    9: [2, 0, 4, 0],
+    10: [4, 2, 0, 0],
+    11: [0, 2, 0, 4],
 }
 
 def append_regular_stabilizers(
@@ -169,7 +177,7 @@ def append_regular_stabilizers(
 
             regular_schedules = regular_forward_schedules if forward else regular_reverse_schedules
 
-            if 0 <= ptype <= 7:
+            if 0 <= ptype <= 10:
                 vertices_d = [ (0,0) , (1,0) , (0,1), (1,1) ]
                 try:
                     dx, dy = vertices_d[regular_schedules[ptype].index(moment)]
@@ -179,13 +187,14 @@ def append_regular_stabilizers(
                 except ValueError:
                     # The current plaquette doesn't do anything in the current moment.
                     pass
-            elif 8 <= ptype <= 11:
-                pass
-            elif 12 <= ptype <= 13:
-                pass
+                except KeyError as ke:
+                    print(f"> {ptype} @ {row},{col} [m:{moment}]")
+                    print(f">> {regular_schedules[ptype]} [{regular_schedules[ptype].index(moment)}]")
+                    raise ke
 
     elif moment == 6:
         circuit.append("MX", mq_locations.keys())
+        circuit.append("TICK")
 
 if __name__ == "__main__":
     junction = produce_template()
