@@ -63,7 +63,7 @@ def vertices(junction, row, col):
         vm = [(0.5, 0.5), (1.5, 0.5), (1.0, 0.0)]
     elif ptype == 15:
         vd = [(0.0, 0.0), (0.0, 1.0), (2.0, 0.0)]
-        vm = [(0.5, 0.5), (1.5, 0.5), (1.0, 1.0)]
+        vm = [(0.5, 0.5), (1.5, 0.5), (1.0, 0.0)]
     else:
         vd = []
         vm = []
@@ -141,6 +141,8 @@ regular_forward_schedules = {
     11: [0, 2, 0, 4],
     12: [2, 4, 3, 5],
     13: [2, 4, 3, 5],
+    14: [0, 4, 3, 5],
+    15: [2, 4, 3, 0],
 }
 
 regular_reverse_schedules = {
@@ -158,6 +160,8 @@ regular_reverse_schedules = {
     11: [0, 4, 0, 2],
     12: [4, 2, 5, 3],
     13: [4, 2, 5, 3],
+    14: [0, 2, 5, 3],
+    15: [4, 2, 5, 0],
 }
 
 def append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
@@ -165,7 +169,7 @@ def append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, m
         lambda position: 0 <= junction[*position] <= 11, itertools.product(range(16), range(16))
     )
     extended_stabilizers = filter(
-        lambda position: 12 <= junction[*position] <= 13, itertools.product(range(16), range(16))
+        lambda position: 12 <= junction[*position] <= 15, itertools.product(range(16), range(16))
     )
     if moment == 0:
         targets_x = []
@@ -241,7 +245,7 @@ def append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, m
                 if ptype == 12:
                     targets_cx.append(mq)
                     targets_cx.append(dq)
-                elif ptype == 13:
+                elif 13 <= ptype <= 15:
                     targets_cz.append(mq)
                     targets_cz.append(dq)
             except ValueError:
@@ -253,26 +257,6 @@ def append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, m
         circuit.append("RZ", targets_rz)
         circuit.append("MX", targets_mx)
 
-
-def append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
-    extended_stabilizers = filter(
-        lambda position: 12 <= junction[*position] <= 13, itertools.product(range(16), range(16))
-    )
-    if moment == 0:
-        targets_x = []
-        targets_z = []
-        for row, col in extended_stabilizers:
-            targets_x.append(mq_at_locations[col + 0.5, row + 0.5])
-            targets_z.append(mq_at_locations[col + 0.0, row + 1.0])
-        circuit.append("RX", targets_x)
-        circuit.append("RZ", targets_z)
-    elif 1 <= moment <= 6:
-        pass
-    elif moment == 7:
-        targets_x = []
-        for row, col in extended_stabilizers:
-            targets_x.append(mq_at_locations[col + 0.5, row + 1.5])
-        circuit.append("MX", targets_x)
 
 if __name__ == "__main__":
     junction = produce_template()
@@ -320,7 +304,8 @@ if __name__ == "__main__":
     # Populate the forward round
     for moment in range(8):
         append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
-        circuit.append("TICK")
+        if moment < 7:
+            circuit.append("TICK")
 
     # Populate the reverse round
     for moment in range(8):
