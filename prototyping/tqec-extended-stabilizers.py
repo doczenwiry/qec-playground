@@ -144,7 +144,7 @@ regular_forward_schedules = {
     8: [0, 0, 4, 2],
     9: [4, 0, 2, 0],
     10: [2, 4, 0, 0],
-    11: [0, 4, 0, 2],
+    11: [0, 2, 0, 4],
 }
 
 regular_reverse_schedules = {
@@ -159,42 +159,47 @@ regular_reverse_schedules = {
     8: [0, 0, 2, 4],
     9: [2, 0, 4, 0],
     10: [4, 2, 0, 0],
-    11: [0, 2, 0, 4],
+    11: [0, 4, 0, 2],
 }
 
-def append_regular_stabilizers(
-        circuit, junction, locations_mq, mq_locations, locations_dq, dq_locations,
-        moment, forward
-):
-    if moment == 0:
-        circuit.append("RX", mq_locations.keys())
+def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
+    regular_stabilizers = filter(
+        lambda position: 0 <= junction[*position] <= 11, itertools.product(range(16), range(16))
+    )
+    if moment == 0 or moment == 6:
+        targets = [mq_at_locations[col + 0.5, row + 0.5] for row, col in regular_stabilizers]
+        circuit.append("RX" if moment == 0 else "MX", targets)
     elif 1 <= moment <= 5:
-        for row, col in itertools.product(range(16), range(16)):
-            ptype = junction[row, col]
+        targets_cx = []
+        targets_cz = []
 
-            if junction[row, col] == 255:
-                continue
+        for row, col in regular_stabilizers:
+            ptype = junction[row, col]
 
             regular_schedules = regular_forward_schedules if forward else regular_reverse_schedules
 
-            if 0 <= ptype <= 10:
-                vertices_d = [ (0,0) , (1,0) , (0,1), (1,1) ]
-                try:
-                    dx, dy = vertices_d[regular_schedules[ptype].index(moment)]
-                    dq = locations_dq[col + dx, row + dy]
-                    mq = locations_mq[col + 0.5, row + 0.5]
-                    circuit.append(f"C{'X' if 0 <= ptype <= 3 else 'Z'}", [ mq, dq ])
-                except ValueError:
-                    # The current plaquette doesn't do anything in the current moment.
-                    pass
-                except KeyError as ke:
-                    print(f"> {ptype} @ {row},{col} [m:{moment}]")
-                    print(f">> {regular_schedules[ptype]} [{regular_schedules[ptype].index(moment)}]")
-                    raise ke
+            vertices_d = [ (0,0) , (1,0) , (0,1), (1,1) ]
+            try:
+                dx, dy = vertices_d[regular_schedules[ptype].index(moment)]
+                dq = dq_at_locations_dq[col + dx, row + dy]
+                mq = mq_at_locations[col + 0.5, row + 0.5]
+                if 0 <= ptype <= 3:
+                    targets_cx.append(mq)
+                    targets_cx.append(dq)
+                elif 4 <= ptype <= 11:
+                    targets_cz.append(mq)
+                    targets_cz.append(dq)
+                # circuit.append(f"C{'X' if 0 <= ptype <= 3 else 'Z'}", [ mq, dq ])
+            except ValueError:
+                # The current plaquette doesn't do anything in the current moment.
+                pass
+            except KeyError as ke:
+                print(f"> {ptype} @ {row},{col} [m:{moment}]")
+                print(f">> {regular_schedules[ptype]} [{regular_schedules[ptype].index(moment)}]")
+                raise ke
 
-    elif moment == 6:
-        circuit.append("MX", mq_locations.keys())
-        circuit.append("TICK")
+        circuit.append("CX", targets_cx)
+        circuit.append("CZ", targets_cz)
 
 if __name__ == "__main__":
     junction = produce_template()
@@ -210,10 +215,8 @@ if __name__ == "__main__":
     # The number encodes a specific stabiliser circuit that must be properly inserted :)
     # Have fun !
     stabilizers = dict()
-    locations_mq = dict()
-    mq_locations = dict()
-    locations_dq = dict()
-    dq_locations = dict()
+    mq_at_locations = dict()
+    dq_at_locations = dict()
 
     circuit = stim.Circuit()
 
@@ -225,40 +228,32 @@ if __name__ == "__main__":
             location = col + dc, row + dr
             if location[0] == 10 and location[1] == 5:
                 print(f"FOUND ! {location} from {row},{col}")
-            if location not in locations_dq:
+            if location not in dq_at_locations:
                 circuit.append("QUBIT_COORDS", [qubit_id], location)
-                locations_dq[location] = qubit_id
-                dq_locations[qubit_id] = location
+                dq_at_locations[location] = qubit_id
                 qubit_id += 1
 
         for dr, dc in vertices_m:
             location = col + dc, row + dr
-            if location not in locations_mq:
-                locations_mq[location] = qubit_id
-                mq_locations[qubit_id] = location
+            if location not in mq_at_locations:
+                mq_at_locations[location] = qubit_id
                 circuit.append("QUBIT_COORDS", [qubit_id], location)
                 qubit_id += 1
 
     circuit.append("TICK")
 
-    circuit.append("R", dq_locations.keys())
+    circuit.append("R", dq_at_locations.values())
 
     circuit.append("TICK")
 
     # Populate the forward round
     for moment in range(7):
-        append_regular_stabilizers(
-            circuit, junction, locations_mq, mq_locations, locations_dq, dq_locations,
-            moment, forward=True
-        )
+        append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
         circuit.append("TICK")
 
     # Populate the reverse round
     for moment in range(7):
-        append_regular_stabilizers(
-            circuit, junction, locations_mq, mq_locations, locations_dq, dq_locations,
-            moment, forward=False
-        )
+        append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=False)
         circuit.append("TICK")
 
     circuit_file = "../assets/tqec-extended-stabilizers.stim"
@@ -282,7 +277,7 @@ if __name__ == "__main__":
             plaquette_type = plaquettes[stabilizer_type][0]
             x, z = int(plaquette_type == 'X'), int(plaquette_type == 'Z')
 
-            polygon = [str(locations_dq[col+dc, row+dr]) for dr, dc in vertices_d]
+            polygon = [str(dq_at_locations[col + dc, row + dr]) for dr, dc in vertices_d]
             circuit_lines.insert(insertion, f"#!pragma POLYGON({x},0,{z},0.5) {" ".join(polygon)}\n")
             insertion += 1
 
