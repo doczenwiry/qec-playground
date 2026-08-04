@@ -126,85 +126,36 @@ def pretty(array, r, c):
     cell = array[r, c]
     return hex(cell)[2:] if 0 <= cell <= 15 else '.'
 
-regular_forward_schedules = {
-    0: [3, 5, 1, 2],
-    1: [1, 4, 3, 5],
-    2: [1, 2, 3, 5],
-    3: [4, 1, 5, 3],
-    4: [3, 5, 1, 2],
-    5: [1, 4, 3, 5],
-    6: [1, 2, 3, 5],
-    7: [4, 1, 5, 3],
-    8: [0, 0, 4, 2],
-    9: [4, 0, 2, 0],
-    10: [2, 4, 0, 0],
-    11: [0, 2, 0, 4],
-    12: [2, 4, 3, 5],
-    13: [2, 4, 3, 5],
-    14: [0, 4, 3, 5],
-    15: [2, 4, 3, 0],
+regular_schedules = {
+    'forward': {
+        0: [3, 5, 1, 2], 1: [1, 4, 3, 5], 2: [1, 2, 3, 5], 3: [4, 1, 5, 3],
+        4: [3, 5, 1, 2], 5: [1, 4, 3, 5], 6: [1, 2, 3, 5], 7: [4, 1, 5, 3]
+    },
+    'reverse': {
+        0: [5, 3, 2, 1], 1: [4, 1, 5, 3], 2: [2, 1, 5, 3], 3: [1, 4, 3, 5],
+        4: [5, 3, 2, 1], 5: [4, 1, 5, 3], 6: [2, 1, 5, 3], 7: [1, 4, 3, 5]
+    }
 }
 
-regular_reverse_schedules = {
-    0: [5, 3, 2, 1],
-    1: [4, 1, 5, 3],
-    2: [2, 1, 5, 3],
-    3: [1, 4, 3, 5],
-    4: [5, 3, 2, 1],
-    5: [4, 1, 5, 3],
-    6: [2, 1, 5, 3],
-    7: [1, 4, 3, 5],
-    8: [0, 0, 2, 4],
-    9: [2, 0, 4, 0],
-    10: [4, 2, 0, 0],
-    11: [0, 4, 0, 2],
-    12: [4, 2, 5, 3],
-    13: [4, 2, 5, 3],
-    14: [0, 2, 5, 3],
-    15: [4, 2, 5, 0],
-}
-
-def append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
+def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
     regular_stabilizers = filter(
-        lambda position: 0 <= junction[*position] <= 11, itertools.product(range(16), range(16))
+        lambda position: 0 <= junction[*position] <= 7, itertools.product(range(16), range(16))
     )
-    extended_stabilizers = filter(
-        lambda position: 12 <= junction[*position] <= 15, itertools.product(range(16), range(16))
-    )
-    if moment == 0:
-        targets_x = []
-        targets_z = []
+    schedules = regular_schedules['forward'] if forward else regular_schedules['reverse']
 
-        for row, col in regular_stabilizers:
-            targets_x.append(mq_at_locations[col + 0.5, row + 0.5])
-        for row, col in extended_stabilizers:
-            targets_x.append(mq_at_locations[col + 0.5, row + 0.5])
-            targets_z.append(mq_at_locations[col + 0.0, row + 1.0])
-
-        circuit.append("RX", targets_x)
-        circuit.append("RZ", targets_z)
-    elif moment == 7:
-        targets_x = []
-        for row, col in extended_stabilizers:
-            targets_x.append(mq_at_locations[col + 0.5, row + 1.5])
-        circuit.append("MX", targets_x)
-
-    elif 1 <= moment <= 6:
-        targets_mx = []
-        targets_cx = []
-        targets_cz = []
-
-        for row, col in regular_stabilizers:
-            if moment == 6:
-                targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
-
+    targets_cx = []
+    targets_cz = []
+    targets_rx = []
+    targets_mx = []
+    for row, col in regular_stabilizers:
+        if moment == 0:
+            targets_rx.append(mq_at_locations[col + 0.5, row + 0.5])
+        elif 1 <= moment <= 5:
             ptype = junction[row, col]
-
-            regular_schedules = regular_forward_schedules if forward else regular_reverse_schedules
 
             vertices_d = [ (0,0) , (1,0) , (0,1), (1,1) ]
             try:
-                dx, dy = vertices_d[regular_schedules[ptype].index(moment)]
+                dx, dy = vertices_d[schedules[ptype].index(moment)]
                 dq = dq_at_locations_dq[col + dx, row + dy]
                 mq = mq_at_locations[col + 0.5, row + 0.5]
                 if 0 <= ptype <= 3:
@@ -216,9 +167,82 @@ def append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, m
             except ValueError:
                 # The current plaquette doesn't do anything in the current moment.
                 pass
+        elif moment == 6:
+            targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
 
-        targets_rz = []
-        for row, col in extended_stabilizers:
+    if targets_rx: circuit.append("RX", targets_rx)
+    if targets_cx: circuit.append("CX", targets_cx)
+    if targets_cz: circuit.append("CZ", targets_cz)
+    if targets_mx: circuit.append("MX", targets_mx)
+
+twobody_schedules = {
+    'forward': {
+        8: [0, 0, 3, 5], 9: [4, 0, 2, 0], 10: [2, 4, 0, 0], 11: [0, 2, 0, 4]
+    },
+    'reverse': {
+        8: [0, 0, 5, 3], 9: [2, 0, 4, 0], 10: [4, 2, 0, 0], 11: [0, 4, 0, 2]
+    }
+}
+
+def append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
+    twobody_stabilizers = filter(
+        lambda position: 8 <= junction[*position] <= 11, itertools.product(range(16), range(16))
+    )
+    schedules = twobody_schedules['forward'] if forward else twobody_schedules['reverse']
+
+    targets_rx = []
+    targets_cz = []
+    targets_mx = []
+
+    for row, col in twobody_stabilizers:
+        if moment == 0:
+            targets_rx.append(mq_at_locations[col + 0.5, row + 0.5])
+        elif 1 <= moment <= 5:
+            ptype = junction[row, col]
+
+            vertices_d = [(0, 0), (1, 0), (0, 1), (1, 1)]
+            try:
+                dx, dy = vertices_d[schedules[ptype].index(moment)]
+                mq = mq_at_locations[col + 0.5, row + 0.5]
+                dq = dq_at_locations_dq[col + dx, row + dy]
+                targets_cz.append(mq)
+                targets_cz.append(dq)
+            except ValueError:
+                # The current plaquette doesn't do anything in the current moment.
+                pass
+        elif moment == 6:
+            targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
+
+    if targets_rx: circuit.append("RX", targets_rx)
+    if targets_cz: circuit.append("CZ", targets_cz)
+    if targets_mx: circuit.append("MX", targets_mx)
+
+extended_schedules = {
+    'forward': {
+        12: [2, 4, 3, 5], 13: [2, 4, 3, 5], 14: [0, 4, 3, 5], 15: [2, 4, 3, 0]
+    },
+    'reverse': {
+        12: [4, 2, 5, 3], 13: [4, 2, 5, 3], 14: [0, 2, 5, 3], 15: [4, 2, 5, 0]
+    }
+}
+
+def append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
+    extended_stabilizers = filter(
+        lambda position: 12 <= junction[*position] <= 15, itertools.product(range(16), range(16))
+    )
+    schedules = extended_schedules['forward'] if forward else extended_schedules['reverse']
+
+    targets_rx = []
+    targets_rz = []
+    targets_cx = []
+    targets_cz = []
+    targets_mx = []
+
+    for row, col in extended_stabilizers:
+        if moment == 0:
+            targets_rx.append(mq_at_locations[col + 0.5, row + 0.5])
+            targets_rz.append(mq_at_locations[col + 0.0, row + 1.0])
+        elif 1 <= moment <= 6:
             if moment == 1:
                 targets_cx.append(mq_at_locations[col + 0.5, row + 0.5])
                 targets_cx.append(mq_at_locations[col + 0.0, row + 1.0])
@@ -235,11 +259,9 @@ def append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, m
 
             ptype = junction[row, col]
 
-            regular_schedules = regular_forward_schedules if forward else regular_reverse_schedules
-
             vertices_d = [ (0,0) , (1,0) , (0,2), (1,2) ]
             try:
-                dx, dy = vertices_d[regular_schedules[ptype].index(moment)]
+                dx, dy = vertices_d[schedules[ptype].index(moment)]
                 mq = mq_at_locations[col + 0.5, row + 0.5] if dy == 0 else mq_at_locations[col + 0.5, row + 1.5]
                 dq = dq_at_locations_dq[col + dx, row + dy]
                 if ptype == 12:
@@ -251,12 +273,14 @@ def append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, m
             except ValueError:
                 # The current plaquette doesn't do anything in the current moment.
                 pass
+        elif moment == 7:
+            targets_mx.append(mq_at_locations[col + 0.5, row + 1.5])
 
-        circuit.append("CX", targets_cx)
-        circuit.append("CZ", targets_cz)
-        circuit.append("RZ", targets_rz)
-        circuit.append("MX", targets_mx)
-
+    if targets_rx: circuit.append("RX", targets_rx)
+    if targets_rz: circuit.append("RZ", targets_rz)
+    if targets_cx: circuit.append("CX", targets_cx)
+    if targets_cz: circuit.append("CZ", targets_cz)
+    if targets_mx: circuit.append("MX", targets_mx)
 
 if __name__ == "__main__":
     junction = produce_template()
@@ -297,20 +321,35 @@ if __name__ == "__main__":
 
     circuit.append("TICK")
 
-    circuit.append("R", dq_at_locations.values())
+    circuit.append("RZ", dq_at_locations.values())
 
     circuit.append("TICK")
 
     # Populate the forward round
     for moment in range(8):
-        append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
+        append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
+        append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
+        append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
         if moment < 7:
             circuit.append("TICK")
 
     # Populate the reverse round
     for moment in range(8):
-        append_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=False)
-        circuit.append("TICK")
+        append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=False)
+        append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=False)
+        append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=False)
+        if moment < 7:
+            circuit.append("TICK")
+
+    # Populate the forward round
+    for moment in range(8):
+        append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
+        append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
+        append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
+        if moment < 7:
+            circuit.append("TICK")
+
+    circuit.append("MZ", dq_at_locations.values())
 
     circuit_file = "../assets/tqec-extended-stabilizers.stim"
     circuit.to_file(circuit_file)
