@@ -177,10 +177,10 @@ def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locatio
 
 twobody_schedules = {
     'forward': {
-        8: [0, 0, 3, 5], 9: [4, 0, 2, 0], 10: [2, 4, 0, 0], 11: [0, 2, 0, 4]
+        8: [0, 0, 3, 5], 9: [3, 0, 6, 0], 10: [2, 4, 0, 0], 11: [0, 2, 0, 4]
     },
     'reverse': {
-        8: [0, 0, 5, 3], 9: [2, 0, 4, 0], 10: [4, 2, 0, 0], 11: [0, 4, 0, 2]
+        8: [0, 0, 5, 3], 9: [2, 0, 4, 0], 10: [4, 2, 0, 0], 11: [0, 3, 0, 6]
     }
 }
 
@@ -195,23 +195,54 @@ def append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locatio
     targets_mx = []
 
     for row, col in twobody_stabilizers:
-        if moment == 0:
-            targets_rx.append(mq_at_locations[col + 0.5, row + 0.5])
-        elif 1 <= moment <= 5:
-            ptype = junction[row, col]
-
-            vertices_d = [(0, 0), (1, 0), (0, 1), (1, 1)]
-            try:
-                dx, dy = vertices_d[schedules[ptype].index(moment)]
-                mq = mq_at_locations[col + 0.5, row + 0.5]
-                dq = dq_at_locations_dq[col + dx, row + dy]
-                targets_cz.append(mq)
-                targets_cz.append(dq)
-            except ValueError:
-                # The current plaquette doesn't do anything in the current moment.
-                pass
-        elif moment == 6:
-            targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
+        ptype = junction[row, col]
+        if ptype in [8, 10]:
+            if moment == 0:
+                targets_rx.append(mq_at_locations[col + 0.5, row + 0.5])
+            elif 1 <= moment <= 5:
+                vertices_d = [(0, 0), (1, 0), (0, 1), (1, 1)]
+                try:
+                    dx, dy = vertices_d[schedules[ptype].index(moment)]
+                    mq = mq_at_locations[col + 0.5, row + 0.5]
+                    dq = dq_at_locations_dq[col + dx, row + dy]
+                    targets_cz.append(mq)
+                    targets_cz.append(dq)
+                except ValueError:
+                    # The current plaquette doesn't do anything in the current moment.
+                    pass
+            elif moment == 6:
+                targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
+        else:
+            if moment == 1:
+                targets_rx.append(mq_at_locations[col + 0.5, row + 0.5])
+            elif 2 <= moment <= 5:
+                vertices_d = [(0, 0), (1, 0), (0, 1), (1, 1)]
+                try:
+                    dx, dy = vertices_d[schedules[ptype].index(moment)]
+                    mq = mq_at_locations[col + 0.5, row + 0.5]
+                    dq = dq_at_locations_dq[col + dx, row + dy]
+                    targets_cz.append(mq)
+                    targets_cz.append(dq)
+                except ValueError:
+                    # The current plaquette doesn't do anything in the current moment.
+                    pass
+            elif moment == 6:
+                if (ptype == 9 and forward) or (ptype == 11 and not forward):
+                    vertices_d = [(0, 0), (1, 0), (0, 1), (1, 1)]
+                    try:
+                        dx, dy = vertices_d[schedules[ptype].index(moment)]
+                        mq = mq_at_locations[col + 0.5, row + 0.5]
+                        dq = dq_at_locations_dq[col + dx, row + dy]
+                        targets_cz.append(mq)
+                        targets_cz.append(dq)
+                    except ValueError:
+                        # The current plaquette doesn't do anything in the current moment.
+                        pass
+                else:
+                    targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
+            elif moment == 7:
+                if (ptype == 9 and forward) or (ptype == 11 and not forward):
+                    targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
 
     if targets_rx: circuit.append("RX", targets_rx)
     if targets_cz: circuit.append("CZ", targets_cz)
