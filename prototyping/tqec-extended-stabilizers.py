@@ -17,6 +17,8 @@ import itertools
 import numpy as np
 import stim
 
+SIDE = 18
+
 plaquettes = {
     0 : 'X4T',
     1 : 'X4R',
@@ -70,19 +72,19 @@ def vertices(junction, row, col):
     return vd, vm
 
 def produce_template() -> np.ndarray:
-    template = np.full(shape=(16, 16), fill_value=255, dtype=np.uint8)
+    template = np.full(shape=(SIDE, SIDE), fill_value=255, dtype=np.uint8)
 
     # Add the top and bottom "square"
-    template[0:4, 6:10] = np.array([
+    template[1:5, 7:11] = np.array([
         2, 5, 2, 5,
         5, 2, 5, 2,
         2, 5, 2, 5,
         5, 2, 5, 2,
     ]).reshape((4,4))
-    template[12:16, 6:10] = template[0:4, 6:10]
+    template[13:17, 7:11] = template[1:5, 7:11]
 
     # Add the central long "row"
-    template[6:10, 0:16] = np.array([
+    template[7:11, 1:17] = np.array([
         6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1,
         1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6,
         6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1,
@@ -90,7 +92,7 @@ def produce_template() -> np.ndarray:
     ]).reshape((4,16))
 
     # Update the central square
-    template[6:10, 6:10] = np.array([
+    template[7:11, 7:11] = np.array([
         5, 2, 5, 2,
         1, 5, 2, 6,
         6, 2, 5, 1,
@@ -100,25 +102,29 @@ def produce_template() -> np.ndarray:
     # Plug the 2-body Z-stabilisers on the left and right sides
     for r in [ 0, 1, 2, 3, 12, 13, 14, 15 ]:
         if r % 2 == 0:
-            template[r, 5] = 11
+            template[r+1, 6] = 11
         else:
-            template[r, 10] = 9
+            template[r+1, 11] = 9
+    template[8, 0] = template[10, 0] = 11
+    template[7, 17] = template[9, 17] = 9
 
     # Plug the 2-body Z-stabilisers on the top and bottom sides
     for c in [ 0, 1, 2, 3, 4, 11, 12, 13, 14, 15 ]:
         if c % 2 == 0:
-            template[10, c] = 10
+            template[11, c+1] = 10
         else:
-            template[5, c] = 8
+            template[6, c+1] = 8
+    template[0, 7] = template[0, 9] = 8
+    template[17, 8] = template[17, 10] = 10
 
     # Plug the extended stabilizers
     for col in range(6, 10):
-        template[4, col] = 12 if col % 2 == 0 else 13
-        template[10, col] = 12 if col % 2 != 0 else 13
+        template[5, col+1] = 12 if col % 2 == 0 else 13
+        template[11, col+1] = 12 if col % 2 != 0 else 13
 
     # Plug the extended triangular stabilizers
-    template[4, 5] = 14
-    template[10, 10] = 15
+    template[5, 6] = 14
+    template[11, 11] = 15
 
     return template
 
@@ -139,7 +145,7 @@ regular_schedules = {
 
 def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
     regular_stabilizers = filter(
-        lambda position: 0 <= junction[*position] <= 7, itertools.product(range(16), range(16))
+        lambda position: 0 <= junction[*position] <= 7, itertools.product(range(SIDE), range(SIDE))
     )
     schedules = regular_schedules['forward'] if forward else regular_schedules['reverse']
 
@@ -186,7 +192,7 @@ twobody_schedules = {
 
 def append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
     twobody_stabilizers = filter(
-        lambda position: 8 <= junction[*position] <= 11, itertools.product(range(16), range(16))
+        lambda position: 8 <= junction[*position] <= 11, itertools.product(range(SIDE), range(SIDE))
     )
     schedules = twobody_schedules['forward'] if forward else twobody_schedules['reverse']
 
@@ -259,7 +265,7 @@ extended_schedules = {
 
 def append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
     extended_stabilizers = filter(
-        lambda position: 12 <= junction[*position] <= 15, itertools.product(range(16), range(16))
+        lambda position: 12 <= junction[*position] <= 15, itertools.product(range(SIDE), range(SIDE))
     )
     schedules = extended_schedules['forward'] if forward else extended_schedules['reverse']
 
@@ -344,8 +350,8 @@ def print_schedules():
 
 if __name__ == "__main__":
     junction = produce_template()
-    for row in range(16):
-        for col in range(16):
+    for row in range(SIDE):
+        for col in range(SIDE):
             print(pretty(junction, row, col), end=" ")
         print()
 
@@ -361,7 +367,7 @@ if __name__ == "__main__":
     circuit = stim.Circuit()
 
     qubit_id = 0
-    for row, col in itertools.product(range(16), range(16)):
+    for row, col in itertools.product(range(SIDE), range(SIDE)):
         vertices_d, vertices_m = vertices(junction, row, col)
 
         for dr, dc in vertices_d:
@@ -419,7 +425,7 @@ if __name__ == "__main__":
         insertion = 0
         while circuit_lines[insertion].startswith("QUBIT_COORDS"):
             insertion += 1
-        for row, col in itertools.product(range(16), range(16)):
+        for row, col in itertools.product(range(SIDE), range(SIDE)):
             # Determine vertices
             vertices_d, _ = vertices(junction, row, col)
 
