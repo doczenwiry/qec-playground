@@ -313,6 +313,35 @@ def append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locati
     if targets_cz: circuit.append("CZ", targets_cz)
     if targets_mx: circuit.append("MX", targets_mx)
 
+def pretty_schedules(forward, reverse):
+    schedules = ""
+    for row in range(2):
+        for col in range(2):
+            moment = forward[row * 2 + col]
+            schedules += str(moment) if moment else '.'
+        schedules += " <-> "
+        for col in range(2):
+            moment = reverse[row * 2 + col]
+            schedules += str(moment) if moment else '.'
+        schedules += "\n"
+    return schedules
+
+def print_schedules():
+    for ptype in regular_schedules['forward'].keys():
+        forward = regular_schedules['forward'][ptype]
+        reverse = regular_schedules['reverse'][ptype]
+        print(f"{plaquettes[ptype]} [{hex(ptype)[2:]}] :\n{pretty_schedules(forward, reverse)}")
+
+    for ptype in twobody_schedules['forward'].keys():
+        forward = twobody_schedules['forward'][ptype]
+        reverse = twobody_schedules['reverse'][ptype]
+        print(f"{plaquettes[ptype]} [{hex(ptype)[2:]}] :\n{pretty_schedules(forward, reverse)}")
+
+    for ptype in extended_schedules['forward'].keys():
+        forward = extended_schedules['forward'][ptype]
+        reverse = extended_schedules['reverse'][ptype]
+        print(f"{plaquettes[ptype]} [{hex(ptype)[2:]}] :\n{pretty_schedules(forward, reverse)}")
+
 if __name__ == "__main__":
     junction = produce_template()
     for row in range(16):
@@ -320,8 +349,7 @@ if __name__ == "__main__":
             print(pretty(junction, row, col), end=" ")
         print()
 
-    for idx, plq in plaquettes.items():
-        print(f"{hex(idx)[2:]} : {plq}")
+    print_schedules()
 
     # All the positions in the array correspond to measurement qubits, with the data qubits surrounding them.
     # The number encodes a specific stabiliser circuit that must be properly inserted :)
