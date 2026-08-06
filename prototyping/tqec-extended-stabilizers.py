@@ -399,8 +399,8 @@ if __name__ == "__main__":
             append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward)
             append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward)
             append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward)
-            if moment < 7:
-                circuit.append("TICK")
+            # if moment < 7:
+            circuit.append("TICK")
         forward = not forward
 
     circuit.append("M", dq_at_locations.values())
