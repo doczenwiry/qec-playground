@@ -386,35 +386,24 @@ if __name__ == "__main__":
 
     circuit.append("TICK")
 
-    circuit.append("RZ", dq_at_locations.values())
+    circuit.append("R", dq_at_locations.values())
 
     circuit.append("TICK")
 
-    # Populate the forward round
-    for moment in range(8):
-        append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
-        append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
-        append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
-        if moment < 7:
-            circuit.append("TICK")
+    forward = True
 
-    # Populate the reverse round
-    for moment in range(8):
-        append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=False)
-        append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=False)
-        append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=False)
-        if moment < 7:
-            circuit.append("TICK")
+    # Make 5 rounds: forward, reverse, forward, reverse, forward
+    for round in range(5):
+        # Populate the current round
+        for moment in range(8):
+            append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward)
+            append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward)
+            append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward)
+            if moment < 7:
+                circuit.append("TICK")
+        forward = not forward
 
-    # Populate the forward round
-    for moment in range(8):
-        append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
-        append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
-        append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward=True)
-        if moment < 7:
-            circuit.append("TICK")
-
-    circuit.append("MZ", dq_at_locations.values())
+    circuit.append("M", dq_at_locations.values())
 
     circuit_file = "../assets/tqec-extended-stabilizers.stim"
     circuit.to_file(circuit_file)
