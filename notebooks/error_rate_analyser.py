@@ -54,6 +54,7 @@ def noisify_circuit_level(circuit, noise = 0.001):
 
     return noisy_circuit
 
+# Based on stim's getting started notebook.
 def analyse_error_rates(circuit, name = "circuit"):
     tasks = [
         sinter.Task(
