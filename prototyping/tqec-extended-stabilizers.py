@@ -17,6 +17,8 @@ import itertools
 import numpy as np
 import stim
 
+from prototyping.plaquettes_drawing import draw_plaquettes
+
 SIDE = 18
 
 plaquettes = {
@@ -356,6 +358,15 @@ if __name__ == "__main__":
         print()
 
     print_schedules()
+
+    draw_plaquettes(
+        junction, regular_schedules, twobody_schedules, extended_schedules,
+        direction = 'forward', savefile='schedule-forward.png'
+    )
+    draw_plaquettes(
+        junction, regular_schedules, twobody_schedules, extended_schedules,
+        direction = 'reverse', savefile='schedule-reverse.png'
+    )
 
     # All the positions in the array correspond to measurement qubits, with the data qubits surrounding them.
     # The number encodes a specific stabiliser circuit that must be properly inserted :)
