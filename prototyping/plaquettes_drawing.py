@@ -87,58 +87,74 @@ def draw_plaquettes(
                 make_shape( (col, row), PLAQUETTE_SHAPES[ptype], UNIT),
                 fill=color, outline="black", width=3
             )
-            # Go over the schedule and place the number at the corresponding corner.
-            if 0 <= ptype <= 7 or 12 <= ptype <= 13:
-                shape = PLAQUETTE_SHAPES[ptype]
-                if 0 <= ptype <= 7:
-                    schedules = regular_schedules
-                    last_qubits_moments = sorted(schedules[direction][ptype], reverse=True)[:2]
-                elif 12 <= ptype <= 13:
-                    schedules = extended_schedules
-                    last_qubits_moments = [3, 5]
-                cx = sum(x for x,_ in shape) / len(shape)
-                cy = sum(y for _,y in shape) / len(shape)
-                x, y = col + cx, row + cy
-                last_qubits = []
-                for index, (dx, dy) in enumerate(shape):
-                    moment = schedules[direction][ptype][SCHEDULE_ORDER[index]]
-                    if moment == 0:
-                        continue
 
-                    px, py = x + 0.65 * (dx - cx), y + 0.65 * (dy - cy)
-                    if moment in last_qubits_moments:
-                        last_qubits.append( (px * UNIT, py * UNIT) )
-                    drawer.text( (px * UNIT, py * UNIT), text=str(moment), fill="black", anchor="mm", font=font)
+        # Go over the schedule and place the number at the corresponding corner.
+        if 0 <= ptype <= 7 or 12 <= ptype <= 13:
+            shape = PLAQUETTE_SHAPES[ptype]
+            if 0 <= ptype <= 7:
+                schedules = regular_schedules
+                last_qubits_moments = sorted(schedules[direction][ptype], reverse=True)[:2]
+            elif 12 <= ptype <= 13:
+                schedules = extended_schedules
+                last_qubits_moments = [3, 5]
+            cx = sum(x for x,_ in shape) / len(shape)
+            cy = sum(y for _,y in shape) / len(shape)
+            x, y = col + cx, row + cy
+            last_qubits = []
+            for index, (dx, dy) in enumerate(shape):
+                moment = schedules[direction][ptype][SCHEDULE_ORDER[index]]
+                if moment == 0:
+                    continue
+
+                px, py = x + 0.65 * (dx - cx), y + 0.65 * (dy - cy)
+                if moment in last_qubits_moments:
+                    last_qubits.append( (px * UNIT, py * UNIT) )
+                drawer.text( (px * UNIT, py * UNIT), text=str(moment), fill="black", anchor="mm", font=font)
+            h1, h2 = last_qubits
+            trim = 0.20
+            sh1 = tuple(np.array(h1) + trim * (np.array(h2) - np.array(h1)))
+            sh2 = tuple(np.array(h2) - trim * (np.array(h2) - np.array(h1)))
+            drawer.line( [ sh1, sh2 ], fill="black", width=10)
+            drawer.line([sh1, sh2], fill=color, width=5)
+        elif 14 <= ptype <= 15:
+            shape = [ (0,0), (1,0), (1,2), (0,2) ]
+            last_qubits_moments = [3, 5]
+            schedules = extended_schedules
+            cx = sum(x for x,_ in shape) / len(shape)
+            cy = sum(y for _,y in shape) / len(shape)
+            x, y = col + cx, row + cy
+            last_qubits = []
+            for index, (dx, dy) in enumerate(shape):
+                moment = schedules[direction][ptype][SCHEDULE_ORDER[index]]
+                if moment == 0:
+                    continue
+
+                px, py = x + 0.65 * (dx - cx), y + 0.65 * (dy - cy)
+                if moment in last_qubits_moments:
+                    last_qubits.append( (px * UNIT, py * UNIT) )
+                drawer.text( (px * UNIT, py * UNIT), text=str(moment), fill="black", anchor="mm", font=font)
+            if len(last_qubits) == 2:
                 h1, h2 = last_qubits
                 trim = 0.20
                 sh1 = tuple(np.array(h1) + trim * (np.array(h2) - np.array(h1)))
                 sh2 = tuple(np.array(h2) - trim * (np.array(h2) - np.array(h1)))
                 drawer.line( [ sh1, sh2 ], fill="black", width=10)
                 drawer.line([sh1, sh2], fill=color, width=5)
-            elif 14 <= ptype <= 15:
-                shape = [ (0,0), (1,0), (1,2), (0,2) ]
-                last_qubits_moments = [3, 5]
-                schedules = extended_schedules
-                cx = sum(x for x,_ in shape) / len(shape)
-                cy = sum(y for _,y in shape) / len(shape)
-                x, y = col + cx, row + cy
-                last_qubits = []
-                for index, (dx, dy) in enumerate(shape):
-                    moment = schedules[direction][ptype][SCHEDULE_ORDER[index]]
-                    if moment == 0:
-                        continue
+        elif 8 <= ptype <= 11:
+            shape = [(0, 0), (1, 0), (1, 1), (0, 1)]
+            schedules = twobody_schedules
+            cx = sum(x for x, _ in shape) / len(shape)
+            cy = sum(y for _, y in shape) / len(shape)
+            x, y = col + cx, row + cy
+            for index, (dx, dy) in enumerate(shape):
+                moment = schedules[direction][ptype][SCHEDULE_ORDER[index]]
+                if moment == 0:
+                    continue
 
-                    px, py = x + 0.65 * (dx - cx), y + 0.65 * (dy - cy)
-                    if moment in last_qubits_moments:
-                        last_qubits.append( (px * UNIT, py * UNIT) )
-                    drawer.text( (px * UNIT, py * UNIT), text=str(moment), fill="black", anchor="mm", font=font)
-                if len(last_qubits) == 2:
-                    h1, h2 = last_qubits
-                    trim = 0.20
-                    sh1 = tuple(np.array(h1) + trim * (np.array(h2) - np.array(h1)))
-                    sh2 = tuple(np.array(h2) - trim * (np.array(h2) - np.array(h1)))
-                    drawer.line( [ sh1, sh2 ], fill="black", width=10)
-                    drawer.line([sh1, sh2], fill=color, width=5)
+                px, py = x + 0.65 * (dx - cx), y + 0.65 * (dy - cy)
+                drawer.text((px * UNIT, py * UNIT), text=str(moment), fill="black", anchor="mm", font=font)
 
-    image.show()
-    if savefile: image.save(savefile)
+    if savefile:
+        image.save(savefile)
+    else:
+        image.show()
