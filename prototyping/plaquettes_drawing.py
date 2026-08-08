@@ -103,7 +103,7 @@ def draw_plaquettes(junction: np.ndarray, all_schedules, direction = 'forward', 
                 continue
             ntype = junction[row+pr, col+pc]
             if 0 <= ntype <= 11 or 16 <= ntype <= 19:
-                moment = all_schedules['forward'][ntype][3 - index]
+                moment = all_schedules[direction][ntype][3 - index]
                 touched.add(moment)
                 count += 1
 
