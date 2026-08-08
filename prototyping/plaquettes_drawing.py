@@ -63,10 +63,7 @@ def make_chord(position, base_shape, scale):
     x0, y0, x1, y1 = base_shape
     return [ (x0+x) * scale , (y0+y) * scale, (x1+x) * scale , (y1+y) * scale ]
 
-def draw_plaquettes(
-    junction: np.ndarray, regular_schedules, extended_schedules,
-    direction = 'forward', savefile = None
-):
+def draw_plaquettes(junction: np.ndarray, all_schedules, direction = 'forward', savefile = None):
     height, width = junction.shape
     image = Image.new("RGB", (width * UNIT, height * UNIT), "gray")
 
@@ -106,7 +103,7 @@ def draw_plaquettes(
                 continue
             ntype = junction[row+pr, col+pc]
             if 0 <= ntype <= 11 or 16 <= ntype <= 19:
-                moment = regular_schedules['forward'][ntype][3 - index]
+                moment = all_schedules['forward'][ntype][3 - index]
                 touched.add(moment)
                 count += 1
 
@@ -126,20 +123,17 @@ def draw_plaquettes(
         if 0 <= ptype <= 7 or 12 <= ptype <= 13 or 16 <= ptype <= 19:
             shape = SQUARE if 0 <= ptype <= 7 or 16 <= ptype <= 19 else RECTANGLE # PLAQUETTE_SHAPES[ptype]
             if 0 <= ptype <= 7:
-                schedules = regular_schedules
-                last_qubits_moments = sorted(schedules[direction][ptype], reverse=True)[:2]
+                last_qubits_moments = sorted(all_schedules[direction][ptype], reverse=True)[:2]
             elif 12 <= ptype <= 13:
-                schedules = extended_schedules
                 last_qubits_moments = [3, 5]
             elif 16 <= ptype <= 19:
-                schedules = regular_schedules
                 last_qubits_moments = []
             cx = sum(x for x,_ in shape) / len(shape)
             cy = sum(y for _,y in shape) / len(shape)
             x, y = col + cx, row + cy
             last_qubits = []
             for index, (dx, dy) in enumerate(shape):
-                moment = schedules[direction][ptype][SCHEDULE_ORDER[index]]
+                moment = all_schedules[direction][ptype][SCHEDULE_ORDER[index]]
                 if moment == 0:
                     continue
 
@@ -157,13 +151,12 @@ def draw_plaquettes(
         elif 14 <= ptype <= 15:
             shape = [ (0,0), (1,0), (1,2), (0,2) ]
             last_qubits_moments = [3, 5]
-            schedules = extended_schedules
             cx = sum(x for x,_ in shape) / len(shape)
             cy = sum(y for _,y in shape) / len(shape)
             x, y = col + cx, row + cy
             last_qubits = []
             for index, (dx, dy) in enumerate(shape):
-                moment = schedules[direction][ptype][SCHEDULE_ORDER[index]]
+                moment = all_schedules[direction][ptype][SCHEDULE_ORDER[index]]
                 if moment == 0:
                     continue
 
@@ -180,12 +173,11 @@ def draw_plaquettes(
                 drawer.line([sh1, sh2], fill=color, width=5)
         elif 8 <= ptype <= 11:
             shape = [(0, 0), (1, 0), (1, 1), (0, 1)]
-            schedules = regular_schedules
             cx = sum(x for x, _ in shape) / len(shape)
             cy = sum(y for _, y in shape) / len(shape)
             x, y = col + cx, row + cy
             for index, (dx, dy) in enumerate(shape):
-                moment = schedules[direction][ptype][SCHEDULE_ORDER[index]]
+                moment = all_schedules[direction][ptype][SCHEDULE_ORDER[index]]
                 if moment == 0:
                     continue
 
@@ -200,10 +192,9 @@ def draw_plaquettes(
 
         if 0 <= ptype <= 11 or 16 <= ptype <= 19:
             offset = 1
-            pschedule = regular_schedules[direction][ptype]
         else:
             offset = 2
-            pschedule = extended_schedules[direction][ptype]
+        pschedule = all_schedules[direction][ptype]
 
         if row + offset >= height:
             continue
@@ -212,7 +203,7 @@ def draw_plaquettes(
         if btype == 255:
             continue
 
-        bschedule = regular_schedules[direction][btype] if 0 <= btype <= 11 or 16 <= btype <= 19 else extended_schedules[direction][btype]
+        bschedule = all_schedules[direction][btype] if 0 <= btype <= 11 or 16 <= btype <= 19 else all_schedules[direction][btype]
 
         if (pschedule[2] < bschedule[0]) ^ (pschedule[3] < bschedule[1]):
             drawer.text( ( (col + 0.5) * UNIT, (row + offset) * UNIT), text="X", fill="yellow", anchor="mm", font=font)
@@ -224,7 +215,7 @@ def draw_plaquettes(
         if rtype == 255:
             continue
 
-        rschedule = regular_schedules[direction][rtype] if 0 <= rtype <= 11 or 16 <= rtype <= 19 else extended_schedules[direction][rtype]
+        rschedule = all_schedules[direction][rtype] if 0 <= rtype <= 11 or 16 <= rtype <= 19 else all_schedules[direction][rtype]
         if (pschedule[1] < rschedule[0]) ^ (pschedule[3] < rschedule[2]):
             drawer.text( ( (col + 1.0) * UNIT, (row + 0.5) * UNIT), text="X", fill="yellow", anchor="mm", font=font)
 

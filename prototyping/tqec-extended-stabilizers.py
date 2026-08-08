@@ -150,17 +150,19 @@ def pretty(array, r, c):
     cell = array[r, c]
     return encoding[cell] if 0 <= cell <= 19 else '.'
 
-regular_schedules = {
+all_schedules = {
     'forward': {
         0: [3, 5, 1, 2], 1: [1, 4, 3, 5],  2: [1, 2, 3, 5],  3: [4, 1, 5, 3],
         4: [3, 5, 1, 2], 5: [1, 4, 3, 5],  6: [1, 2, 3, 5],  7: [4, 1, 5, 3],
         8: [0, 0, 3, 5], 9: [1, 0, 3, 0], 10: [1, 4, 0, 0], 11: [0, 4, 0, 5],
+        12: [2, 4, 3, 5], 13: [2, 4, 3, 5], 14: [0, 4, 3, 5], 15: [2, 4, 3, 0],
         16: [0, 2, 3, 5], 17: [4, 0, 6, 3], 18: [1, 4, 0, 5], 19: [2, 4, 1, 0]
     },
     'reverse': {
         0: [5, 3, 2, 1], 1: [4, 1, 5, 3],  2: [2, 1, 5, 3],  3: [1, 4, 3, 5],
         4: [5, 3, 2, 1], 5: [4, 1, 5, 3],  6: [2, 1, 5, 3],  7: [1, 4, 3, 5],
         8: [0, 0, 5, 3], 9: [5, 0, 4, 0], 10: [4, 1, 0, 0], 11: [0, 3, 0, 1],
+        12: [4, 2, 5, 3], 13: [4, 2, 5, 3], 14: [0, 2, 5, 3], 15: [4, 2, 5, 0],
         16: [0,1,5,3], 17: [4,0,5,2], 18: [3,1,0,2], 19: [6,5,4,0]
     }
 }
@@ -170,7 +172,7 @@ def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locatio
         lambda position: 0 <= junction[*position] <= 11 or 16 <= junction[*position] <= 19,
         itertools.product(range(SIDE), range(SIDE))
     )
-    schedules = regular_schedules['forward'] if forward else regular_schedules['reverse']
+    schedules = all_schedules['forward'] if forward else all_schedules['reverse']
 
     targets_cx = []
     targets_cz = []
@@ -207,20 +209,11 @@ def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locatio
     if targets_cz: circuit.append("CZ", targets_cz)
     if targets_mx: circuit.append("MX", targets_mx)
 
-extended_schedules = {
-    'forward': {
-        12: [2, 4, 3, 5], 13: [2, 4, 3, 5], 14: [0, 4, 3, 5], 15: [2, 4, 3, 0]
-    },
-    'reverse': {
-        12: [4, 2, 5, 3], 13: [4, 2, 5, 3], 14: [0, 2, 5, 3], 15: [4, 2, 5, 0]
-    }
-}
-
 def append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
     extended_stabilizers = filter(
         lambda position: 12 <= junction[*position] <= 15, itertools.product(range(SIDE), range(SIDE))
     )
-    schedules = extended_schedules['forward'] if forward else extended_schedules['reverse']
+    schedules = all_schedules['forward'] if forward else all_schedules['reverse']
 
     targets_rx = []
     targets_rz = []
@@ -286,14 +279,9 @@ def pretty_schedules(forward, reverse):
     return schedules
 
 def print_schedules():
-    for ptype in regular_schedules['forward'].keys():
-        forward = regular_schedules['forward'][ptype]
-        reverse = regular_schedules['reverse'][ptype]
-        print(f"{plaquettes[ptype]} [{hex(ptype)[2:]}] :\n{pretty_schedules(forward, reverse)}")
-
-    for ptype in extended_schedules['forward'].keys():
-        forward = extended_schedules['forward'][ptype]
-        reverse = extended_schedules['reverse'][ptype]
+    for ptype in all_schedules['forward'].keys():
+        forward = all_schedules['forward'][ptype]
+        reverse = all_schedules['reverse'][ptype]
         print(f"{plaquettes[ptype]} [{hex(ptype)[2:]}] :\n{pretty_schedules(forward, reverse)}")
 
 if __name__ == "__main__":
@@ -306,12 +294,10 @@ if __name__ == "__main__":
     print_schedules()
 
     draw_plaquettes(
-        junction, regular_schedules, extended_schedules,
-        direction = 'forward', savefile='../assets/tqec/tqec-extended-stabilizers-forward.png'
+        junction, all_schedules, direction = 'forward', savefile='../assets/tqec/tqec-extended-stabilizers-forward.png'
     )
     draw_plaquettes(
-        junction, regular_schedules, extended_schedules,
-        direction = 'reverse', savefile='../assets/tqec/tqec-extended-stabilizers-reverse.png'
+        junction, all_schedules, direction = 'reverse', savefile='../assets/tqec/tqec-extended-stabilizers-reverse.png'
     )
 
     # All the positions in the array correspond to measurement qubits, with the data qubits surrounding them.
