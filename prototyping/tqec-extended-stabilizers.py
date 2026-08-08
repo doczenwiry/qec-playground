@@ -11,7 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import base64
 import itertools
 
 import numpy as np
@@ -38,27 +38,30 @@ plaquettes = {
     13 : 'Z5B',
     14 : 'Z3B',
     15 : 'Z3T',
+    16 : 'ZT0',
+    17 : 'ZT1',
+    18 : 'ZT2',
+    19 : 'ZT3'
 }
 
 def vertices(junction, row, col):
     """Returns the coordinates of data qubits and measurement qubits touched by this plaquette type."""
     ptype = junction[row, col]
-    if 0 <= ptype <= 7:
+    if 0 <= ptype <= 7 or 16 <= ptype <= 19:
         vd = [(0.0, 0.0) , (0.0, 1.0), (1.0, 1.0), (1.0, 0.0)]
         vm = [(0.5, 0.5)]
-    elif 8 <= ptype <= 11:
-        if ptype == 8:
-            vd = [(1.0, 0.0) , (1.0, 1.0)]
-            vm = [(0.5, 0.5)]
-        elif ptype == 9:
-            vd = [(0.0, 0.0), (1.0, 0.0)]
-            vm = [(0.5, 0.5)]
-        elif ptype == 10:
-            vd = [(0.0, 0.0), (0.0, 1.0)]
-            vm = [(0.5, 0.5)]
-        else: # ptype == 11:
-            vd = [(0.0, 1.0), (1.0, 1.0)]
-            vm = [(0.5, 0.5)]
+    elif ptype == 8:
+        vd = [(1.0, 0.0) , (1.0, 1.0)]
+        vm = [(0.5, 0.5)]
+    elif ptype == 9:
+        vd = [(0.0, 0.0), (1.0, 0.0)]
+        vm = [(0.5, 0.5)]
+    elif ptype == 10:
+        vd = [(0.0, 0.0), (0.0, 1.0)]
+        vm = [(0.5, 0.5)]
+    elif ptype == 11:
+        vd = [(0.0, 1.0), (1.0, 1.0)]
+        vm = [(0.5, 0.5)]
     elif 12 <= ptype <= 13:
         vd = [(0.0, 0.0), (0.0, 1.0), (2.0, 1.0), (2.0, 0.0)]
         vm = [(0.5, 0.5), (1.5, 0.5), (1.0, 0.0)]
@@ -71,6 +74,12 @@ def vertices(junction, row, col):
     else:
         vd = []
         vm = []
+
+    if 16 <= ptype <= 17:
+        vd.pop(ptype - 16)
+    elif 18 <= ptype <= 19:
+        vd.pop(3 - (ptype - 18))
+
     return vd, vm
 
 def produce_template() -> np.ndarray:
@@ -128,26 +137,38 @@ def produce_template() -> np.ndarray:
     template[5, 6] = 14
     template[11, 11] = 15
 
+    # Trim the unprotected data qubits
+    template[ 7,  1] = 16
+    template[ 1, 10] = 17
+    template[16,  7] = 18
+    template[10, 16] = 19
+
     return template
 
+encoding = "0123456789abcdefghij"
 def pretty(array, r, c):
     cell = array[r, c]
-    return hex(cell)[2:] if 0 <= cell <= 15 else '.'
+    return encoding[cell] if 0 <= cell <= 19 else '.'
 
 regular_schedules = {
     'forward': {
-        0: [3, 5, 1, 2], 1: [1, 4, 3, 5], 2: [1, 2, 3, 5], 3: [4, 1, 5, 3],
-        4: [3, 5, 1, 2], 5: [1, 4, 3, 5], 6: [1, 2, 3, 5], 7: [4, 1, 5, 3]
+        0: [3, 5, 1, 2], 1: [1, 4, 3, 5],  2: [1, 2, 3, 5],  3: [4, 1, 5, 3],
+        4: [3, 5, 1, 2], 5: [1, 4, 3, 5],  6: [1, 2, 3, 5],  7: [4, 1, 5, 3],
+        8: [0, 0, 3, 5], 9: [1, 0, 3, 0], 10: [1, 4, 0, 0], 11: [0, 4, 0, 5],
+        16: [0, 4, 3, 5], 17: [1, 0, 3, 5], 18: [1, 4, 0, 5], 19: [1, 4, 3, 0]
     },
     'reverse': {
-        0: [5, 3, 2, 1], 1: [4, 1, 5, 3], 2: [2, 1, 5, 3], 3: [1, 4, 3, 5],
-        4: [5, 3, 2, 1], 5: [4, 1, 5, 3], 6: [2, 1, 5, 3], 7: [1, 4, 3, 5]
+        0: [5, 3, 2, 1], 1: [4, 1, 5, 3],  2: [2, 1, 5, 3],  3: [1, 4, 3, 5],
+        4: [5, 3, 2, 1], 5: [4, 1, 5, 3],  6: [2, 1, 5, 3],  7: [1, 4, 3, 5],
+        8: [0, 0, 5, 3], 9: [5, 0, 4, 0], 10: [4, 1, 0, 0], 11: [0, 3, 0, 1],
+        16: [0,0,0,0], 17: [0,0,0,0], 18: [0,0,0,0], 19: [0,0,0,0]
     }
 }
 
-def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
+def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward):
     regular_stabilizers = filter(
-        lambda position: 0 <= junction[*position] <= 7, itertools.product(range(SIDE), range(SIDE))
+        lambda position: 0 <= junction[*position] <= 11 or 16 <= junction[*position] <= 19,
+        itertools.product(range(SIDE), range(SIDE))
     )
     schedules = regular_schedules['forward'] if forward else regular_schedules['reverse']
 
@@ -162,14 +183,16 @@ def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locatio
             ptype = junction[row, col]
 
             vertices_d = [ (0,0) , (1,0) , (0,1), (1,1) ]
+
             try:
                 dx, dy = vertices_d[schedules[ptype].index(moment)]
-                dq = dq_at_locations_dq[col + dx, row + dy]
+
+                dq = dq_at_locations[col + dx, row + dy]
                 mq = mq_at_locations[col + 0.5, row + 0.5]
                 if 0 <= ptype <= 3:
                     targets_cx.append(mq)
                     targets_cx.append(dq)
-                elif 4 <= ptype <= 11:
+                elif 4 <= ptype <= 11 or 16 <= ptype <= 19:
                     targets_cz.append(mq)
                     targets_cz.append(dq)
             except ValueError:
@@ -180,79 +203,6 @@ def append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locatio
 
     if targets_rx: circuit.append("RX", targets_rx)
     if targets_cx: circuit.append("CX", targets_cx)
-    if targets_cz: circuit.append("CZ", targets_cz)
-    if targets_mx: circuit.append("MX", targets_mx)
-
-twobody_schedules = {
-    'forward': {
-        8: [0, 0, 3, 5], 9: [3, 0, 6, 0], 10: [2, 4, 0, 0], 11: [0, 2, 0, 4]
-    },
-    'reverse': {
-        8: [0, 0, 5, 3], 9: [2, 0, 4, 0], 10: [4, 2, 0, 0], 11: [0, 3, 0, 6]
-    }
-}
-
-def append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations_dq, moment, forward):
-    twobody_stabilizers = filter(
-        lambda position: 8 <= junction[*position] <= 11, itertools.product(range(SIDE), range(SIDE))
-    )
-    schedules = twobody_schedules['forward'] if forward else twobody_schedules['reverse']
-
-    targets_rx = []
-    targets_cz = []
-    targets_mx = []
-
-    for row, col in twobody_stabilizers:
-        ptype = junction[row, col]
-        if ptype in [8, 10]:
-            if moment == 0:
-                targets_rx.append(mq_at_locations[col + 0.5, row + 0.5])
-            elif 1 <= moment <= 5:
-                vertices_d = [(0, 0), (1, 0), (0, 1), (1, 1)]
-                try:
-                    dx, dy = vertices_d[schedules[ptype].index(moment)]
-                    mq = mq_at_locations[col + 0.5, row + 0.5]
-                    dq = dq_at_locations_dq[col + dx, row + dy]
-                    targets_cz.append(mq)
-                    targets_cz.append(dq)
-                except ValueError:
-                    # The current plaquette doesn't do anything in the current moment.
-                    pass
-            elif moment == 6:
-                targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
-        else:
-            if moment == 1:
-                targets_rx.append(mq_at_locations[col + 0.5, row + 0.5])
-            elif 2 <= moment <= 5:
-                vertices_d = [(0, 0), (1, 0), (0, 1), (1, 1)]
-                try:
-                    dx, dy = vertices_d[schedules[ptype].index(moment)]
-                    mq = mq_at_locations[col + 0.5, row + 0.5]
-                    dq = dq_at_locations_dq[col + dx, row + dy]
-                    targets_cz.append(mq)
-                    targets_cz.append(dq)
-                except ValueError:
-                    # The current plaquette doesn't do anything in the current moment.
-                    pass
-            elif moment == 6:
-                if (ptype == 9 and forward) or (ptype == 11 and not forward):
-                    vertices_d = [(0, 0), (1, 0), (0, 1), (1, 1)]
-                    try:
-                        dx, dy = vertices_d[schedules[ptype].index(moment)]
-                        mq = mq_at_locations[col + 0.5, row + 0.5]
-                        dq = dq_at_locations_dq[col + dx, row + dy]
-                        targets_cz.append(mq)
-                        targets_cz.append(dq)
-                    except ValueError:
-                        # The current plaquette doesn't do anything in the current moment.
-                        pass
-                else:
-                    targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
-            elif moment == 7:
-                if (ptype == 9 and forward) or (ptype == 11 and not forward):
-                    targets_mx.append(mq_at_locations[col + 0.5, row + 0.5])
-
-    if targets_rx: circuit.append("RX", targets_rx)
     if targets_cz: circuit.append("CZ", targets_cz)
     if targets_mx: circuit.append("MX", targets_mx)
 
@@ -340,11 +290,6 @@ def print_schedules():
         reverse = regular_schedules['reverse'][ptype]
         print(f"{plaquettes[ptype]} [{hex(ptype)[2:]}] :\n{pretty_schedules(forward, reverse)}")
 
-    for ptype in twobody_schedules['forward'].keys():
-        forward = twobody_schedules['forward'][ptype]
-        reverse = twobody_schedules['reverse'][ptype]
-        print(f"{plaquettes[ptype]} [{hex(ptype)[2:]}] :\n{pretty_schedules(forward, reverse)}")
-
     for ptype in extended_schedules['forward'].keys():
         forward = extended_schedules['forward'][ptype]
         reverse = extended_schedules['reverse'][ptype]
@@ -360,12 +305,12 @@ if __name__ == "__main__":
     print_schedules()
 
     draw_plaquettes(
-        junction, regular_schedules, twobody_schedules, extended_schedules,
-        direction = 'forward', savefile='schedule-forward.png'
+        junction, regular_schedules, extended_schedules,
+        direction = 'forward', savefile='../assets/tqec/tqec-extended-stabilizers-forward.png'
     )
     draw_plaquettes(
-        junction, regular_schedules, twobody_schedules, extended_schedules,
-        direction = 'reverse', savefile='schedule-reverse.png'
+        junction, regular_schedules, extended_schedules,
+        direction = 'reverse', savefile='../assets/tqec/tqec-extended-stabilizers-reverse.png'
     )
 
     # All the positions in the array correspond to measurement qubits, with the data qubits surrounding them.
@@ -382,6 +327,7 @@ if __name__ == "__main__":
         vertices_d, vertices_m = vertices(junction, row, col)
 
         for dr, dc in vertices_d:
+
             location = col + dc, row + dr
             if location not in dq_at_locations:
                 circuit.append("QUBIT_COORDS", [qubit_id], location)
@@ -397,7 +343,7 @@ if __name__ == "__main__":
 
     circuit.append("TICK")
 
-    circuit.append("R", dq_at_locations.values())
+    circuit.append("RX", dq_at_locations.values())
 
     circuit.append("TICK")
 
@@ -408,15 +354,14 @@ if __name__ == "__main__":
         # Populate the current round
         for moment in range(8):
             append_regular_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward)
-            append_twobody_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward)
             append_extended_stabilizers(circuit, junction, mq_at_locations, dq_at_locations, moment, forward)
             # if moment < 7:
             circuit.append("TICK")
         forward = not forward
 
-    circuit.append("M", dq_at_locations.values())
+    circuit.append("MX", dq_at_locations.values())
 
-    circuit_file = "../assets/tqec-extended-stabilizers.stim"
+    circuit_file = "../assets/tqec/tqec-extended-stabilizers.stim"
     circuit.to_file(circuit_file)
 
     # Insert all the polygons into the Stim file for readability.
@@ -437,9 +382,9 @@ if __name__ == "__main__":
             plaquette_type = plaquettes[stabilizer_type][0]
             x, z = int(plaquette_type == 'X'), int(plaquette_type == 'Z')
 
-            polygon = [str(dq_at_locations[col + dc, row + dr]) for dr, dc in vertices_d]
+            polygon = [ str(dq_at_locations[col + dc, row + dr]) for dr, dc in vertices_d ]
             circuit_lines.insert(insertion, f"#!pragma POLYGON({x},0,{z},0.5) {" ".join(polygon)}\n")
             insertion += 1
 
-    with open("../assets/tqec-extended-stabilizers.stim", "w", encoding="utf-8") as file:
+    with open("../assets/tqec/tqec-extended-stabilizers.stim", "w", encoding="utf-8") as file:
         file.writelines(circuit_lines)
