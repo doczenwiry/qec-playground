@@ -192,6 +192,42 @@ def draw_plaquettes(
                 px, py = x + 0.65 * (dx - cx), y + 0.65 * (dy - cy)
                 drawer.text((px * UNIT, py * UNIT), text=str(moment), fill="black", anchor="mm", font=font)
 
+    for row, col in itertools.product(range(width), range(height)):
+        ptype = junction[row, col]
+
+        if ptype == 255:
+            continue
+
+        if 0 <= ptype <= 11 or 16 <= ptype <= 19:
+            offset = 1
+            pschedule = regular_schedules[direction][ptype]
+        else:
+            offset = 2
+            pschedule = extended_schedules[direction][ptype]
+
+        if row + offset >= height:
+            continue
+
+        btype = junction[row + offset, col]
+        if btype == 255:
+            continue
+
+        bschedule = regular_schedules[direction][btype] if 0 <= btype <= 11 or 16 <= btype <= 19 else extended_schedules[direction][btype]
+
+        if (pschedule[2] < bschedule[0]) ^ (pschedule[3] < bschedule[1]):
+            drawer.text( ( (col + 0.5) * UNIT, (row + offset) * UNIT), text="X", fill="yellow", anchor="mm", font=font)
+
+        if col + 1 >= width:
+            continue
+
+        rtype = junction[row, col+1]
+        if rtype == 255:
+            continue
+
+        rschedule = regular_schedules[direction][rtype] if 0 <= rtype <= 11 or 16 <= rtype <= 19 else extended_schedules[direction][rtype]
+        if (pschedule[1] < rschedule[0]) ^ (pschedule[3] < rschedule[2]):
+            drawer.text( ( (col + 1.0) * UNIT, (row + 0.5) * UNIT), text="X", fill="yellow", anchor="mm", font=font)
+
     if savefile:
         image.save(savefile)
     else:
