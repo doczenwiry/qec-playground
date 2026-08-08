@@ -11,7 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import base64
+
 import itertools
 
 import numpy as np
@@ -327,7 +327,6 @@ if __name__ == "__main__":
         vertices_d, vertices_m = vertices(junction, row, col)
 
         for dr, dc in vertices_d:
-
             location = col + dc, row + dr
             if location not in dq_at_locations:
                 circuit.append("QUBIT_COORDS", [qubit_id], location)

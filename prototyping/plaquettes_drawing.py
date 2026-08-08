@@ -93,6 +93,35 @@ def draw_plaquettes(
                 fill=color, outline="black", width=3
             )
 
+    for row, col in itertools.product(range(width), range(height)):
+        ptype = junction[row, col]
+
+        if ptype == 255:
+            continue
+
+        count = 0
+        touched = set()
+        for index, (pr, pc) in enumerate([ (-1,-1), (-1, 0), ( 0,-1), (0, 0) ]):
+            if not (0 <= row+pr < height and 0 <= col+pc < width):
+                continue
+            ntype = junction[row+pr, col+pc]
+            if 0 <= ntype <= 11 or 16 <= ntype <= 19:
+                moment = regular_schedules['forward'][ntype][3 - index]
+                touched.add(moment)
+                count += 1
+
+        if len(touched) != count:
+            bounding = [ pos * UNIT for pos in [ col-0.375, row-0.375, col+0.375, row+0.375 ] ]
+            drawer.ellipse(bounding, fill="#FFFF0020", outline="black", width=3)
+
+    for row, col in itertools.product(range(width), range(height)):
+        ptype = junction[row, col]
+
+        if ptype == 255:
+            continue
+
+        color = "#CF4040" if 0 <= ptype <= 3 or ptype == 12 else "#4040CF"
+
         # Go over the schedule and place the number at the corresponding corner.
         if 0 <= ptype <= 7 or 12 <= ptype <= 13 or 16 <= ptype <= 19:
             shape = SQUARE if 0 <= ptype <= 7 or 16 <= ptype <= 19 else RECTANGLE # PLAQUETTE_SHAPES[ptype]
