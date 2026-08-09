@@ -55,7 +55,8 @@ PLAQUETTE_SHAPES = {
     16: TRIM_TL, 17: TRIM_TR, 18: TRIM_BL, 19: TRIM_BR,
 }
 PLAQUETTE_CHORDS = {
-    8 : CHORD_T, 9 : CHORD_R, 10 : CHORD_B, 11 : CHORD_L
+    8 : CHORD_T, 9 : CHORD_R, 10 : CHORD_B, 11 : CHORD_L,
+    16: CHORD_T, 17: CHORD_R, 18: CHORD_B, 19: CHORD_L
 }
 
 def make_shape(position, base_shape, scale):
@@ -67,7 +68,7 @@ def make_chord(position, base_shape, scale):
     x0, y0, x1, y1 = base_shape
     return [ (x0+x) * scale , (y0+y) * scale, (x1+x) * scale , (y1+y) * scale ]
 
-def draw_plaquettes(junction: np.ndarray, all_schedules, direction = 'forward', savefile = None):
+def draw_plaquettes(junction: np.ndarray, all_schedules, direction = 'forward', temporal=False, savefile = None):
     height, width = junction.shape
     image = Image.new("RGB", (width * UNIT, height * UNIT), "gray")
 
@@ -80,9 +81,9 @@ def draw_plaquettes(junction: np.ndarray, all_schedules, direction = 'forward', 
         if ptype == 255:
             continue
 
-        color = "#CF4040" if 0 <= ptype <= 3 or ptype == 12 else "#4040CF"
+        color = "#CF4040" if 0 <= ptype <= 3 or ptype == 12 or (temporal and 16 <= ptype <= 19) else "#4040CF"
 
-        if 8 <= ptype <= 11:
+        if 8 <= ptype <= 11 or (temporal and 16 <= ptype <= 19):
             parameters, start, final = PLAQUETTE_CHORDS[ptype]
             drawer.chord(
                 make_chord((col,row), parameters, UNIT), start=start, end=final,
