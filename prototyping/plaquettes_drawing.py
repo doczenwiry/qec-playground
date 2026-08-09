@@ -35,6 +35,10 @@ SQUARE = [ (0,0), (1,0), (1,1), (0,1) ]
 RECTANGLE = [ (0,0), (1,0), (1,2), (0,2) ]
 TRIANGLE_TL = [ (0.6, 0), (1,0), (1, 2), (0, 2), (0, 1.6) ]
 TRIANGLE_BR = [ (0,0), (1,0), (1, 0.4), (0.4, 2), (0, 2) ]
+TRIM_TL = [ (0.725, 0), (1.0, 0), (1.0, 1.0), (0,1), (0, 0.725) ]
+TRIM_TR = [ (0,0), (0.225, 0), (1,0.725), (1,1), (0,1) ]
+TRIM_BL = [ (0,0), (1,0), (1,1), (0.725, 1), (0, 0.225) ]
+TRIM_BR = [ (0,0), (1,0), (1,0.225), (0.225, 1), (0, 1) ]
 SQUARE_TRIM0 = [ (1,0), (1,1), (0,1) ]
 SQUARE_TRIM1 = [ (0,0), (1,1), (0,1) ]
 SQUARE_TRIM2 = [ (0,0), (1,0), (1,1) ]
@@ -48,7 +52,7 @@ CHORD_L = ( [ 0.5, 0.0, 1.5, 1.0] ,  90, 270 )
 PLAQUETTE_SHAPES = {
     0: SQUARE, 1: SQUARE, 2: SQUARE, 3: SQUARE, 4: SQUARE, 5: SQUARE, 6: SQUARE, 7: SQUARE,
     12: RECTANGLE, 13: RECTANGLE, 14: TRIANGLE_TL, 15: TRIANGLE_BR,
-    16: SQUARE_TRIM0, 17: SQUARE_TRIM1, 18: SQUARE_TRIM2, 19: SQUARE_TRIM3,
+    16: TRIM_TL, 17: TRIM_TR, 18: TRIM_BL, 19: TRIM_BR,
 }
 PLAQUETTE_CHORDS = {
     8 : CHORD_T, 9 : CHORD_R, 10 : CHORD_B, 11 : CHORD_L
