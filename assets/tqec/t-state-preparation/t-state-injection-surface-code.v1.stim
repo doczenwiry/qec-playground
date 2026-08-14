@@ -13,6 +13,12 @@ QUBIT_COORDS(5, 3) 8
 TICK
 R 1 2 7 3 8
 RX 5 4 0 6
+#!pragma MARKX(0) 0 4 5
+#!pragma MARKX(1) 0 4 6
+#!pragma MARKX(2) 4 5 6
+#!pragma MARKZ(0) 2
+#!pragma MARKZ(1) 1
+#!pragma MARKZ(2) 7
 TICK
 CX 4 7 6 3 5 2 0 1
 TICK
