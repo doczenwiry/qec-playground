@@ -80,7 +80,7 @@
 
 	\subsection{\mbox{\sc Inject} --- Modified Steane Code preparation}
 
-	In order to prepare a 7-qubits magic state, the following modified Steane Code circuit\footnote{Based on the circuit from Figure 6 in arXiv:2409.17595} is used where a \Op{T}-gate\footnote{Or an \Op{S}-gate to enable simulation of the resulting circuit that the non-Clifford \Op{T}-gate prevents} has been strategically placed to inject the $\frac{\pi}{4}$ phase onto the $\kett{1}_{\scriptscriptstyle L}$ component of the $\kett{+}_{\scriptscriptstyle L}$ state.
+	In order to prepare a 7-qubits magic state, the following modified Steane Code circuit\footnote{Based on the circuit from Figure 6 in arXiv:2409.17595} is used where a $\Op{T}^\dagger$-gate\footnote{Or an $\Op{S}^\dagger$-gate to enable simulation of the resulting circuit that the non-Clifford \Op{T}-gate prevents} has been strategically placed to inject the $\frac{\pi}{4}$ phase onto the $\kett{1}_{\scriptscriptstyle L}$ component of the $\kett{+}_{\scriptscriptstyle L}$ state.
 
 	\begin{figure}[h!]
 		\centering
@@ -98,7 +98,7 @@
 			\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
 			& \ctrl{1} &\phantom{i}&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
 			\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
-			& \targ{}  & \targ{}  & \gate{\Op{T}} & \targ{} & \targ{} &
+			& \targ{}  & \targ{}  & \gate{\Op{T}^{\dagger}} & \targ{} & \targ{} &
 		\end{quantikz}
 		\caption{Modified Steane Code. In the absence of errors, the $7$ qubits are in a logical state $\kett{+}_{\scriptscriptstyle L}$ once the red line is reached. Note that the entire circuit can be performed in 8 steps.}
 	\end{figure}
@@ -142,7 +142,49 @@
 	\subsection{\mbox{\sc Syndrome} --- Detect Steane preparation failure}
 	\subsection{\mbox{\sc Post-select} --- Discard for some other reason}
 
+	\newpage
+
 	\section{Stage II --- Cultivation}
+
+	\begin{figure}[h!]
+		\centering
+		\begin{quantikz}[row sep={between origins, 0.75cm}]
+			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Check T}}
+			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Mystery}}
+			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Check T}}
+			& \\
+			&&&& \\
+			&&&& \\
+			&&&& \\
+			&&&& \\
+			&&&& \\
+			&&&&
+		\end{quantikz}
+		\caption{Overview of the cultivation stage in three parts.}	
+	\end{figure}
+
+	\begin{figure}[h!]
+		\centering
+		\begin{quantikz}[row sep={0.6cm, between origins}]
+			& \gate[7, style={rounded corners=5pt}][1cm]{\Op{T}^\dagger} & \\
+			&& \\
+			&& \\
+			&& \\
+			&& \\
+			&& \\
+			&& \\[0.5cm]
+			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
+			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
+			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
+			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
+			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
+			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} &
+		\end{quantikz}
+		\caption{Mystery circuit.}
+	\end{figure}
+
+	\newpage
+
 	\section{Stage III --- Expansion}
 
 	\newpage
@@ -188,10 +230,10 @@
 			\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
 			&& \ctrl{1} &\phantom{i}&&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
 			\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
-			&& \targ{}  & \targ{}  && \gate{\Op{T}} & \targ{} & \targ{} &
+			&& \targ{}  & \targ{}  && \gate{\Op{T}^{\dagger}} & \targ{} & \targ{} &
 		\end{quantikz}
 		}
-		\caption{Modified Steane Code with intermediate states. The basis states corresponding to the $\kett{0}_{\scriptscriptstyle L}$ (resp. $\kett{1}_{\scriptscriptstyle L}$) are placed in the left (resp. right) column. As pointed out by Austin, the two CNOTs in the middle section ensure that the 7-th qubit has a value of {\tt 0} (resp. {\tt 1}) in all the components of $\kett{0}_{\scriptscriptstyle L}$ (resp. $\kett{1}_{\scriptscriptstyle L}$). This means that the \Op{T}-gate injects the $e^{i\pi/4}$ into all the components of $\kett{1}_{\scriptscriptstyle L}$ while leaving $\kett{0}_{\scriptscriptstyle L}$ untouched. The two final CNOTs brings the resulting state back to $\ket{\Op{T}}_{\scriptscriptstyle L}$.}
+		\caption{Modified Steane Code with intermediate states. The basis states corresponding to the $\kett{0}_{\scriptscriptstyle L}$ (resp. $\kett{1}_{\scriptscriptstyle L}$) are placed in the left (resp. right) column. As pointed out by Austin, the two CNOTs in the middle section ensure that the 7-th qubit has a value of {\tt 0} (resp. {\tt 1}) in all the components of $\kett{0}_{\scriptscriptstyle L}$ (resp. $\kett{1}_{\scriptscriptstyle L}$). This means that the $\Op{T}^{\dagger}$-gate injects the $e^{i\pi/4}$ into all the components of $\kett{1}_{\scriptscriptstyle L}$ while leaving $\kett{0}_{\scriptscriptstyle L}$ untouched. The two final CNOTs brings the resulting state back to $\ket{\Op{T}}_{\scriptscriptstyle L}$.}
 	\end{figure}
 
 
