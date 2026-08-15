@@ -13,23 +13,25 @@ QUBIT_COORDS(3, 3) 10
 #!pragma POLYGON(0,1,0,0.25) 4 9 5 0
 #!pragma POLYGON(1,0,0,0.25) 5 9 10 6
 TICK
-R 1 10 4 2
-RX 0 5 9 6 3 8 7
-#!pragma MARKX(0) 0 3 5 6
-#!pragma MARKZ(0) 1
+R 1 10 4
+RX 0 5 9 6 3 8 7 2
+#!pragma MARKX(0) 0 5 7 9
+#!pragma MARKX(1) 0 3 5 6 7
+#!pragma MARKX(2) 5 6 8 9 7
+#!pragma MARKZ(0) 4
+#!pragma MARKZ(1) 1
+#!pragma MARKZ(2) 10
 TICK
-CX 3 1 7 4
+CX 3 1 8 10 7 4
 TICK
-CX 4 2 8 10
+CX 2 4 6 3 9 7 5 8
 TICK
+CX 5 3 0 2 6 8
 TICK
-CX 6 3 5 8 9 7
+CX 0 3 5 7 9 8
 TICK
-CX 5 3 9 8 0 2
+CX 3 1 8 10 2 4
 TICK
-CX 6 8 5 2 0 3
+CX 0 2 7 4
 TICK
-TICK
-CX 3 1 4 2
-TICK
-CX 8 10 4 7
+CX 9 7
