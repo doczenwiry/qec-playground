@@ -236,29 +236,45 @@
 		\end{subfigure}
 		\begin{subfigure}[t]{0.62\textwidth}
 			\centering
-			\begin{quantikz}[row sep={0.6cm, between origins}, column sep={0.3cm}]
+			\begin{quantikz}[row sep={0.75cm, between origins}, column sep={0.3cm}]
 				% Data qubits
-				\lstick{$q_{1}$} & \gate[7, style={rounded corners=5pt}][1cm]{\Op{T}^\dagger} &&&&&&&&&&\targ{}&& \\
-				\lstick{$q_{2}$} &&&&&&&\targ{}&&&&&& \\
-				\lstick{$q_{3}$} &&&&&&\targ{}&&&\ctrl{10}&\ctrl{4}&&\ctrl{7}&\meter{} \\
-				\lstick{$q_{4}$} &&&&&\targ{}&&&&&&&& \\
-				\lstick{$q_{5}$} &&&&\targ{}&&&&&&&&& \\
-				\lstick{$q_{6}$} &&&\targ{}&&&&&&&&&& \\
-				\lstick{$q_{7}$} &&\targ{}& &&&&&\ctrl{2}&&\targ{}&&& \\[0.5cm]
-				% Ancilla qubits
-				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-				&\ctrl{-1}&&&&&&&&&&&\\
-				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-				&&\ctrl{-3}&&&&&\targ{}&&&&&\\
-				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-				&&&\ctrl{-5}&&&&&&\ctrl{1}&\ctrl{-9}&\targ{}&\\
-				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-				&&&&\ctrl{-7}&&&&&\targ{}&&&\\
-				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-				&&&&&\ctrl{-9}& &&&&&&\\
-				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-				&&&&&&\ctrl{-11}&&\targ{}&&&&
+				\lstick{$q_{2}$} & \gate{\Op{T}^\dagger} &\targ{} &&&&& \\
+				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &\targ{}&&&& \\
+				\lstick{$q_{3}$} & \gate{\Op{T}^\dagger} &\targ{} &\ctrl{-1}&&\ctrl{10}&\ctrl{5}& \meter{} \\
+				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&\phantom{i}&\phantom{i}& \\
+				\lstick{$q_{4}$} & \gate{\Op{T}^\dagger} &\targ{} &&&\phantom{i}&\phantom{i}& \\
+				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &\targ{}&&\phantom{i}&\phantom{i}& \\
+				\lstick{$q_{5}$} & \gate{\Op{T}^\dagger} &\targ{} &\phantom{i}&&\phantom{i}&\phantom{i}& \\
+				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &\ctrl{-2}&\ctrl{1}&\phantom{i}&\targ{}& \\
+				\lstick{$q_{1}$} & \gate{\Op{T}^\dagger} &&&\targ{}&&& \\
+				\lstick{$q_{6}$} & \gate{\Op{T}^\dagger} &\targ{} &&&\phantom{i}&& \\
+				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} & \targ{} &&\phantom{i}&& \\
+				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &\phantom{i}&&&& \\
+				\lstick{$q_{7}$} & \gate{\Op{T}^\dagger} &\targ{} & \ctrl{-2} &&\targ{}&& \\
 			\end{quantikz}
+%			\begin{quantikz}[row sep={0.6cm, between origins}, column sep={0.3cm}]
+%				% Data qubits
+%				\lstick{$q_{1}$} & \gate[7, style={rounded corners=5pt}][1cm]{\Op{T}^\dagger} &&&&&&&&&&\targ{}&& \\
+%				\lstick{$q_{2}$} &&&&&&&\targ{}&&&&&& \\
+%				\lstick{$q_{3}$} &&&&&&\targ{}&&&\ctrl{10}&\ctrl{4}&&\ctrl{7}&\meter{} \\
+%				\lstick{$q_{4}$} &&&&&\targ{}&&&&&&&& \\
+%				\lstick{$q_{5}$} &&&&\targ{}&&&&&&&&& \\
+%				\lstick{$q_{6}$} &&&\targ{}&&&&&&&&&& \\
+%				\lstick{$q_{7}$} &&\targ{}& &&&&&\ctrl{2}&&\targ{}&&& \\[0.5cm]
+%				% Ancilla qubits
+%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+%				&\ctrl{-1}&&&&&&&&&&&\\
+%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+%				&&\ctrl{-3}&&&&&\targ{}&&&&&\\
+%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+%				&&&\ctrl{-5}&&&&&&\ctrl{1}&\ctrl{-9}&\targ{}&\\
+%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+%				&&&&\ctrl{-7}&&&&&\targ{}&&&\\
+%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+%				&&&&&\ctrl{-9}& &&&&&&\\
+%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+%				&&&&&&\ctrl{-11}&&\targ{}&&&&
+%			\end{quantikz}
 		\end{subfigure}
 		\caption{Mystery circuit.}
 	\end{figure}
