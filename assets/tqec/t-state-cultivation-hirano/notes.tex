@@ -196,87 +196,65 @@
 		\centering
 		\begin{quantikz}[row sep={between origins, 0.75cm}]
 			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Check T}}
-			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Mystery}}
+			& \gate[7,style={rounded corners=5pt}][1cm]{\Op{T}^\dagger}
+			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Cultivation}}
+			& \gate[7,style={rounded corners=5pt}][1cm]{\Op{T}}
 			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Check T}}
 			& \\
-			&&&& \\
-			&&&& \\
-			&&&& \\
-			&&&& \\
-			&&&& \\
-			&&&&
+			&&&&&& \\
+			&&&&&& \\
+			&&&&&& \\
+			&&&&&& \\
+			&&&&&& \\
+			&&&&&&
 		\end{quantikz}
 		\caption{Overview of the cultivation stage in three parts.}	
 	\end{figure}
 
 	\begin{figure}[h!]
-		\begin{subfigure}[c]{0.32\textwidth}
-			\centering
-			\begin{tikzpicture}
-				\coordinate (O) at (0,0);
-				\coordinate (A) at ( 30:2.25);
-				\coordinate (B) at ( 90:2.25);
-				\coordinate (C) at (150:2.25);
-				\coordinate (D) at (210:2.25);
-				\coordinate (E) at (270:2.25);
-				\coordinate (F) at (330:2.25);
-
-				\fill[quantum green, stabilizer] (O) -- (A) -- (B) -- (C) -- cycle;
-				\fill[quantum blue, stabilizer]  (O) -- (C) -- (D) -- (E) -- cycle;
-				\fill[quantum red, stabilizer]  (O) -- (E) -- (F) -- (A) -- cycle;
-
-				\node[data] at (E) {\small $\mathbf{1}$};
-				\node[data] at (D) {\small $\mathbf{2}$};
-				\node[data] at (O) {$\mathbf{3}$};
-				\node[data] at (F) {\small $\mathbf{4}$};
-				\node[data] at (A) {\small $\mathbf{5}$};
-				\node[data] at (B) {$\mathbf{6}$};
-				\node[data] at (C) {\small $\mathbf{7}$};	
-			\end{tikzpicture}
-		\end{subfigure}
-		\begin{subfigure}[t]{0.62\textwidth}
-			\centering
-			\begin{quantikz}[row sep={0.75cm, between origins}, column sep={0.3cm}]
-				% Data qubits
-				\lstick{$q_{2}$} & \gate{\Op{T}^\dagger} &\targ{} &&&&& \\
-				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &\targ{}&&&& \\
-				\lstick{$q_{3}$} & \gate{\Op{T}^\dagger} &\targ{} &\ctrl{-1}&&\ctrl{10}&\ctrl{5}& \meter{} \\
-				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&\phantom{i}&\phantom{i}& \\
-				\lstick{$q_{4}$} & \gate{\Op{T}^\dagger} &\targ{} &&&\phantom{i}&\phantom{i}& \\
-				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &\targ{}&&\phantom{i}&\phantom{i}& \\
-				\lstick{$q_{5}$} & \gate{\Op{T}^\dagger} &\targ{} &\phantom{i}&&\phantom{i}&\phantom{i}& \\
-				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &\ctrl{-2}&\ctrl{1}&\phantom{i}&\targ{}& \\
-				\lstick{$q_{1}$} & \gate{\Op{T}^\dagger} &&&\targ{}&&& \\
-				\lstick{$q_{6}$} & \gate{\Op{T}^\dagger} &\targ{} &&&\phantom{i}&& \\
-				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} & \targ{} &&\phantom{i}&& \\
-				& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &\phantom{i}&&&& \\
-				\lstick{$q_{7}$} & \gate{\Op{T}^\dagger} &\targ{} & \ctrl{-2} &&\targ{}&& \\
-			\end{quantikz}
-%			\begin{quantikz}[row sep={0.6cm, between origins}, column sep={0.3cm}]
-%				% Data qubits
-%				\lstick{$q_{1}$} & \gate[7, style={rounded corners=5pt}][1cm]{\Op{T}^\dagger} &&&&&&&&&&\targ{}&& \\
-%				\lstick{$q_{2}$} &&&&&&&\targ{}&&&&&& \\
-%				\lstick{$q_{3}$} &&&&&&\targ{}&&&\ctrl{10}&\ctrl{4}&&\ctrl{7}&\meter{} \\
-%				\lstick{$q_{4}$} &&&&&\targ{}&&&&&&&& \\
-%				\lstick{$q_{5}$} &&&&\targ{}&&&&&&&&& \\
-%				\lstick{$q_{6}$} &&&\targ{}&&&&&&&&&& \\
-%				\lstick{$q_{7}$} &&\targ{}& &&&&&\ctrl{2}&&\targ{}&&& \\[0.5cm]
-%				% Ancilla qubits
-%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-%				&\ctrl{-1}&&&&&&&&&&&\\
-%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-%				&&\ctrl{-3}&&&&&\targ{}&&&&&\\
-%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-%				&&&\ctrl{-5}&&&&&&\ctrl{1}&\ctrl{-9}&\targ{}&\\
-%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-%				&&&&\ctrl{-7}&&&&&\targ{}&&&\\
-%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-%				&&&&&\ctrl{-9}& &&&&&&\\
-%				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
-%				&&&&&&\ctrl{-11}&&\targ{}&&&&
-%			\end{quantikz}
-		\end{subfigure}
-		\caption{Mystery circuit.}
+		\centering
+		\begin{quantikz}[row sep={0.85cm, between origins}, column sep={0.3cm}]
+			% Data qubit 6
+			\lstick{$q_{6}$} & \gate{\Op{T}^\dagger} && \targ{} &&&&
+			& &&&&\targ{} && \gate{\Op{T}} & \\
+			% Ancilla 1
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} & \targ{} &&&
+			& &&&\targ{}&\ctrl{-1} & \meter{\scalebox{0.5}{\Op{X}}}\\
+			% Data qubit 7
+			\lstick{$q_{7}$} & \gate{\Op{T}^\dagger} & &\targ{} & \ctrl{-1} &\targ{}&&
+			& &&\targ{}&\ctrl{-1}&\targ{}&&\gate{\Op{T}} & \\
+			% Ancilla 2
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&\phantom{i}&&
+			& &&\phantom{i}&&\ctrl{-1}& \meter{\scalebox{0.5}{\Op{X}}}\\
+			% Data qubit 2
+			\lstick{$q_{2}$} & \gate{\Op{T}^\dagger} & &\targ{} &&\phantom{i}&&
+			& &&\phantom{i}&&\targ{}&&\gate{\Op{T}} &\\
+			% Ancilla 3
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &\targ{}&\phantom{i}&&
+			& &&\phantom{i}&\targ{}&\ctrl{-1}& \meter{\scalebox{0.5}{\Op{X}}}\\
+			% Data qubit 3
+			\lstick{$q_{3}$} & \gate{\Op{T}^\dagger} & &\targ{} &\ctrl{-1}&\ctrl{-4}&\ctrl{3}& \meter{\scalebox{0.5}{\Op{X}}}
+			& \wireoverride{}\midstick{$\kett{+}$} &\ctrl{3}&\ctrl{-4}&\ctrl{-1}&\targ{}&& \gate{\Op{T}} &\\
+			% Ancilla 4
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&\phantom{i}&
+			& &\phantom{i}&&&\ctrl{-1}& \meter{\scalebox{0.5}{\Op{X}}}\\
+			% Data qubit 1
+			\lstick{$q_{1}$} & \gate{\Op{T}^\dagger} & &&&\targ{}&\phantom{i}&
+			& &\phantom{i}&\targ{}&&&&\gate{\Op{T}} & \\
+			% Ancilla 5
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &\ctrl{2}&\ctrl{-1}&\targ{}&
+			& &\targ{}&\ctrl{-1}&\ctrl{2}&\ctrl{1}& \meter{\scalebox{0.5}{\Op{X}}}\\
+			% Data qubit 5
+			\lstick{$q_{5}$} & \gate{\Op{T}^\dagger} & &\targ{} &\phantom{i}&&&
+			& &&&\phantom{i}&\targ{}&&\gate{\Op{T}} & \\
+			% Ancilla 6
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &\targ{}&&&
+			& &&&\targ{}&\ctrl{1}& \meter{\scalebox{0.5}{\Op{X}}}\\
+			% Data qubit 4
+			\lstick{$q_{4}$} & \gate{\Op{T}^\dagger} & &\targ{} &&&&
+			& &&&&\targ{}&&\gate{\Op{T}} & \\
+		\end{quantikz}
+		\caption{Highlight on the central part of the cultivation. Note that the qubits have been re-organised for a more readable circuit.}
 	\end{figure}
 
 	\newpage
