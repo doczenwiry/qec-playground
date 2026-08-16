@@ -27,12 +27,16 @@
 \tikzstyle{quantum blue}=[blue!75!black!50]
 \tikzstyle{quantum green}=[green!75!black!50]
 
+\tikzstyle{data}=[circle, fill=black, text=white]
+\tikzstyle{meas}=[circle, fill=white, draw=black, ultra thick]
+\tikzstyle{stabilizer}=[draw=black]
+
 \newcommand{\ttbf}{\ttfamily\fontseries{b}\selectfont}
 \DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it}
 
-\title{TQEC --- T-state cultivation\footnote{Based on Austin Fowler's presentation of arXiv:2510.24615 and arXiv:2409.17595 at TQEC meeting on 2026/08/12.}}
-\author{}
-\date{}
+\title{TQEC --- Notes on T-state cultivation\footnote{Based on Austin Fowler's presentation of arXiv:2510.24615 and arXiv:2409.17595 at TQEC meeting on 2026/08/12.}}
+\author{Seweryn Dynerowicz}
+%\date{}
 
 \newcommand{\Op}[1]{{\bf #1}}
 \newcommand{\kett}[1]{\ket{\mbox{\tt #1}}}
@@ -51,14 +55,15 @@
 		\label{eq:magic-state}
 	\end{equation}
 
-	The injection stage is broken down into three parts as shown on the Figure below.
+	The injection stage is broken down into two main parts as shown on the figure below.
+	\vspace{-1cm}
 
 	\begin{figure}[h!]
 		\centering
 		\begin{quantikz}[row sep={between origins, 0.75cm}]
 			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Inject}}
 			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Syndrome}}
-			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Post-select}}
+			& \gate[7,style={rounded corners=5pt, fill=black, inner ysep=-27.5pt}]{\rotatebox{90}{\color{white}\scshape Post-select}}
 			& \\
 			&&&& \\
 			&&&& \\
@@ -67,45 +72,87 @@
 			&&&& \\
 			&&&&
 		\end{quantikz}
+		\vspace{-1cm}
 		\caption{Overview of the injection stage in three parts.}	
 	\end{figure}
 
 	In the first part, an attempt is made to prepare a logical magic state using a modified Steane Code circuit where a phase of $e^{i\pi/4}$ is injected into a logical $\kett{+}_{\scriptscriptstyle L}$ state. \\
 
-	Since we are working in a noisy environment, that attempt may fail and we wish to confirm whether the state that was prepared is indeed the one from Eq. (\ref{eq:magic-state}). The second part consists in performing a single round of syndrome measurement for the stabilizers of the Steane Code to determine whether the injection has prepared a +1 eigenstate. The third part performs post-selection. The verification that the phase has been properly injected is performed in the cultivation stage. \\
+	Since we are working in a noisy environment, that attempt may fail and we wish to confirm whether the state that was prepared is indeed the one from Eq. (\ref{eq:magic-state}). The second part consists in performing a single round of syndrome measurement for the stabilizers of the Steane Code to determine whether the injection has successfully prepared a +1 eigenstate. A post-selection is performed based on the outcome to decide whether to discard the state and start a new attempt or proceed with the cultivation stage. The cultivation stage is where we verify that  the correct phase has been injected. \\
 
-	In the next subsections, we will go over the abstract circuitry behind those parts. The concrete circuits for the surface code array will be provided in (TBD) appendix.
+		% The syndrome measurement can only determine whether we have successfully prepared a logical $\kett{+}_{\scriptscriptstyle L}$. It is oblivious to the phase ?
+
+	In the next subsections, we will go over the abstract circuitry behind those parts. The concrete circuits for the surface code array will be provided in the (TBD) appendix.
 
 	\newpage
 
-	\subsection{\mbox{\sc Inject} --- Modified Steane Code preparation}
+	\subsection{\mbox{\sc Inject} --- Modified Steane Code}
 
-	In order to prepare a 7-qubits magic state, the following modified Steane Code circuit\footnote{Based on the circuit from Figure 6 in arXiv:2409.17595} is used where a $\Op{T}^\dagger$-gate\footnote{Or an $\Op{S}^\dagger$-gate to enable simulation of the resulting circuit that the non-Clifford \Op{T}-gate prevents} has been strategically placed to inject the $\frac{\pi}{4}$ phase onto the $\kett{1}_{\scriptscriptstyle L}$ component of the $\kett{+}_{\scriptscriptstyle L}$ state.
+	In order to prepare a 7-qubits magic state, the following modified Steane Code circuit\footnote{Based on the circuit from Figure 6 in arXiv:2409.17595} is used where a $\Op{T}^\dagger$-gate\footnote{Or an $\Op{S}^\dagger$-gate to enable simulation of the resulting circuit that the non-Clifford \Op{T}-gate prevents} has been strategically placed to inject the $\frac{\pi}{4}$ phase onto the $\kett{1}_{\scriptscriptstyle L}$ component of the $\kett{+}_{\scriptscriptstyle L}$ state. In the following circuit, we assume a numbering of qubits $1$ through $7$ from top to bottom. 
 
 	\begin{figure}[h!]
 		\centering
-		\begin{quantikz}[row sep=0.6cm]
-			\lstick{$\kett{+}$~} & \ctrl{1} &           & \ctrl{3}  &           &
-			\slice{} &&&&&& \rstick[7]{~~$\ket{\Op{T}}_{\scriptscriptstyle L}$} \\
-			\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &\phantom{i}& \targ{}   &
-			&          & \ctrl{5}  && \ctrl{5}  && \\
-			\lstick{$\kett{+}$~} & \ctrl{1} & \ctrl{-1} &\phantom{i}&\phantom{i}& \ctrl{3}
-			&          &\phantom{i}&&\phantom{i}&& \\
-			\lstick{$\kett{0}$~} & \targ{}  & \targ{}   & \targ{}   &\phantom{i}&\phantom{i}
-			&          &\phantom{i}&&\phantom{i}&& \\
-			\lstick{$\kett{+}$~} & \ctrl{1} & \ctrl{-1} &           &\phantom{i}&\phantom{i}
-			&          &\phantom{i}&&\phantom{i}&& \\
-			\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
-			& \ctrl{1} &\phantom{i}&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
-			\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
-			& \targ{}  & \targ{}  & \gate{\Op{T}^{\dagger}} & \targ{} & \targ{} &
-		\end{quantikz}
-		\caption{Modified Steane Code. In the absence of errors, the $7$ qubits are in a logical state $\kett{+}_{\scriptscriptstyle L}$ once the red line is reached. Note that the entire circuit can be performed in 8 steps.}
+		\begin{subfigure}[c]{0.32\textwidth}
+			\centering
+			\begin{tikzpicture}
+				\coordinate (O) at (0,0);
+				\coordinate (A) at ( 30:2.25);
+				\coordinate (B) at ( 90:2.25);
+				\coordinate (C) at (150:2.25);
+				\coordinate (D) at (210:2.25);
+				\coordinate (E) at (270:2.25);
+				\coordinate (F) at (330:2.25);
+
+				\fill[quantum green, stabilizer] (O) -- (A) -- (B) -- (C) -- cycle;
+				\fill[quantum blue, stabilizer]  (O) -- (C) -- (D) -- (E) -- cycle;
+				\fill[quantum red, stabilizer]  (O) -- (E) -- (F) -- (A) -- cycle;
+
+				\node[data] at (E) {\small $\mathbf{1}$};
+				\node[data] at (D) {\small $\mathbf{2}$};
+				\node[data] at (O) {$\mathbf{3}$};
+				\node[data] at (F) {\small $\mathbf{4}$};
+				\node[data] at (A) {\small $\mathbf{5}$};
+				\node[data] at (B) {$\mathbf{6}$};
+				\node[data] at (C) {\small $\mathbf{7}$};	
+			\end{tikzpicture}
+		\end{subfigure}
+		\begin{subfigure}[c]{0.62\textwidth}
+			\centering
+			\begin{quantikz}[row sep=0.6cm]
+				\lstick{$\kett{+}$~} & \ctrl{1} &           & \ctrl{3}  &           &
+				\slice{} &&&&&& \rstick[7]{~~$\ket{\Op{T}}_{\scriptscriptstyle L}$} \\
+				\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &\phantom{i}& \targ{}   &
+				&          & \ctrl{5}  && \ctrl{5}  && \\
+				\lstick{$\kett{+}$~} & \ctrl{1} & \ctrl{-1} &\phantom{i}&\phantom{i}& \ctrl{3}
+				&          &\phantom{i}&&\phantom{i}&& \\
+				\lstick{$\kett{0}$~} & \targ{}  & \targ{}   & \targ{}   &\phantom{i}&\phantom{i}
+				&          &\phantom{i}&&\phantom{i}&& \\
+				\lstick{$\kett{+}$~} & \ctrl{1} & \ctrl{-1} &           &\phantom{i}&\phantom{i}
+				&          &\phantom{i}&&\phantom{i}&& \\
+				\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
+				& \ctrl{1} &\phantom{i}&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
+				\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
+				& \targ{}  & \targ{}  & \gate{\Op{T}^{\dagger}} & \targ{} & \targ{} &
+			\end{quantikz}
+		\end{subfigure}
+		\caption{Modified Steane Code with stabilizer diagram. Note that the abstract circuit can be performed in 8 steps.}
 	\end{figure}
+
+	In the absence of errors, the seven qubits are in a logical state $\kett{+}_{\scriptscriptstyle L}$ once the red line is reached
+	
+	\begin{equation*}
+		\kett{+}_{\scriptscriptstyle L} \quad=\quad
+			\sqrt{\frac{1}{2}}\left(\vphantom{\sqrt{\frac{1}{2}}}
+				\kett{0}_{\scriptscriptstyle L} + \kett{1}_{\scriptscriptstyle L}
+			\right)
+		\label{eq:logical-plus-state}
+	\end{equation*}
+
+	As pointed out by Austin, the first two CNOTs after the red line result in all the states of the logical $\kett{0}_{\scriptscriptstyle L}$ (resp. $\kett{1}_{\scriptscriptstyle L}$) having qubit $7$ set to $\kett{0}$ (resp. $\kett{1}$). Once the $e^{i\pi/4}$ phase has been injected by the $\Op{T}^{\dagger}$, the last two CNOTs change the value of qubit $7$ as to return the seven qubits in the state $\kett{+}_{\scriptscriptstyle L}$. See Figure (\ref{fig:injection-states}) for the detailed superpositions.
 
 	\subsubsection{Proof of correctness}
 
-	\paragraph{Preparation of $\kett{+}_{\scriptscriptstyle L}$} Assuming a numbering for the qubits of $1$ through $7$ from top to bottom, the stabilizers propagate along the first five steps as follows
+	\paragraph{(TBD) Preparation of $\kett{+}_{\scriptscriptstyle L}$ } Sticking to our assumed numbering, the stabilizers propagate along the first five steps as follows
 
 	\begin{equation*}
 		\Op{X}_{1} \rightarrow \Op{X}_{124}
@@ -132,15 +179,14 @@
 		\Op{X}_{2346}\Op{X}_{456}\Op{X}_{267} = \Op{X}_{3567}
 	\end{equation*}
 
-	The product of all the 4-body X-stabilizers tells us we have prepared the +1 eigenstate of logical $\Op{X}_{\scriptscriptstyle L}$
-	\begin{equation*}
-		\Op{X}_{124}\Op{X}_{2346}\Op{X}_{456}\Op{X}_{267} = \Op{X}_{1234567}
-	\end{equation*}
+%	The product of all the 4-body X-stabilizers tells us we have prepared the +1 eigenstate of logical $\Op{X}_{\scriptscriptstyle L}$
+%	\begin{equation*}
+%		\Op{X}_{124}\Op{X}_{2346}\Op{X}_{456}\Op{X}_{267} = \Op{X}_{1234567}
+%	\end{equation*}
 
-	\paragraph{Injection of $\pi/4$ phase}
+	\paragraph{(TBD) Injection of $e^{\pi/4}$ phase}
 
-	\subsection{\mbox{\sc Syndrome} --- Detect Steane preparation failure}
-	\subsection{\mbox{\sc Post-select} --- Discard for some other reason}
+	\subsection{\mbox{\sc Syndrome} --- Detect preparation failure}
 
 	\newpage
 
@@ -164,22 +210,56 @@
 	\end{figure}
 
 	\begin{figure}[h!]
-		\centering
-		\begin{quantikz}[row sep={0.6cm, between origins}]
-			& \gate[7, style={rounded corners=5pt}][1cm]{\Op{T}^\dagger} & \\
-			&& \\
-			&& \\
-			&& \\
-			&& \\
-			&& \\
-			&& \\[0.5cm]
-			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
-			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
-			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
-			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
-			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} & \\
-			\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$} &
-		\end{quantikz}
+		\begin{subfigure}[c]{0.32\textwidth}
+			\centering
+			\begin{tikzpicture}
+				\coordinate (O) at (0,0);
+				\coordinate (A) at ( 30:2.25);
+				\coordinate (B) at ( 90:2.25);
+				\coordinate (C) at (150:2.25);
+				\coordinate (D) at (210:2.25);
+				\coordinate (E) at (270:2.25);
+				\coordinate (F) at (330:2.25);
+
+				\fill[quantum green, stabilizer] (O) -- (A) -- (B) -- (C) -- cycle;
+				\fill[quantum blue, stabilizer]  (O) -- (C) -- (D) -- (E) -- cycle;
+				\fill[quantum red, stabilizer]  (O) -- (E) -- (F) -- (A) -- cycle;
+
+				\node[data] at (E) {\small $\mathbf{1}$};
+				\node[data] at (D) {\small $\mathbf{2}$};
+				\node[data] at (O) {$\mathbf{3}$};
+				\node[data] at (F) {\small $\mathbf{4}$};
+				\node[data] at (A) {\small $\mathbf{5}$};
+				\node[data] at (B) {$\mathbf{6}$};
+				\node[data] at (C) {\small $\mathbf{7}$};	
+			\end{tikzpicture}
+		\end{subfigure}
+		\begin{subfigure}[t]{0.62\textwidth}
+			\centering
+			\begin{quantikz}[row sep={0.6cm, between origins}, column sep={0.3cm}]
+				% Data qubits
+				\lstick{$q_{1}$} & \gate[7, style={rounded corners=5pt}][1cm]{\Op{T}^\dagger} &&&&&&&&&&\targ{}&& \\
+				\lstick{$q_{2}$} &&&&&&&\targ{}&&&&&& \\
+				\lstick{$q_{3}$} &&&&&&\targ{}&&&\ctrl{10}&\ctrl{4}&&\ctrl{7}&\meter{} \\
+				\lstick{$q_{4}$} &&&&&\targ{}&&&&&&&& \\
+				\lstick{$q_{5}$} &&&&\targ{}&&&&&&&&& \\
+				\lstick{$q_{6}$} &&&\targ{}&&&&&&&&&& \\
+				\lstick{$q_{7}$} &&\targ{}& &&&&&\ctrl{2}&&\targ{}&&& \\[0.5cm]
+				% Ancilla qubits
+				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+				&\ctrl{-1}&&&&&&&&&&&\\
+				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+				&&\ctrl{-3}&&&&&\targ{}&&&&&\\
+				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+				&&&\ctrl{-5}&&&&&&\ctrl{1}&\ctrl{-9}&\targ{}&\\
+				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+				&&&&\ctrl{-7}&&&&&\targ{}&&&\\
+				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+				&&&&&\ctrl{-9}& &&&&&&\\
+				\wireoverride{n} & \wireoverride{n}\midstick{$\kett{+}$}
+				&&&&&&\ctrl{-11}&&\targ{}&&&&
+			\end{quantikz}
+		\end{subfigure}
 		\caption{Mystery circuit.}
 	\end{figure}
 
@@ -190,8 +270,8 @@
 	\newpage
 
 	\appendix
-	
-	\section{Injection stage --- Intermediate states}
+
+	\section{Injection stage --- Extra diagrams}
 
 	\begin{figure}[h!]
 		\centering
@@ -233,8 +313,35 @@
 			&& \targ{}  & \targ{}  && \gate{\Op{T}^{\dagger}} & \targ{} & \targ{} &
 		\end{quantikz}
 		}
-		\caption{Modified Steane Code with intermediate states. The basis states corresponding to the $\kett{0}_{\scriptscriptstyle L}$ (resp. $\kett{1}_{\scriptscriptstyle L}$) are placed in the left (resp. right) column. As pointed out by Austin, the two CNOTs in the middle section ensure that the 7-th qubit has a value of {\tt 0} (resp. {\tt 1}) in all the components of $\kett{0}_{\scriptscriptstyle L}$ (resp. $\kett{1}_{\scriptscriptstyle L}$). This means that the $\Op{T}^{\dagger}$-gate injects the $e^{i\pi/4}$ into all the components of $\kett{1}_{\scriptscriptstyle L}$ while leaving $\kett{0}_{\scriptscriptstyle L}$ untouched. The two final CNOTs brings the resulting state back to $\ket{\Op{T}}_{\scriptscriptstyle L}$.}
+		\caption{Modified Steane Code with intermediate states (normalisation factor omitted). The basis states corresponding to the $\kett{0}_{\scriptscriptstyle L}$ (resp. $\kett{1}_{\scriptscriptstyle L}$) are aligned in the left (resp. right) column. Note that the 7-th qubit has a value of $\kett{0}$ (resp. $\kett{1}$) in all the components coming from $\kett{0}_{\scriptscriptstyle L}$ (resp. $\kett{1}_{\scriptscriptstyle L}$) before the $\Op{T}^{\dagger}$-gate is applied.}
+		\label{fig:injection-states}
 	\end{figure}
 
+	\begin{figure}[h!]
+		\centering
+		\begin{tikzpicture}
+			\fill[draw=black, quantum green] (0, 0) -- (0,-2) -- (4,-2);
+			\fill[draw=black, quantum blue] (0,-2) -- (0, -4) -- (2, -4) -- (2, -2);
+			\fill[draw=black, quantum red] (2,-2) -- (2, -4) -- (4, -4) -- (4, -2);
+			
+			\node[data] at (2,-4) {\large $\mathbf{1}$};
+			\node[data] at (0,-4) {\large $\mathbf{2}$};
+			\node[data] at (2,-2) {\large $\mathbf{3}$};
+			\node[data] at (4,-4) {\large $\mathbf{4}$};
+			\node[data] at (4,-2) {\large $\mathbf{5}$};
+			\node[data] at (0, 0) {\large $\mathbf{6}$};
+			\node[data] at (0,-2) {\large $\mathbf{7}$};	
+
+			\node[data] at (2,  0) {\phantom{0}};
+%			\node[data] at (4,  0) {\phantom{0}};
+			\node[meas] at (-1, -1) {};
+			\node[meas] at ( 1, -1) {};
+			\node[meas] at ( 3, -1) {};
+			\node[meas] at (-1, -3) {};
+			\node[meas] at ( 1, -3) {};
+			\node[meas] at ( 3, -3) {};
+		\end{tikzpicture}
+		\caption{Modified Steane Code overlaid on the surface code array. Data qubits are identified as black circles. Measurement qubits are shown as white circles. The extra qubits are those used for syndrome measurement in the injection stage and checking the phase in the cultivation stage.}
+	\end{figure}
 
 \end{document}
