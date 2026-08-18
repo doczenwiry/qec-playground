@@ -12,6 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import itertools
+import numpy as np
 import stim
 import sinter
 import matplotlib.pyplot as plt
@@ -55,21 +57,20 @@ def noisify_circuit_level(circuit, noise = 0.001):
     return noisy_circuit
 
 # Based on stim's getting started notebook.
-def analyse_error_rates(circuit, name = "circuit"):
+def analyse_error_rates(circuit, name = "circuit", shots= 1e6, minimal_noise = -6, points: int = 10):
     tasks = [
         sinter.Task(
             circuit=noisify_circuit_level(circuit, noise=noise),
             json_metadata={'d': d, 'p': noise},
         )
-        for d in [5]
-        for noise in [0.0001, 0.001, 0.003125, 0.00625, 0.0125, 0.025, 0.05, 0.08, 0.1]
+        for d, noise in itertools.product([5], np.logspace(-1, minimal_noise, num=points))
     ]
 
     collected_stats: list[sinter.TaskStats] = sinter.collect(
         num_workers=4,
         tasks=tasks,
         decoders=['pymatching'],
-        max_shots=1_000_000,
+        max_shots=int(shots),
         max_errors=500,
     )
 
@@ -80,8 +81,8 @@ def analyse_error_rates(circuit, name = "circuit"):
         x_func=lambda stats: stats.json_metadata['p'],
         group_func=lambda stats: stats.json_metadata['d'],
     )
-    ax.set_ylim(1e-9, 1e-0)
-    ax.set_xlim(9e-4, 1.2e-1)
+    ax.set_ylim(1e-9, 1.5)
+    ax.set_xlim(10**minimal_noise, 0.125)
     ax.loglog()
     ax.set_title(f"Analysis of {name}")
     ax.set_xlabel("Phyical Error Rate")

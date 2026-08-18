@@ -879,7 +879,9 @@ dependencies = [
     { name = "crochet" },
     { name = "ipykernel" },
     { name = "ipython" },
+    { name = "matplotlib" },
     { name = "numpy" },
+    { name = "sinter" },
     { name = "stim" },
     { name = "tqec" },
 ]
@@ -889,7 +891,9 @@ requires-dist = [
     { name = "crochet", git = "ssh://git@github.com/doczenwiry/crochet.git" },
     { name = "ipykernel", specifier = ">=7.3.0" },
     { name = "ipython", specifier = ">=9.16.0" },
+    { name = "matplotlib", specifier = ">=3.11.1" },
     { name = "numpy", specifier = ">=2.2.6" },
+    { name = "sinter", specifier = ">=1.16.0" },
     { name = "stim", specifier = ">=1.16.0" },
     { name = "tqec", specifier = ">=0.2.0" },
 ]

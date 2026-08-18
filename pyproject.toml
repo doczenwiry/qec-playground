@@ -7,7 +7,9 @@ dependencies = [
     "crochet",
     "ipykernel>=7.3.0",
     "ipython>=9.16.0",
+    "matplotlib>=3.11.1",
     "numpy>=2.2.6",
+    "sinter>=1.16.0",
     "stim>=1.16.0",
     "tqec>=0.2.0",
 ]
