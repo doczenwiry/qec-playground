@@ -17,6 +17,7 @@ import numpy as np
 import stim
 import sinter
 import matplotlib.pyplot as plt
+from tqec import NoiseModel
 
 def noisify_phenomenological(circuit, noise = 0.001):
     noisy_circuit = stim.Circuit()
@@ -60,7 +61,7 @@ def noisify_circuit_level(circuit, noise = 0.001):
 def analyse_error_rates(circuit, name = "circuit", shots= 1e6, minimal_noise = -6, points: int = 10):
     tasks = [
         sinter.Task(
-            circuit=noisify_circuit_level(circuit, noise=noise),
+            circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(circuit),
             json_metadata={'d': d, 'p': noise},
         )
         for d, noise in itertools.product([5], np.logspace(-1, minimal_noise, num=points))
@@ -71,7 +72,7 @@ def analyse_error_rates(circuit, name = "circuit", shots= 1e6, minimal_noise = -
         tasks=tasks,
         decoders=['pymatching'],
         max_shots=int(shots),
-        max_errors=500,
+        max_errors=5000,
     )
 
     fig, ax = plt.subplots(1, 1)
