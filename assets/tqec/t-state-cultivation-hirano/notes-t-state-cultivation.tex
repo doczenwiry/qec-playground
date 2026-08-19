@@ -78,7 +78,7 @@
 
 	In the first part, an attempt is made to prepare a logical magic state using a modified Steane Code circuit where a phase of $e^{i\pi/4}$ is injected into a logical $\kett{+}_{\scriptscriptstyle L}$ state. \\
 
-	Since we are working in a noisy environment, that attempt may fail and we wish to confirm whether the state that was prepared is indeed the one from Eq. (\ref{eq:magic-state}). The second part consists in performing a single round of syndrome measurement for the stabilizers of the Steane Code to determine whether the injection has successfully prepared a +1 eigenstate. A post-selection is performed based on the outcome to decide whether to discard the state and start a new attempt or proceed with the cultivation stage. The cultivation stage is where we verify that  the correct phase has been injected. \\
+	Since we are working in a noisy environment, that attempt may fail and we wish to confirm whether the state that was prepared is indeed the one from Eq. (\ref{eq:magic-state}). The second part consists in performing a single round of syndrome measurement for the stabilizers of the Steane Code to determine whether the injection has successfully prepared a +1 eigenstate. A post-selection is performed based on the outcome to decide whether to discard the state and start a new attempt or proceed with the cultivation stage. The cultivation stage is where we verify that the correct phase has been injected and improve the code distance of the patch where that state is stored. \\
 
 		% The syndrome measurement can only determine whether we have successfully prepared a logical $\kett{+}_{\scriptscriptstyle L}$. It is oblivious to the phase ?
 
@@ -122,20 +122,20 @@
 				\lstick{$\kett{+}$~} & \ctrl{1} &           & \ctrl{3}  &           &
 				\slice{} &&&&&& \rstick[7]{~~$\ket{\Op{T}}_{\scriptscriptstyle L}$} \\
 				\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &\phantom{i}& \targ{}   &
-				&          & \ctrl{5}  && \ctrl{5}  && \\
+				& \ctrl{5}  &&& \ctrl{5}  && \\
 				\lstick{$\kett{+}$~} & \ctrl{1} & \ctrl{-1} &\phantom{i}&\phantom{i}& \ctrl{3}
-				&          &\phantom{i}&&\phantom{i}&& \\
+				& \phantom{i}&&&\phantom{i}&& \\
 				\lstick{$\kett{0}$~} & \targ{}  & \targ{}   & \targ{}   &\phantom{i}&\phantom{i}
-				&          &\phantom{i}&&\phantom{i}&& \\
+				& \phantom{i}&&&\phantom{i}&& \\
 				\lstick{$\kett{+}$~} & \ctrl{1} & \ctrl{-1} &           &\phantom{i}&\phantom{i}
-				&          &\phantom{i}&&\phantom{i}&& \\
+				& \phantom{i}&&&\phantom{i}&& \\
 				\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
-				& \ctrl{1} &\phantom{i}&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
+				& \phantom{i}&\ctrl{1}&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
 				\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
 				& \targ{}  & \targ{}  & \gate{\Op{T}^{\dagger}} & \targ{} & \targ{} &
 			\end{quantikz}
 		\end{subfigure}
-		\caption{Modified Steane Code with stabilizer diagram. Note that the abstract circuit can be performed in 8 steps.}
+		\caption{Modified Steane Code with stabilizer diagram. Note that the abstract circuit can be performed in $8$ steps.}
 	\end{figure}
 
 	In the absence of errors, the seven qubits are in a logical state $\kett{+}_{\scriptscriptstyle L}$ once the red line is reached
@@ -210,21 +210,50 @@
 
 	\begin{figure}[h!]
 		\centering
-		\begin{quantikz}[row sep={between origins, 0.75cm}]
-			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Check T}}
-			& \gate[7,style={rounded corners=5pt}][1cm]{\Op{T}^\dagger}
-			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Cultivation}}
-			& \gate[7,style={rounded corners=5pt}][1cm]{\Op{T}}
-			& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Check T}}
-			& \\
-			&&&&&& \\
-			&&&&&& \\
-			&&&&&& \\
-			&&&&&& \\
-			&&&&&& \\
-			&&&&&&
-		\end{quantikz}
-		\caption{Overview of the cultivation stage in three parts.}	
+		\begin{subfigure}[c]{0.35\textwidth}
+			\centering
+			\scalebox{1.0}{
+				\begin{tikzpicture}
+					\coordinate (O) at (0,0);
+					\coordinate (A) at ( 30:2.25);
+					\coordinate (B) at ( 90:2.25);
+					\coordinate (C) at (150:2.25);
+					\coordinate (D) at (210:2.25);
+					\coordinate (E) at (270:2.25);
+					\coordinate (F) at (330:2.25);
+	
+					\fill[quantum green, stabilizer] (O) -- (A) -- (B) -- (C) -- cycle;
+					\fill[quantum blue, stabilizer]  (O) -- (C) -- (D) -- (E) -- cycle;
+					\fill[quantum red, stabilizer]  (O) -- (E) -- (F) -- (A) -- cycle;
+	
+					\node[data] at (E) {\small $\mathbf{1}$};
+					\node[data] at (D) {\small $\mathbf{2}$};
+					\node[data] at (O) {$\mathbf{3}$};
+					\node[data] at (F) {\small $\mathbf{4}$};
+					\node[data] at (A) {\small $\mathbf{5}$};
+					\node[data] at (B) {$\mathbf{6}$};
+					\node[data] at (C) {\small $\mathbf{7}$};
+					\node[circle, draw=yellow!95!black!75, line width=2.5pt] at (C) {\phantom{.}};
+				\end{tikzpicture}
+			}
+			\caption{Mapping of qubits onto the Steane Code. Qubit $7$ is the one on which the $\Op{T}^\dagger$ gate is applied in the injection stage.}
+		\end{subfigure}
+		\begin{subfigure}[c]{0.6\textwidth}
+			\centering
+			\begin{quantikz}[row sep={between origins, 0.75cm}]
+				\lstick{$q_{6}$} & \gate[7,style={rounded corners=5pt}][1cm]{\Op{T}^\dagger}
+				& \gate[7,style={rounded corners=5pt}][3cm]{\textsc{Cultivation}}
+				& \gate[7,style={rounded corners=5pt}][1cm]{\Op{T}}
+				& \\
+				\lstick{$q_{7}$} &&&& \\
+				\lstick{$q_{2}$} &&&& \\
+				\lstick{$q_{3}$} &&&& \\
+				\lstick{$q_{1}$} &&&& \\
+				\lstick{$q_{5}$} &&&& \\
+				\lstick{$q_{4}$} &&&&
+			\end{quantikz}
+			\caption{Overview of the cultivation stage in three parts.}	
+		\end{subfigure}
 	\end{figure}
 
 	\begin{figure}[h!]
@@ -373,4 +402,52 @@
 		\caption{Modified Steane Code overlaid on the surface code array. Data qubits are identified as black circles. Measurement qubits are shown as white circles. The extra qubits (6 syndrome and 3 data) can be used to perform the superdense code cycle and the cultivation stage. The surface code onto which the magic state will be teleported is partially shown below for reference.}
 	\end{figure}
 
+	\begin{figure}[h!]
+		\centering
+		\begin{tikzpicture}
+			% Plaquettes of the Steane Code
+			\fill[quantum green] (-2, 0) -- ( 2, 0) -- ( 2,-2) -- ( 0,-2);
+			\fill[quantum blue]  ( 0,-2) -- (-2,-4) -- ( 2,-4) -- ( 2,-2);
+			\fill[quantum red]   ( 2, 0) -- ( 4,-2) -- ( 4,-4) -- ( 2,-4);
+
+			% Plaquettes of the Surface Code
+			\fill[quantum blue] (0,-6) -- (2, -6) -- (2, -7) -- (0, -7);
+			\fill[quantum blue] (4,-6) -- (6, -6) -- (6, -7) -- (4, -7);
+			\fill[quantum red] (2,-6) -- (4, -6) -- (4, -7) -- (2, -7);
+			\fill[quantum red] (6,-6) -- (8, -6) -- (8, -7) -- (6, -7);
+
+			\fill[quantum blue] (6, -6) arc[start angle=180, end angle=0, radius=1.0]
+				-- (8, -6) -- cycle;
+			\fill[quantum blue] (8, -6) arc[start angle=90, end angle=0, radius=1.0]
+				-- (8, -7) -- cycle;
+			\fill[quantum blue] (6, -6) arc[start angle=180, end angle=0, radius=1.0]
+				-- (8, -6) -- cycle;
+
+			\fill[quantum blue, opacity=0.25] (2,-4) -- (4, -4) -- (4, -6) -- (2, -6);
+			\filldraw[quantum blue, opacity=0.25] (-2,-4) to[bend left=30] (0,-6) to[bend left=30] (-2,-4);
+
+
+			\node[data] at ( 0, 0) {\phantom{o}};
+			\node[data] at ( 4,-2) {\phantom{o}};
+			\node[data] at ( 0,-4) {\phantom{o}};
+
+			\node[data] at ( 2,-4) {\large $\mathbf{1}$};
+			\node[data] at (-2,-4) {\large $\mathbf{2}$};
+			\node[data] at ( 2,-2) {\large $\mathbf{3}$};
+			\node[data] at ( 4,-4) {\large $\mathbf{4}$};
+			\node[data] at ( 2, 0) {\large $\mathbf{5}$};
+			\node[data] at (-2, 0) {\large $\mathbf{6}$};
+			\node[data] at ( 0,-2) {\large $\mathbf{7}$};	
+
+			\foreach \x in {-1, 1, 3}{
+				\foreach \y in {-3, -1}{
+					\node[meas] at (\x,\y) {};
+				}
+			}
+			\foreach \x in {-1, 3}{ \node[meas, opacity=0.25] at (\x,-5) {}; }
+
+			\foreach \x in {0, 2, 4, 6, 8}{ \node[data] at (\x, -6) {\phantom{o}}; }
+		\end{tikzpicture}
+		\caption{(Alt) Modified Steane Code overlaid on the surface code array. Data qubits are identified as black circles. Measurement qubits are shown as white circles. The extra qubits (6 syndrome and 3 data) can be used to perform the superdense code cycle and the cultivation stage. The surface code onto which the magic state will be teleported is partially shown below for reference.}
+	\end{figure}
 \end{document}
