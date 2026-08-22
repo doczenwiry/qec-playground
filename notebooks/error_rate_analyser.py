@@ -35,28 +35,6 @@ def noisify_phenomenological(circuit, noise = 0.001):
 
     return noisy_circuit
 
-def noisify_circuit_level(circuit, noise = 0.001):
-    noisy_circuit = stim.Circuit()
-
-    for instruction in circuit.flattened():
-        if instruction.name in ["CX", "CZ"]:
-            noisy_circuit.append(instruction)
-            noisy_circuit.append("DEPOLARIZE2", instruction.targets_copy(), noise)
-        elif instruction.name in ["M", "MX"]:
-            noisy_circuit.append(instruction.name, instruction.targets_copy(), noise)
-        elif instruction.name in ["R", "RX"]:
-            noisy_circuit.append(instruction)
-            noisy_circuit.append("DEPOLARIZE1", instruction.targets_copy(), noise)
-        elif instruction.name in ["QUBIT_COORDS", "TICK", "DETECTOR", "OBSERVABLE_INCLUDE"]:
-            noisy_circuit.append(instruction)
-        else:
-            raise NotImplementedError(f"Incomplete noisification : {instruction.name}")
-
-    noisy_circuit.compile_detector_sampler()
-    noisy_circuit.compile_sampler()
-
-    return noisy_circuit
-
 # Based on stim's getting started notebook.
 def analyse_error_rates(circuit, name = "circuit", shots= 1e6, minimal_noise = -6, points: int = 10):
     tasks = [
