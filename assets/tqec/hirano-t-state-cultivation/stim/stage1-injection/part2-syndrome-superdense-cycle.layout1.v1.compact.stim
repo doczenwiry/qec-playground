@@ -71,3 +71,6 @@ CX 1 6 5 10 15 11
 TICK
 M 6 10 11
 MX 5 1 15
+DETECTOR(2.5, 1.5, 0) rec[-3] rec[-5]
+DETECTOR(1.5, 2.5, 0) rec[-2] rec[-6]
+DETECTOR(4.5, 1.5, 0) rec[-1] rec[-4]
