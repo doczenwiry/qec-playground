@@ -1,3 +1,4 @@
+# Erroneous shape of stabilizers
 QUBIT_COORDS(1, 2) 0
 QUBIT_COORDS(1, 4) 1
 QUBIT_COORDS(1.5, 3.5) 2
