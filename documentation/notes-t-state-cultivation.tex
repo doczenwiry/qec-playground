@@ -1,8 +1,12 @@
 \documentclass{article}
 
 \usepackage[margin=20pt]{geometry}
-\usepackage{graphics}
+\usepackage{graphicx}
 \graphicspath{{figures/}{../figures/}}
+
+\usepackage{tikz}
+\usetikzlibrary{3d, calc, external}
+\tikzexternalize[prefix=figures-cache/]
 
 \usepackage{amsmath, amssymb, amsfonts}
 
@@ -18,15 +22,15 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 
-\usepackage{zx-calculus}
 \usepackage{quantikz}
 \usepackage{braket}
 \usepackage{subcaption}
+\usepackage{hyperref}
 
-\tikzstyle{quantumR}=[red!75!black!50]
-\tikzstyle{quantumB}=[blue!75!black!50]
-\tikzstyle{quantumG}=[green!75!black!50]
-\tikzstyle{quantumY}=[yellow!95!black!75]
+\colorlet{quantumR}{red!75!black!50}
+\colorlet{quantumB}{blue!75!black!50}
+\colorlet{quantumG}{green!75!black!50}
+\colorlet{quantumY}{yellow!95!black!75}
 
 \tikzstyle{data}=[circle, fill=black, text=white]
 \tikzstyle{meas}=[circle, fill=white, draw=black, ultra thick]
@@ -35,13 +39,13 @@
 \newcommand{\ttbf}{\ttfamily\fontseries{b}\selectfont}
 \DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it}
 
-\title{TQEC --- Notes on T-state cultivation\footnote{Based on Austin Fowler's presentation of arXiv:2510.24615 and arXiv:2409.17595 at TQEC meeting on 2026/08/12.}}
+\title{TQEC --- Notes on T-state cultivation\thanks{Based on Austin Fowler's presentation of \texorpdfstring{\href{https://arxiv.org/abs/arXiv:2510.24615}{arXiv:2510.24615}}{arXiv:2510.24615} and \texorpdfstring{\href{https://arxiv.org/abs/2510.24615}{arXiv:2409.17595}}{arXiv:2409.17595} at TQEC meeting on 2026/08/12.}}
 \author{Seweryn Dynerowicz}
 %\date{}
 
 \newcommand{\Op}[1]{{\bf #1}}
 \newcommand{\kett}[1]{\ket{\mbox{\tt #1}}}
-\newcommand{\wn}{\wireoverride{n}}
+\newcommand{\swtn}{\setwiretype{n}}
 
 \begin{document}
 	\maketitle
@@ -116,7 +120,7 @@
 				\node[data] at (A) {\small $\mathbf{5}$};
 				\node[data] at (B) {$\mathbf{6}$};
 				\node[data] at (C) {\small $\mathbf{7}$};
-				\node[circle, draw=yellow!95!black!75, line width=2.5pt] at (C) {\phantom{.}};
+				\draw[quantumY, line width=2.5pt] (C) circle (6.5pt);
 			\end{tikzpicture}
 		\end{subfigure}
 		\begin{subfigure}[c]{0.62\textwidth}
@@ -135,7 +139,7 @@
 				\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
 				& \phantom{i}&\ctrl{1}&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
 				\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
-				& \targ{}  & \targ{}  & \gate[style={fill=yellow!95!black!75}]{\Op{T}^{\dagger}} & \targ{} & \targ{} &
+				& \targ{}  & \targ{}  & \gate[style={fill=quantumY}]{\Op{T}^{\dagger}} & \targ{} & \targ{} &
 			\end{quantikz}
 		\end{subfigure}
 		\caption{Modified Steane Code with stabilizer diagram. Note that the abstract circuit can be performed in $8$ steps.}
@@ -211,6 +215,8 @@
 
 	\section{Stage II --- Cultivation}
 
+	{\bf Careful:} the $\Op{S}$ gate is transversal in the Steane Code but the $\Op{T}$ gate is not.
+
 	\begin{figure}[h!]
 		\centering
 		\begin{subfigure}[c]{0.35\textwidth}
@@ -236,7 +242,7 @@
 					\node[data] at (A) {\small $\mathbf{5}$};
 					\node[data] at (B) {$\mathbf{6}$};
 					\node[data] at (C) {\small $\mathbf{7}$};
-					\node[circle, draw=yellow!95!black!75, line width=2.5pt] at (C) {\phantom{.}};
+					\draw[quantumY, line width=2.5pt] (C) circle (6.5pt);
 				\end{tikzpicture}
 			}
 			\caption{Mapping of qubits onto the Steane Code. Qubit $7$ is the one on which the $\Op{T}^\dagger$ gate is applied in the injection stage.}
@@ -268,7 +274,7 @@
 			\\
 			% Ancilla 1
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} && \targ{} &&&
-			& &&&\targ{}&&\ctrl{-1} & \meter{\scalebox{0.5}{\Op{X}}} &\setwiretype{n}&
+			& &&&\targ{}&&\ctrl{-1} & \meter{\scalebox{0.5}{\Op{X}}} &\swtn&
 			\\
 			% Data qubit 7
 			\lstick{$q_{7}$} & \gate{\Op{T}^\dagger} & &\targ{} && \ctrl{-1} &\targ{}&&
@@ -276,7 +282,7 @@
 			\\
 			% Ancilla 2
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&\phantom{i}&&
-			& &&\phantom{i}&&&\ctrl{-1}& \meter{\scalebox{0.5}{\Op{X}}} & \setwiretype{n} &
+			& &&\phantom{i}&&&\ctrl{-1}& \meter{\scalebox{0.5}{\Op{X}}} & \swtn &
 			\\
 			% Data qubit 2
 			\lstick{$q_{2}$} & \gate{\Op{T}^\dagger} & &\targ{} &&&\phantom{i}&&
@@ -284,7 +290,7 @@
 			\\
 			% Ancilla 3
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&\targ{}&\phantom{i}&&
-			& &&\phantom{i}&\targ{}&&\ctrl{-1}& \meter{\scalebox{0.5}{\Op{X}}} &\setwiretype{n}&
+			& &&\phantom{i}&\targ{}&&\ctrl{-1}& \meter{\scalebox{0.5}{\Op{X}}} &\swtn&
 			\\
 			% Data qubit 3
 			\lstick{$q_{3}$} & \gate{\Op{T}^\dagger} & &\targ{} &&\ctrl{-1}&\ctrl{-4}&\ctrl{3}& \meter{\scalebox{0.5}{\Op{X}}}
@@ -292,7 +298,7 @@
 			\\
 			% Ancilla 4
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&&\phantom{i}&
-			& &\phantom{i}&&&&\ctrl{-1}& \meter{\scalebox{0.5}{\Op{X}}} &\setwiretype{n}&
+			& &\phantom{i}&&&&\ctrl{-1}& \meter{\scalebox{0.5}{\Op{X}}} &\swtn&
 			\\
 			% Data qubit 1
 			\lstick{$q_{1}$} & \gate{\Op{T}^\dagger} & &&\targ{}&&&\phantom{i}&
@@ -300,7 +306,7 @@
 			\\
 			% Ancilla 5
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &\ctrl{-1}&&\ctrl{2}&\targ{}&
-			& &\targ{}&\ctrl{2}&&\ctrl{-1}&\ctrl{1}& \meter{\scalebox{0.5}{\Op{X}}} &\setwiretype{n}&
+			& &\targ{}&\ctrl{2}&&\ctrl{-1}&\ctrl{1}& \meter{\scalebox{0.5}{\Op{X}}} &\swtn&
 			\\
 			% Data qubit 5
 			\lstick{$q_{5}$} & \gate{\Op{T}^\dagger} & &\targ{} &&&\phantom{i}&&
@@ -308,7 +314,7 @@
 			\\
 			% Ancilla 6
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &&&\targ{}&&
-			& &&\targ{}&&&\ctrl{1}& \meter{\scalebox{0.5}{\Op{X}}} &\setwiretype{n}&
+			& &&\targ{}&&&\ctrl{1}& \meter{\scalebox{0.5}{\Op{X}}} &\swtn&
 			\\
 			% Data qubit 4
 			\lstick{$q_{4}$} & \gate{\Op{T}^\dagger} & &\targ{} &&&&&
