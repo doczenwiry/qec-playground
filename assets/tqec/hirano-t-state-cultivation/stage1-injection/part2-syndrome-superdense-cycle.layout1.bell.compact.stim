@@ -46,26 +46,52 @@ TICK
 #!pragma POLYGON(0,1,0,0.25) 2 12 8 3
 #!pragma POLYGON(1,0,0,0.25) 8 12 14 9
 TICK
-REPEAT 3 {
-    R 6 10 15
-    RX 1 5 11
-    TICK
-    CX 1 6 5 10 11 15
-    TICK
-    CX 6 9 5 3 10 8 11 14
-    TICK
-    CX 5 2 10 12 6 8 11 9
-    TICK
-    CX 11 8 6 3 1 0 15 12
-    TICK
-    CX 3 6 8 11 0 1 12 15
-    TICK
-    CX 2 5 12 10 8 6 9 11
-    TICK
-    CX 14 11 9 6 3 5 8 10
-    TICK
-    CX 1 6 5 10 11 15
-    TICK
-    M 6 10 15
-    MX 5 1 11
-}
+R 6 10 15
+RX 1 5 11
+TICK
+CX 1 6 5 10 11 15
+TICK
+CX 6 9 5 3 10 8 11 14
+TICK
+CX 5 2 10 12 6 8 11 9
+TICK
+CX 11 8 6 3 1 0 15 12
+TICK
+CX 3 6 8 11 0 1 12 15
+TICK
+CX 2 5 12 10 8 6 9 11
+TICK
+CX 14 11 9 6 3 5 8 10
+TICK
+CX 1 6 5 10 11 15
+TICK
+M 6 10 15
+MX 5 1 11
+DETECTOR(2.5, 1.5, 0) rec[-3] rec[-5]
+DETECTOR(1.5, 2.5, 0) rec[-2] rec[-6]
+DETECTOR(3.5, 2.5, 0) rec[-1] rec[-4]
+TICK
+R 6 10 15
+RX 1 5 11
+TICK
+CX 1 6 5 10 11 15
+TICK
+CX 6 9 5 3 10 8 11 14
+TICK
+CX 5 2 10 12 6 8 11 9
+TICK
+CX 11 8 6 3 1 0 15 12
+TICK
+CX 3 6 8 11 0 1 12 15
+TICK
+CX 2 5 12 10 8 6 9 11
+TICK
+CX 14 11 9 6 3 5 8 10
+TICK
+CX 1 6 5 10 11 15
+TICK
+M 6 10 15
+MX 5 1 11
+DETECTOR(3.5, 2.5, 1) rec[-3] rec[-5] rec[-7] rec[-9] rec[-11]
+DETECTOR(2.5, 1.5, 1) rec[-2] rec[-6] rec[-9] rec[-12]
+DETECTOR(4.5, 1.5, 1) rec[-1] rec[-4] rec[-10]
