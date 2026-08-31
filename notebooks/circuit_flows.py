@@ -23,7 +23,7 @@ def convert_to_pauli(stabilizer: str, support: list[int], qubits: int) -> stim.P
         pauli += stabilizer if q in support else "_"
     return stim.PauliString(pauli)
 
-def extract_measurements(circuit: stim.Circuit) -> list[stim.CircuitInstruction]:
+def extract_measurements(circuit: stim.Circuit) -> list[str]:
     order = []
 
     for instruction in circuit.flattened():
