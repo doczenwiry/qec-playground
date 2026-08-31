@@ -12,6 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from typing import Optional, Iterable
+
+import itertools
 import stim
 
 def convert_to_pauli(stabilizer: str, support: list[int], qubits: int) -> stim.PauliString:
@@ -31,3 +34,36 @@ def extract_measurements(circuit: stim.Circuit) -> list[stim.CircuitInstruction]
                     order.append(f"{opcode}@{tgt.value}")
 
     return order
+
+def is_pauli_preserved(circuit: stim.Circuit, pauliI: stim.PauliString, pauliO: Optional[stim.PauliString] = None):
+    solution = circuit.solve_flow_measurements([stim.Flow(input=pauliI, output=pauliO or pauliI)])[0] or []
+    flow = stim.Flow(input=pauliI, output=pauliO or pauliI, measurements=solution)
+    return circuit.has_flow(flow), solution
+
+def check_stabilizer_preservation(circuit: stim.Circuit, stabilizers: list[str], supports: Iterable[list[int]]):
+    measurements = extract_measurements(circuit) or list()
+
+    for support, stabilizer in itertools.product(supports, stabilizers):
+        pauli = convert_to_pauli(stabilizer, support, qubits=circuit.num_qubits)
+        preserved, solution = is_pauli_preserved(circuit, pauli)
+        report = f"Preserved (incl. meas. {list(map(lambda m: measurements[m], solution))})" if preserved else "DISTORTED"
+        print(f"> {stabilizer}({",".join(map(str, support))}) : {report}")
+
+def check_observable_preservation(circuit: stim.Circuit, observables: list[str], support: list[int]):
+    measurements = extract_measurements(circuit) or list()
+
+    for observable in observables:
+        pauli = convert_to_pauli(observable, support, qubits=circuit.num_qubits)
+        preserved, solution = is_pauli_preserved(circuit, pauli)
+        report = f"Preserved (incl. meas. {list(map(lambda m: measurements[m], solution))})" if preserved else "DISTORTED"
+        print(f"> {observable}_L : {report}")
+
+def check_syndrome_extractions(circuit: stim.Circuit, syndromes: list[str], supports: Iterable[list[int]]):
+    measurements = extract_measurements(circuit) or list()
+
+    identity = stim.PauliString(circuit.num_qubits)
+    for support, stabilizer in itertools.product(supports, syndromes):
+        pauli = convert_to_pauli(stabilizer, support, qubits=circuit.num_qubits)
+        preserved, solution = is_pauli_preserved(circuit, pauli, identity)
+        report = f"Extracted (incl. meas. {list(map(lambda m: measurements[m], solution))})" if preserved else "DISTORTED"
+        print(f"{stabilizer}({",".join(map(str, support))}) : {report}")
