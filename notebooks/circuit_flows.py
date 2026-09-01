@@ -35,35 +35,39 @@ def extract_measurements(circuit: stim.Circuit) -> list[str]:
 
     return order
 
-def is_pauli_preserved(circuit: stim.Circuit, pauliI: stim.PauliString, pauliO: Optional[stim.PauliString] = None):
-    solution = circuit.solve_flow_measurements([stim.Flow(input=pauliI, output=pauliO or pauliI)])[0] or []
-    flow = stim.Flow(input=pauliI, output=pauliO or pauliI, measurements=solution)
+def check_pauli_flow(circuit: stim.Circuit, pauliI: stim.PauliString, pauliO: stim.PauliString):
+    solution = circuit.solve_flow_measurements([stim.Flow(input=pauliI, output=pauliO)])[0] or []
+    flow = stim.Flow(input=pauliI, output=pauliO, measurements=solution)
     return circuit.has_flow(flow), solution
 
-def check_stabilizer_preservation(circuit: stim.Circuit, stabilizers: list[str], supports: Iterable[list[int]]):
+def check_flow_preservation(circuit: stim.Circuit, pauli: str, support: list[int]):
     measurements = extract_measurements(circuit) or list()
+    pauli_string = convert_to_pauli(pauli, support, qubits=circuit.num_qubits)
+    preserved, solution = check_pauli_flow(circuit, pauliI=pauli_string, pauliO=pauli_string)
+    if len(solution) > 0:
+        inclusion = f"(incl. meas. {list(map(lambda m: measurements[m], solution))})"
+    else:
+        inclusion = ""
+    report = f"Preserved {inclusion}" if preserved else "DISTORTED"
+    print(f"> {pauli}({",".join(map(str, support))}) : {report}")
 
-    for support, stabilizer in itertools.product(supports, stabilizers):
-        pauli = convert_to_pauli(stabilizer, support, qubits=circuit.num_qubits)
-        preserved, solution = is_pauli_preserved(circuit, pauli)
-        report = f"Preserved (incl. meas. {list(map(lambda m: measurements[m], solution))})" if preserved else "DISTORTED"
-        print(f"> {stabilizer}({",".join(map(str, support))}) : {report}")
-
-def check_observable_preservation(circuit: stim.Circuit, observables: list[str], support: list[int]):
+def check_state_preparation(circuit: stim.Circuit, pauli: str, support: list[int]):
     measurements = extract_measurements(circuit) or list()
+    identity = stim.PauliString(circuit.num_qubits)
+    pauli_string = convert_to_pauli(pauli, support, qubits=circuit.num_qubits)
+    preserved, solution = check_pauli_flow(circuit, pauliI=identity, pauliO=pauli_string)
+    if len(solution) > 0:
+        inclusion = f"(incl. meas. {list(map(lambda m: measurements[m], solution))})"
+    else:
+        inclusion = ""
+    report = f"Prepared {inclusion}" if preserved else "DISTORTED"
+    print(f"{pauli}({",".join(map(str, support))}) : {report}")
 
-    for observable in observables:
-        pauli = convert_to_pauli(observable, support, qubits=circuit.num_qubits)
-        preserved, solution = is_pauli_preserved(circuit, pauli)
-        report = f"Preserved (incl. meas. {list(map(lambda m: measurements[m], solution))})" if preserved else "DISTORTED"
-        print(f"> {observable}_L : {report}")
-
-def check_syndrome_extractions(circuit: stim.Circuit, syndromes: list[str], supports: Iterable[list[int]]):
+def check_syndrome_extraction(circuit: stim.Circuit, syndrome: str, support: list[int]):
     measurements = extract_measurements(circuit) or list()
 
     identity = stim.PauliString(circuit.num_qubits)
-    for support, stabilizer in itertools.product(supports, syndromes):
-        pauli = convert_to_pauli(stabilizer, support, qubits=circuit.num_qubits)
-        preserved, solution = is_pauli_preserved(circuit, pauli, identity)
-        report = f"Extracted (incl. meas. {list(map(lambda m: measurements[m], solution))})" if preserved else "DISTORTED"
-        print(f"{stabilizer}({",".join(map(str, support))}) : {report}")
+    pauli = convert_to_pauli(syndrome, support, qubits=circuit.num_qubits)
+    preserved, solution = check_pauli_flow(circuit, pauliI=pauli, pauliO=identity)
+    report = f"Extracted (incl. meas. {list(map(lambda m: measurements[m], solution))})" if preserved else "DISTORTED"
+    print(f"{syndrome}({",".join(map(str, support))}) : {report}")
