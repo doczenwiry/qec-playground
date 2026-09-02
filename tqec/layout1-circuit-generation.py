@@ -18,41 +18,58 @@ import itertools
 import stim
 
 from utils.circuit_expectations import count_cnots
-from utils.circuit_flows import check_flow_preservation, check_state_preparation, check_syndrome_extraction, \
-    check_pauli_flow
+from utils.circuit_flows import check_state_preparation, check_syndrome_extraction
 
-STEANE_DATA = {
-    0 : (3,3),
-    1 : (1,3),
-    2 : (3,2),
-    3 : (4,3),
-    4 : (4,1),
-    5 : (2,1),
-    6 : (2,2),
-}
-
+STEANE_DATA = { 0 : (3,3), 1 : (1,3), 2 : (3,2), 3 : (4,3), 4 : (4,1), 5 : (2,1), 6 : (2,2) }
 STEANE_ANCILLA = {
      7 : (3,1), 8 : (4,2), 9 : (2,3),
     10 : (2.5, 1.5), 11 : (3.5, 1.5), 12 : (4.5, 1.5),
     13 : (1.5, 2.5), 14 : (2.5, 2.5), 15 : (3.5, 2.5),
 }
 
-STEANE_INITIAL = {
-    'R' : [0, 2, 11, 15],
-    'G' : [2, 6, 7, 11],
-    'B' : [0, 14, 6, 2],
+STEANE_INITIAL = { 'R' : [0, 2, 11, 15], 'G' : [2, 6, 7, 11], 'B' : [0, 14, 6, 2] }
+STEANE_STABILIZERS = { 'R' : [0, 2, 4, 3], 'G' : [2, 4, 5, 6], 'B' : [0, 1, 6, 2] }
+
+JUNCTION_STABILIZERS = {
+    16 : (1.5, 3.5), 17 : (3.5, 3.5)
 }
 
-STEANE_STABILIZERS = {
-    'R' : [0, 2, 4, 3],
-    'G' : [2, 4, 5, 6],
-    'B' : [0, 1, 6, 2],
+SURFACE_CODE_DATA = { q + 18 : (2 + (q % 5) , 4 + (q // 5)) for q in range(25) }
+SURFACE_CODE_Z_ANCILLA = {
+    q + 44 : (1.5 + 2 * (q % 3) + ((q // 3) % 2), 4.5 + (q // 3)) for q in range(12)
 }
+SURFACE_CODE_Z_ANCILLA[43] = (5.5, 3.5)
+SURFACE_CODE_X_ANCILLA = {
+    q + 56 : (2.5 + 2 * (q % 2) + ((q // 2) % 2), 4.5 + (q // 2)) for q in range(10)
+}
+
+def __get_qubit_at_location(px, py):
+    for qubit, (x, y) in SURFACE_CODE_DATA.items():
+        if x == px and y == py:
+            return qubit
+    for qubit, (x, y) in STEANE_DATA.items():
+        if x == px and y == py:
+            return qubit
+    return -1
+
+def __get_polygon(px, py):
+    return [
+        __get_qubit_at_location(px + dx, py + dy) for dx, dy in [ (-0.5, -0.5), (+0.5, -0.5), (+0.5, +0.5), (-0.5, +0.5) ]
+        if __get_qubit_at_location(px + dx, py + dy) != -1
+    ]
 
 def append_stage0_coordinates(circuit: stim.Circuit):
     for qubit, location in STEANE_DATA.items():
         circuit.append("QUBIT_COORDS", [qubit], location)
     for qubit, location in STEANE_ANCILLA.items():
+        circuit.append("QUBIT_COORDS", [qubit], location)
+    for qubit, location in JUNCTION_STABILIZERS.items():
+        circuit.append("QUBIT_COORDS", [qubit], location)
+    for qubit, location in SURFACE_CODE_DATA.items():
+        circuit.append("QUBIT_COORDS", [qubit], location)
+    for qubit, location in SURFACE_CODE_Z_ANCILLA.items():
+        circuit.append("QUBIT_COORDS", [qubit], location)
+    for qubit, location in SURFACE_CODE_X_ANCILLA.items():
         circuit.append("QUBIT_COORDS", [qubit], location)
     circuit.append("TICK")
 
@@ -148,11 +165,14 @@ def append_stage2_cultivation(circuit: stim.Circuit):
 def append_stage3_teleportation(circuit: stim.Circuit) -> int:
     count = len(circuit.flattened())
 
+    circuit.append("RX", SURFACE_CODE_DATA.keys())
+    circuit.append("RX", JUNCTION_STABILIZERS.keys())
+    circuit.append("RX", SURFACE_CODE_Z_ANCILLA.keys())
+    circuit.append("RX", SURFACE_CODE_X_ANCILLA.keys())
     circuit.append("TICK")
     circuit.append("TICK")
 
     return len(circuit.flattened()) - count
-
 
 def append_stage3_expansion(circuit: stim.Circuit) -> int:
     count = len(circuit.flattened())
@@ -182,6 +202,19 @@ def write_file_with_polygons(circuit: stim.Circuit, depths: dict[str, int]):
                 x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
                 lines.insert(insertion, f"#!pragma POLYGON({x},{y},{z},0.5) {" ".join(map(str, support))}\n")
                 insertion += 1
+            if stage == 'cultivation':
+                for qubit, (px, py) in JUNCTION_STABILIZERS.items():
+                    polygon = __get_polygon(px, py)
+                    lines.insert(insertion, f"#!pragma POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}\n")
+                    insertion += 1
+                for qubit, (px, py) in SURFACE_CODE_Z_ANCILLA.items():
+                    polygon = __get_polygon(px, py)
+                    lines.insert(insertion, f"#!pragma POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}\n")
+                    insertion += 1
+                for qubit, (px, py) in SURFACE_CODE_X_ANCILLA.items():
+                    polygon = __get_polygon(px, py)
+                    lines.insert(insertion, f"#!pragma POLYGON(1,0,0,0.5) {" ".join(map(str, polygon))}\n")
+                    insertion += 1
 
     with open(FILENAME, "w", encoding="utf-8") as file:
         file.writelines(lines)
