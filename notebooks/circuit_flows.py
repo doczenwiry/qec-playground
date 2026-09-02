@@ -28,46 +28,61 @@ def extract_measurements(circuit: stim.Circuit) -> list[str]:
 
     for instruction in circuit.flattened():
         if instruction.name in ("M","MX","MY","MZ","MR","MRX","MRY","MPP"):
-            for tgt in instruction.targets_copy():
-                if tgt.is_qubit_target:
-                    opcode = instruction.name + ("Z" if instruction.name in ("M", "MR") else "")
-                    order.append(f"{opcode}@{tgt.value}")
+            if instruction.name == "MPP":
+                order.append(str(instruction))
+            else:
+                for tgt in instruction.targets_copy():
+                    if tgt.is_qubit_target:
+                        opcode = instruction.name + ("Z" if instruction.name in ("M", "MR") else "")
+                        order.append(f"{opcode} {tgt.value}")
+
+    assert len(order) == circuit.num_measurements
 
     return order
 
-def check_pauli_flow(circuit: stim.Circuit, pauliI: stim.PauliString, pauliO: stim.PauliString):
-    solution = circuit.solve_flow_measurements([stim.Flow(input=pauliI, output=pauliO)])[0] or []
+def check_pauli_flow(
+    circuit: stim.Circuit, pauliI: stim.PauliString, pauliO: stim.PauliString,
+    solution: Optional[list[int]] = None
+):
+    if solution is None:
+        solution = circuit.solve_flow_measurements([stim.Flow(input=pauliI, output=pauliO)])[0] or []
     flow = stim.Flow(input=pauliI, output=pauliO, measurements=solution)
     return circuit.has_flow(flow), solution
 
-def check_flow_preservation(circuit: stim.Circuit, pauli: str, support: list[int]):
-    measurements = extract_measurements(circuit) or list()
+def check_flow_preservation(circuit: stim.Circuit, pauli: str, support: list[int], measurements: Optional[list[str]] = None):
+    measurements_index = extract_measurements(circuit) or list()
+    if measurements is not None:
+        measurements = list(map(measurements_index.index, measurements))
     pauli_string = convert_to_pauli(pauli, support, qubits=circuit.num_qubits)
-    preserved, solution = check_pauli_flow(circuit, pauliI=pauli_string, pauliO=pauli_string)
+    preserved, solution = check_pauli_flow(circuit, pauliI=pauli_string, pauliO=pauli_string, solution=measurements)
     if len(solution) > 0:
-        inclusion = f"(incl. meas. {list(map(lambda m: measurements[m], solution))})"
+        inclusion = f"(incl. meas. {list(map(lambda m: measurements_index[m], solution))})"
     else:
         inclusion = ""
     report = f"Preserved {inclusion}" if preserved else "DISTORTED"
     print(f"> {pauli}({",".join(map(str, support))}) : {report}")
 
-def check_state_preparation(circuit: stim.Circuit, pauli: str, support: list[int]):
-    measurements = extract_measurements(circuit) or list()
+def check_state_preparation(circuit: stim.Circuit, pauli: str, support: list[int], measurements: Optional[list[str]] = None):
+    measurements_index = extract_measurements(circuit) or list()
+    if measurements is not None:
+        measurements = list(map(measurements_index.index, measurements))
+
     identity = stim.PauliString(circuit.num_qubits)
     pauli_string = convert_to_pauli(pauli, support, qubits=circuit.num_qubits)
-    preserved, solution = check_pauli_flow(circuit, pauliI=identity, pauliO=pauli_string)
+    preserved, solution = check_pauli_flow(circuit, pauliI=identity, pauliO=pauli_string, solution=measurements)
     if len(solution) > 0:
-        inclusion = f"(incl. meas. {list(map(lambda m: measurements[m], solution))})"
+        inclusion = f"(incl. meas. {list(map(lambda m: measurements_index[m], solution))})"
     else:
         inclusion = ""
     report = f"Prepared {inclusion}" if preserved else "DISTORTED"
-    print(f"{pauli}({",".join(map(str, support))}) : {report}")
+    print(f"> {pauli}({",".join(map(str, support))}) : {report}")
 
-def check_syndrome_extraction(circuit: stim.Circuit, syndrome: str, support: list[int]):
-    measurements = extract_measurements(circuit) or list()
-
+def check_syndrome_extraction(circuit: stim.Circuit, syndrome: str, support: list[int], measurements: Optional[list[str]] = None):
+    measurements_index = extract_measurements(circuit) or list()
+    if measurements is not None:
+        measurements = list(map(measurements_index.index, measurements))
     identity = stim.PauliString(circuit.num_qubits)
     pauli = convert_to_pauli(syndrome, support, qubits=circuit.num_qubits)
-    preserved, solution = check_pauli_flow(circuit, pauliI=pauli, pauliO=identity)
-    report = f"Extracted (incl. meas. {list(map(lambda m: measurements[m], solution))})" if preserved else "DISTORTED"
-    print(f"{syndrome}({",".join(map(str, support))}) : {report}")
+    preserved, solution = check_pauli_flow(circuit, pauliI=pauli, pauliO=identity, solution=measurements)
+    report = f"Extracted (incl. meas. {list(map(lambda m: measurements_index[m], solution))})" if preserved else "DISTORTED"
+    print(f"> {syndrome}({",".join(map(str, support))}) : {report}")
