@@ -13,7 +13,13 @@
 #   limitations under the License.
 
 from pathlib import Path
+
+import itertools
 import stim
+
+from utils.circuit_expectations import count_cnots
+from utils.circuit_flows import check_flow_preservation, check_state_preparation, check_syndrome_extraction, \
+    check_pauli_flow
 
 STEANE_DATA = {
     0 : (3,3),
@@ -52,9 +58,9 @@ def append_stage0_coordinates(circuit: stim.Circuit):
 
 def append_stage1_injection(circuit: stim.Circuit) -> int:
     count = len(circuit.flattened())
-    circuit.append("RX", [0, 2, 4, 6])
-    circuit.append("RZ", [1, 3, 5])
-    circuit.append("RZ", range(7, 16))
+    circuit.append("RX", [0, 2, 6, 11])
+    circuit.append("RZ", [1, 3, 4, 5])
+    circuit.append("RZ", [7, 8, 9, 10, 12, 13, 14, 15])
 
     circuit.append("CX", [11, 7, 2, 15, 0, 14])
     circuit.append("TICK")
@@ -139,6 +145,23 @@ def append_stage2_cultivation(circuit: stim.Circuit):
 
     return len(circuit.flattened()) - count
 
+def append_stage3_teleportation(circuit: stim.Circuit) -> int:
+    count = len(circuit.flattened())
+
+    circuit.append("TICK")
+    circuit.append("TICK")
+
+    return len(circuit.flattened()) - count
+
+
+def append_stage3_expansion(circuit: stim.Circuit) -> int:
+    count = len(circuit.flattened())
+
+    circuit.append("TICK")
+    circuit.append("TICK")
+
+    return len(circuit.flattened()) - count
+
 def write_file_with_polygons(circuit: stim.Circuit, depths: dict[str, int]):
     circuit.to_file(FILENAME)
 
@@ -153,23 +176,12 @@ def write_file_with_polygons(circuit: stim.Circuit, depths: dict[str, int]):
             lines.insert(insertion, f"#!pragma POLYGON({x},{y},{z},0.5) {" ".join(map(str, support))}\n")
             insertion += 1
 
-        insertion += depths['injection']
-        for color, support in STEANE_STABILIZERS.items():
-            x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
-            lines.insert(insertion, f"#!pragma POLYGON({x},{y},{z},0.5) {" ".join(map(str, support))}\n")
-            insertion += 1
-
-        insertion += depths['superdense']
-        for color, support in STEANE_STABILIZERS.items():
-            x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
-            lines.insert(insertion, f"#!pragma POLYGON({x},{y},{z},0.5) {" ".join(map(str, support))}\n")
-            insertion += 1
-
-        insertion += depths['cultivation']
-        for color, support in STEANE_STABILIZERS.items():
-            x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
-            lines.insert(insertion, f"#!pragma POLYGON({x},{y},{z},0.5) {" ".join(map(str, support))}\n")
-            insertion += 1
+        for stage in ['injection', 'superdense', 'cultivation', 'teleportation', 'expansion']:
+            insertion += depths[stage]
+            for color, support in STEANE_STABILIZERS.items():
+                x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
+                lines.insert(insertion, f"#!pragma POLYGON({x},{y},{z},0.5) {" ".join(map(str, support))}\n")
+                insertion += 1
 
     with open(FILENAME, "w", encoding="utf-8") as file:
         file.writelines(lines)
@@ -189,8 +201,20 @@ if __name__ == "__main__":
     # Append the cultivation stage (double-check-T)
     depths['cultivation'] = append_stage2_cultivation(circuit)
     # Append the teleportation part of the escape stage
+    depths['teleportation'] = append_stage3_teleportation(circuit)
     # Append the code expansion part of the escape stage
-
-    print(depths)
+    depths['expansion'] = append_stage3_expansion(circuit)
 
     write_file_with_polygons(circuit, depths)
+
+    print(f"Stabilizer flows")
+    for stabilizer, support in itertools.product(['X', 'Z'], STEANE_STABILIZERS.values()):
+        check_state_preparation(circuit, stabilizer, support)
+    print(f"Observable flows")
+    check_state_preparation(circuit, 'Y', support=list(STEANE_DATA.keys()))
+    print(f"Syndrome extractions")
+    for syndrome, support in itertools.product(['X', 'Z'], STEANE_STABILIZERS.values()):
+        check_syndrome_extraction(circuit, syndrome, support)
+
+    print(f"Circuit statistics")
+    count_cnots(circuit)
