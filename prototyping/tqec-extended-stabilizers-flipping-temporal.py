@@ -352,7 +352,7 @@ if __name__ == "__main__":
 
     circuit.append("MX", dq_at_locations.values())
 
-    circuit_file = "../assets/tqec/extended-stabilizers/tqec-extended-stabilizers-flipping-temporal.stim"
+    circuit_file = "../assets/tqec-extended-stabilizers/tqec-extended-stabilizers-flipping-temporal.stim"
     circuit.to_file(circuit_file)
 
     # Insert all the polygons into the Stim file for readability.
@@ -377,5 +377,5 @@ if __name__ == "__main__":
             circuit_lines.insert(insertion, f"#!pragma POLYGON({x},0,{z},0.5) {" ".join(polygon)}\n")
             insertion += 1
 
-    with open("../assets/tqec/extended-stabilizers/tqec-extended-stabilizers-flipping-temporal.stim", "w", encoding="utf-8") as file:
+    with open("../assets/tqec-extended-stabilizers/tqec-extended-stabilizers-flipping-temporal.stim", "w", encoding="utf-8") as file:
         file.writelines(circuit_lines)
