@@ -26,7 +26,7 @@
 
 from pathlib import Path
 
-from modified_steane_code import ModifiedSteaneCode
+from steane_code_patch import ModifiedSteaneCode
 import itertools
 import stim
 
@@ -140,9 +140,6 @@ if __name__ == "__main__":
         check_state_preparation(circuit, stabilizer, support)
     print(f"Observable flows")
     check_state_preparation(circuit, 'Y', support=msc.logical)
-    # print(f"Syndrome extractions")
-    # for syndrome, support in itertools.product(['X', 'Z'], msc.stabilizers.values()):
-    #     check_syndrome_extraction(circuit, syndrome, support)
 
     print(f"Circuit statistics")
     count_cnots(circuit)
