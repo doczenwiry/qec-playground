@@ -31,16 +31,15 @@ STEANE_INITIAL = { 'R' : [0, 2, 11, 15], 'G' : [2, 6, 7, 11], 'B' : [0, 14, 6, 2
 STEANE_STABILIZERS = { 'R' : [0, 2, 4, 3], 'G' : [2, 4, 5, 6], 'B' : [0, 1, 6, 2] }
 
 JUNCTION_STABILIZERS = {
-    16 : (1.5, 3.5), 17 : (3.5, 3.5)
+    16 : (1.5, 3.5), 17 : (3.5, 3.5), 18 : (5.5, 3.5)
 }
 
-SURFACE_CODE_DATA = { q + 18 : (2 + (q % 5) , 4 + (q // 5)) for q in range(25) }
+SURFACE_CODE_DATA = { q + 19 : (2 + (q % 5) , 4 + (q // 5)) for q in range(25) }
 SURFACE_CODE_Z_ANCILLA = {
-    q + 44 : (1.5 + 2 * (q % 3) + ((q // 3) % 2), 4.5 + (q // 3)) for q in range(12)
+    q + 44 : (2.5 + 2 * (q % 3) - ((q // 3) % 2), 4.5 + (q // 3)) for q in range(12)
 }
-SURFACE_CODE_Z_ANCILLA[43] = (5.5, 3.5)
 SURFACE_CODE_X_ANCILLA = {
-    q + 56 : (2.5 + 2 * (q % 2) + ((q // 2) % 2), 4.5 + (q // 2)) for q in range(10)
+    q + 56 : (3.5 + 2 * (q % 2) - ((q // 2) % 2), 4.5 + (q // 2)) for q in range(10)
 }
 
 def __get_qubit_at_location(px, py):
