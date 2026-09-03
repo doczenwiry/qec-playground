@@ -11,25 +11,16 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#          http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
 
+import logging
 from typing import Iterable
 
 import stim
 
 
-class ModifiedSteaneCode:
+logger = logging.getLogger(__name__)
+
+class SteaneCodePatch:
     QUBITS = [
         # Data qubits
         (2,2), (0,2), (2,1), (3,2), (3,0), (1,0), (1,1),
@@ -46,11 +37,15 @@ class ModifiedSteaneCode:
         px, py = anchor
         self.base_qubit = base_qubit
         self.qubits = {
-            base_qubit + q : (px + dx, py + dy) for q, (dx, dy) in enumerate(ModifiedSteaneCode.QUBITS)
+            base_qubit + q : (px + dx, py + dy) for q, (dx, dy) in enumerate(SteaneCodePatch.QUBITS)
         }
 
     def __shift_qubit_ids(self, qubits: list[int]) -> Iterable[int]:
         return map(lambda q : self.base_qubit + q, qubits)
+
+    @property
+    def num_qubits(self):
+        return len(self.qubits)
 
     @property
     def preparation_moments(self):
@@ -83,12 +78,18 @@ class ModifiedSteaneCode:
     @property
     def stabilizers(self):
         return {
-            color : list(self.__shift_qubit_ids(stabs)) for color, stabs in ModifiedSteaneCode.STABILIZERS.items()
+            color : list(self.__shift_qubit_ids(stabs)) for color, stabs in SteaneCodePatch.STABILIZERS.items()
         }
 
-    def get_polygons(self, initial: bool = False):
+    def get_qubit_at_location(self, px, py):
+        for qubit, (x, y) in self.qubits.items():
+            if x == px and y == py:
+                return qubit
+        return -1
+
+    def __get_polygons(self, initial: bool):
         polygons = []
-        stabilizers = ModifiedSteaneCode.INITIALIZED if initial else ModifiedSteaneCode.STABILIZERS
+        stabilizers = SteaneCodePatch.INITIALIZED if initial else SteaneCodePatch.STABILIZERS
         for color, support in stabilizers.items():
             x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
             polygons.append(
@@ -96,11 +97,17 @@ class ModifiedSteaneCode:
             )
         return polygons
 
+    def get_initial_polygons(self):
+        return self.__get_polygons(initial=True)
+
+    def get_prepared_polygons(self):
+        return self.__get_polygons(initial=False)
+
     def append_metadata(self, circuit: stim.Circuit):
         for qubit, location in self.qubits.items():
             circuit.append("QUBIT_COORDS", [qubit], location)
 
-    def append_preparation_slice(self, circuit: stim.Circuit, moment: int = 0):
+    def append_preparation_slice(self, circuit: stim.Circuit, moment: int):
         match moment:
             case 0:
                 circuit.append("RX", self.__shift_qubit_ids([0, 2, 6, 11]))
@@ -130,7 +137,7 @@ class ModifiedSteaneCode:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_superdense_slice(self, circuit: stim.Circuit, moment: int = 0):
+    def append_superdense_slice(self, circuit: stim.Circuit, moment: int, measure: bool = False):
         match moment:
             case 0:
                 circuit.append("RX", self.__shift_qubit_ids([10, 13, 15]))
@@ -154,10 +161,12 @@ class ModifiedSteaneCode:
             case 9:
                 circuit.append("MX", self.__shift_qubit_ids([10, 13, 15]))
                 circuit.append("MZ", self.__shift_qubit_ids([11, 12, 14]))
+                if measure:
+                    circuit.append("MX", self.logical)
             case _:
-                raise ValueError(f"Invalid moment requested [moment={moment}, max=9]")
+                logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    def append_cultivation_slice(self, circuit: stim.Circuit, moment: int = 0):
+    def append_cultivation_slice(self, circuit: stim.Circuit, moment: int):
         match moment:
             case 0:
                 circuit.append("S_DAG", self.logical)
@@ -186,4 +195,4 @@ class ModifiedSteaneCode:
                 circuit.append("MX", [10, 11, 13, 14, 15])
                 circuit.append("S", self.logical)
             case _:
-                raise ValueError(f"Invalid moment requested [moment={moment}, max=11]")
+                raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
