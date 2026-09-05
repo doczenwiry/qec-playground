@@ -29,12 +29,12 @@ def compute_observable_expectation(circuit, observable, support):
 
     pauli = stim.PauliString("*".join(map(lambda q : observable + str(q), support)))
     expectation = simulator.peek_observable_expectation(pauli)
-    print(f"<{observable}_L> : {("+" if expectation == 1 else "") + str(expectation)}")
+    print(f"> <{observable}({",".join(map(str, support))})> : {("+" if expectation == 1 else "") + str(expectation)}")
 
 def count_cnots(circuit):
     count = 0
     for instruction in circuit.flattened():
         if instruction.name == "CX":
             count += len(instruction.targets_copy()) // 2
-    print(f"Qubits: {circuit.num_qubits}")
-    print(f"CNOTs : {count}")
+    print(f"> #qubits: {circuit.num_qubits}")
+    print(f"> #CNOTs : {count}")

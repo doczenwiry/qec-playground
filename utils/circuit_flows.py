@@ -60,7 +60,7 @@ def check_flow_preservation(circuit: stim.Circuit, pauli: str, support: list[int
     else:
         inclusion = ""
     report = f"Preserved {inclusion}" if preserved else "DISTORTED"
-    print(f"> {pauli}({",".join(map(str, support))}) : {report}")
+    print(f"> +{pauli}({",".join(map(str, support))}) : {report}")
 
 def check_state_preparation(circuit: stim.Circuit, pauli: str, support: list[int], measurements: Optional[list[str]] = None):
     measurements_index = extract_measurements(circuit) or list()
@@ -75,7 +75,7 @@ def check_state_preparation(circuit: stim.Circuit, pauli: str, support: list[int
     else:
         inclusion = ""
     report = f"Prepared {inclusion}" if preserved else "DISTORTED"
-    print(f"> {pauli}({",".join(map(str, support))}) : {report}")
+    print(f"> +{pauli}({",".join(map(str, support))}) : {report}")
 
 def check_syndrome_extraction(circuit: stim.Circuit, syndrome: str, support: list[int], measurements: Optional[list[str]] = None):
     measurements_index = extract_measurements(circuit) or list()
@@ -85,4 +85,4 @@ def check_syndrome_extraction(circuit: stim.Circuit, syndrome: str, support: lis
     pauli = convert_to_pauli(syndrome, support, qubits=circuit.num_qubits)
     preserved, solution = check_pauli_flow(circuit, pauliI=pauli, pauliO=identity, solution=measurements)
     report = f"Extracted (incl. meas. {list(map(lambda m: measurements_index[m], solution))})" if preserved else "DISTORTED"
-    print(f"> {syndrome}({",".join(map(str, support))}) : {report}")
+    print(f"> +{syndrome}({",".join(map(str, support))}) : {report}")

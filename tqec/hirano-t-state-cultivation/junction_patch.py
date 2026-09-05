@@ -27,10 +27,8 @@ class JunctionPatch:
         [ (-0.5, +0.5) , (+0.5, +0.5) ]
     ]
 
-    def __init__(self, steane: SteaneCodePatch, surface: SurfaceCodePatch, anchor: tuple[int, int] = (1, 3)):
-        self.steane = steane
-        self.surface = surface
-        self.base_qubit = steane.num_qubits + surface.num_qubits
+    def __init__(self, base_qubit: int = 0, anchor: tuple[int, int] = (1, 3)):
+        self.base_qubit = base_qubit
         self.anchor = anchor
         px, py = anchor
         self.z_ancilla = {
@@ -45,7 +43,9 @@ class JunctionPatch:
     def moments(self):
         return 1
 
-    def __get_qubit_at_location(self, px: float, py: float):
+    def __get_qubit_at_location(
+        self, px: float, py: float,
+    ):
         qubit = self.steane.get_qubit_at_location(px, py)
         if qubit != -1:
             return qubit
@@ -55,9 +55,16 @@ class JunctionPatch:
         polygons = []
         for q, stabilizer in enumerate(JunctionPatch.STABILIZERS):
             px, py = self.z_ancilla[self.base_qubit + q]
-            polygon = map(lambda d: self.__get_qubit_at_location(px+d[0], py+d[1]), stabilizer)
+            polygon = map(
+                lambda d: self.__get_qubit_at_location(px + d[0], py + d[1]),
+                stabilizer
+            )
             polygons.append(f"#!pragma POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}\n")
         return polygons
+
+    def attach(self, steane: SteaneCodePatch, surface: SurfaceCodePatch):
+        self.steane = steane
+        self.surface = surface
 
     def append_metadata(self, circuit: stim.Circuit):
         for qubit, location in self.z_ancilla.items():
@@ -71,6 +78,8 @@ class JunctionPatch:
                 cz_gates = []
                 for za, (px,py) in self.z_ancilla.items():
                     dx, dy = SurfaceCodePatch.SCHEDULE_Z[(moment-1) // 2]
+                    if za == self.base_qubit and dx == +0.5 and dy == -0.5:
+                        continue
                     target = self.__get_qubit_at_location(px + dx, py + dy)
                     if target != -1:
                         cz_gates.append(za)

@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import itertools
 import stim
 
 import logging
@@ -21,35 +22,66 @@ class SurfaceCodePatch:
     SCHEDULE_X = [ (-0.5, -0.5) , (+0.5, -0.5) , (-0.5, +0.5) , (+0.5, +0.5) ]
     SCHEDULE_Z = [ (-0.5, -0.5) , (-0.5, +0.5) , (+0.5, -0.5) , (+0.5, +0.5) ]
 
-    def __init__(self, distance: int, base_qubit: int = 0, anchor: tuple[int, int] = (2, 4)):
-        self.distance = distance
-        self.base_qubit = base_qubit
+    def __init__(self, distance: int, base_qubit: int = 0, anchor: tuple[int, int] = (2, 4), expansion: int = 0):
         self.anchor = anchor
+        self.base_qubit = base_qubit
+        self.distance = distance
+        self.expansion = expansion
         px, py = anchor
+        expanded = distance + expansion
         self.qubits = {
-            base_qubit + q : (px + (q % distance),py + (q // distance)) for q in range(self.distance**2)
+            base_qubit + q : (px + (q % expanded),py + (q // expanded)) for q in range(expanded**2)
         }
-        ancilla_count = (self.distance**2 - 1) // 2
+        ancilla_count = (expanded**2 - 1) // 2
+        width = 3 + (expansion // 2)
         self.z_ancilla = {
-            base_qubit + len(self.qubits) + q : (px + 0.5 + 2 * (q % 3) - ((q // 3) % 2), py + 0.5 + (q // 3))
+            base_qubit + len(self.qubits) + q : (px + 0.5 + 2 * (q % width) - ((q // width) % 2), py + 0.5 + (q // width))
             for q in range(ancilla_count)
         }
+        width = 2 + (expansion // 2)
         self.x_ancilla = {
-            base_qubit + len(self.qubits) + len(self.z_ancilla) + q : (px + 0.5 + 2 * (q % 2) + ((q // 2) % 2), py - 0.5 + (q // 2))
+            base_qubit + len(self.qubits) + len(self.z_ancilla) + q : (px + 0.5 + 2 * (q % width) + ((q // width) % 2), py - 0.5 + (q // width))
             for q in range(ancilla_count)
         }
 
     @property
     def moments(self):
-        return 1
+        return 6
+
+    @property
+    def instructions(self):
+        return 4
 
     @property
     def num_qubits(self):
         return len(self.qubits) + len(self.z_ancilla) + len(self.x_ancilla)
 
-    def get_qubit_at_location(self, px, py):
+    def active_data_qubits(self, expanded: bool = False):
+        return filter(lambda q : self.is_qubit_active(q, expanded), self.qubits)
+
+    def active_x_ancilla(self, expanded: bool = False):
+        return filter(lambda q : self.is_qubit_active(q, expanded), self.x_ancilla)
+
+    def active_z_ancilla(self, expanded: bool = False):
+        return filter(lambda q: self.is_qubit_active(q, expanded), self.z_ancilla)
+
+    def is_qubit_active(self, q: int, expanded: bool) -> bool:
+        ax, ay = self.anchor
+        if q in self.qubits:
+            px, py = self.qubits[q]
+            return px <= ax + self.distance - 1 and py <= ay + self.distance - 1
+        elif q in self.z_ancilla:
+            px, py = self.z_ancilla[q]
+            return px < ax + self.distance and py <= ay + self.distance - 1
+        elif q in self.x_ancilla:
+            px, py = self.x_ancilla[q]
+            return (expanded or py != self.anchor[1] - 0.5) and px <= ax + self.distance - 1 and py < ay + self.distance
+        else:
+            return False
+
+    def get_qubit_at_location(self, px, py, expanded: bool = False):
         for qubit, (x, y) in self.qubits.items():
-            if x == px and y == py:
+            if x == px and y == py and self.is_qubit_active(qubit, expanded):
                 return qubit
         return -1
 
@@ -60,13 +92,17 @@ class SurfaceCodePatch:
             if self.get_qubit_at_location(px + dx, py + dy) != -1
         ]
 
-    def get_polygons(self, recovered: bool = False):
+    def get_polygons(self, expanded: bool = False):
         polygons = []
         for qubit, (px, py) in self.z_ancilla.items():
+            if not self.is_qubit_active(qubit, expanded):
+                continue
             polygon = self.__get_polygon(px, py)
             polygons.append(f"#!pragma POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}\n")
         for qubit, (px, py) in self.x_ancilla.items():
-            if not recovered and py == self.anchor[1] - 0.5:
+            if not self.is_qubit_active(qubit, expanded):
+                continue
+            if not expanded and py == self.anchor[1] - 0.5:
                 continue
             polygon = self.__get_polygon(px, py)
             polygons.append(f"#!pragma POLYGON(1,0,0,0.5) {" ".join(map(str, polygon))}\n")
@@ -80,37 +116,31 @@ class SurfaceCodePatch:
         for qubit, location in self.x_ancilla.items():
             circuit.append("QUBIT_COORDS", [qubit], location)
 
-    def append_syndrome_slice(self, circuit: stim.Circuit, moment: int, preparation: bool = False, recovered: bool = False):
-        active_x_ancilla = filter(
-            lambda a: recovered or self.x_ancilla[a][1] != self.anchor[1] - 0.5,
-            self.x_ancilla.keys()
-        )
+    def append_syndrome_slice(
+        self, circuit: stim.Circuit, moment: int, preparation: bool = False, expanded: bool = False
+    ):
         match moment:
             case 0:
                 if preparation:
-                    circuit.append("RX", self.qubits.keys())
-                circuit.append("RX", self.z_ancilla.keys())
-                circuit.append("RX", active_x_ancilla)
-            case 1 | 3 | 5 | 7:
-                cz_gates = []
-                for za, (px,py) in self.z_ancilla.items():
-                    dx, dy = SurfaceCodePatch.SCHEDULE_Z[(moment-1) // 2]
-                    target = self.get_qubit_at_location(px + dx, py + dy)
-                    if target != -1:
-                        cz_gates.append(za)
-                        cz_gates.append(target)
-                circuit.append("CZ", cz_gates)
-                cx_gates = []
-                for xa in active_x_ancilla:
-                    px, py = self.x_ancilla[xa]
-                    dx, dy = SurfaceCodePatch.SCHEDULE_X[(moment-1) // 2]
-                    target = self.get_qubit_at_location(px + dx, py + dy)
-                    if target != -1:
-                        cx_gates.append(xa)
-                        cx_gates.append(target)
-                circuit.append("CX", cx_gates)
-            case 9:
-                circuit.append("MX", self.z_ancilla.keys())
-                circuit.append("MX", active_x_ancilla)
+                    circuit.append("RX", self.active_data_qubits(expanded))
+                circuit.append("RX", self.active_z_ancilla(expanded))
+                circuit.append("RX", self.active_x_ancilla(expanded))
+            case 1 | 2 | 3 | 4:
+                for gate, active, ancilla, schedule in [
+                    ("CZ", self.active_z_ancilla(), self.z_ancilla, SurfaceCodePatch.SCHEDULE_Z),
+                    ("CX", self.active_x_ancilla(), self.x_ancilla, SurfaceCodePatch.SCHEDULE_X)
+                ]:
+                    gates = []
+                    for za in active:
+                        px, py = ancilla[za]
+                        dx, dy = schedule[moment - 1]
+                        target = self.get_qubit_at_location(px + dx, py + dy)
+                        if target != -1:
+                            gates.append(za)
+                            gates.append(target)
+                    circuit.append(gate, gates)
+            case 5:
+                circuit.append("MX", self.active_z_ancilla())
+                circuit.append("MX", self.active_x_ancilla())
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
