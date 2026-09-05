@@ -14,26 +14,9 @@
 
 import itertools
 import numpy as np
-import stim
 import sinter
 import matplotlib.pyplot as plt
 from tqec import NoiseModel
-
-def noisify_phenomenological(circuit, noise = 0.001):
-    noisy_circuit = stim.Circuit()
-
-    for instruction in circuit.flattened():
-        if instruction.name in ["M", "MX"]:
-            noisy_circuit.append(instruction.name, instruction.targets_copy(), noise)
-        elif instruction.name in ["R", "RX", "CX", "CZ", "QUBIT_COORDS", "TICK", "DETECTOR", "OBSERVABLE_INCLUDE"]:
-            noisy_circuit.append(instruction)
-        else:
-            raise NotImplementedError(f"Incomplete noisification : {instruction.name}")
-
-    noisy_circuit.compile_detector_sampler()
-    noisy_circuit.compile_sampler()
-
-    return noisy_circuit
 
 # Based on stim's getting started notebook.
 def analyse_error_rates(circuit, name = "circuit", shots= 1e6, minimal_noise = -6, points: int = 10):
@@ -64,7 +47,7 @@ def analyse_error_rates(circuit, name = "circuit", shots= 1e6, minimal_noise = -
     ax.set_xlim(10**minimal_noise, 0.125)
     ax.loglog()
     ax.set_title(f"Analysis of {name}")
-    ax.set_xlabel("Phyical Error Rate")
+    ax.set_xlabel("Physical Error Rate")
     ax.set_ylabel("Logical Error Rate per Shot")
     ax.grid(which='major')
     ax.grid(which='minor')
