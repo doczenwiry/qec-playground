@@ -46,29 +46,23 @@ def write_file_with_polygons(
             lines.insert(insertion, polygon)
             insertion += 1
         insertion += steane.superdense_instructions + steane.superdense_moments
+        insertion += steane.cultivation_instructions + steane.cultivation_moments
 
         for polygon in steane.get_prepared_polygons():
             lines.insert(insertion, polygon)
             insertion += 1
-        insertion += steane.cultivation_instructions + steane.cultivation_moments
+        for polygon in junction.get_polygons():
+            lines.insert(insertion, polygon)
+            insertion += 1
+        for polygon in surface.get_polygons(expansion=False):
+            lines.insert(insertion, polygon)
+            insertion += 1
+        insertion += 3 * (2 * steane.superdense_instructions + steane.superdense_moments + 2)
 
-        for round in range(3):
-            for polygon in steane.get_prepared_polygons():
-                lines.insert(insertion, polygon)
-                insertion += 1
-            for polygon in junction.get_polygons():
-                lines.insert(insertion, polygon)
-                insertion += 1
-            for polygon in surface.get_polygons(expansion=False):
-                lines.insert(insertion, polygon)
-                insertion += 1
-            insertion += steane.superdense_instructions + steane.superdense_moments + 1
-
-        for round in range(5):
-            for polygon in surface.get_polygons(expansion=True):
-                lines.insert(insertion, polygon)
-                insertion += 1
-            insertion += surface.moments + surface.instructions
+        for polygon in surface.get_polygons(expansion=True):
+            lines.insert(insertion, polygon)
+            insertion += 1
+        insertion += surface.moments + surface.instructions
 
     with open(FILENAME, "w", encoding="utf-8") as file:
         file.writelines(lines)
@@ -112,13 +106,13 @@ if __name__ == "__main__":
             elif moment == 9:
                 surface.append_syndrome_slice(circuit, 5, preparation=(round == 0))
             junction.append_syndrome_slice(circuit, moment)
-            # circuit.append("TICK")
+            circuit.append("TICK")
 
     # Rounds waiting for complementary gap
     for round in range(5):
         for moment in range(surface.moments):
             surface.append_syndrome_slice(circuit, moment, preparation=(moment==0), expansion=True)
-            # circuit.append("TICK")
+            circuit.append("TICK")
 
     write_file_with_polygons(circuit, steane, junction, surface)
 
