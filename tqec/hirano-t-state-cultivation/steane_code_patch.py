@@ -15,6 +15,7 @@
 import logging
 from typing import Iterable
 
+import itertools
 import stim
 
 
@@ -107,6 +108,18 @@ class SteaneCodePatch:
         for qubit, location in self.qubits.items():
             circuit.append("QUBIT_COORDS", [qubit], location)
 
+    def append_preparation(self, circuit: stim.Circuit):
+        for moment in range(self.preparation_moments):
+            self.append_preparation_slice(circuit, moment)
+            circuit.append("TICK")
+
+    def append_observable(self, circuit: stim.Circuit, observable: str, support: list[int]):
+            circuit.append("MPP", stim.PauliString(
+                "*".join(map(lambda q: observable + str(q), support))
+            ))
+            circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-1)], 0)
+            circuit.append("TICK")
+
     def append_preparation_slice(self, circuit: stim.Circuit, moment: int):
         match moment:
             case 0:
@@ -137,7 +150,12 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_superdense_slice(self, circuit: stim.Circuit, moment: int, measure: bool = False):
+    def append_superdense(self, circuit: stim.Circuit, postselection: bool = False):
+        for moment in range(self.superdense_moments):
+            self.append_superdense_slice(circuit, moment, postselection)
+            circuit.append("TICK")
+
+    def append_superdense_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False, measure: bool = False):
         match moment:
             case 0:
                 circuit.append("RX", self.__shift_qubit_ids([10, 13, 15]))
@@ -161,12 +179,20 @@ class SteaneCodePatch:
             case 9:
                 circuit.append("MX", self.__shift_qubit_ids([10, 13, 15]))
                 circuit.append("MZ", self.__shift_qubit_ids([11, 12, 14]))
+                if postselection:
+                    for i in range(1, 7):
+                        circuit.append("DETECTOR", [stim.target_rec(-i)])
                 if measure:
                     circuit.append("MX", self.logical)
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    def append_cultivation_slice(self, circuit: stim.Circuit, moment: int):
+    def append_cultivation(self, circuit: stim.Circuit, postselection: bool = False):
+        for moment in range(self.cultivation_moments):
+            self.append_cultivation_slice(circuit, moment, postselection)
+            circuit.append("TICK")
+
+    def append_cultivation_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False):
         match moment:
             case 0:
                 circuit.append("S_DAG", self.logical)
@@ -181,6 +207,8 @@ class SteaneCodePatch:
                 circuit.append("CX", [10, 2])
             case 5:
                 circuit.append("MX", [10])
+                if postselection:
+                    circuit.append("DETECTOR", [stim.target_rec(-1)])
             case 6:
                 circuit.append("RX", [10])
             case 7:
@@ -193,6 +221,9 @@ class SteaneCodePatch:
                 circuit.append("CX", [10, 5, 11, 4, 13, 1, 14, 2, 15, 3])
             case 11:
                 circuit.append("MX", [10, 11, 13, 14, 15])
+                if postselection:
+                    for i in range(1, 6):
+                        circuit.append("DETECTOR", [stim.target_rec(-i)])
                 circuit.append("S", self.logical)
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")

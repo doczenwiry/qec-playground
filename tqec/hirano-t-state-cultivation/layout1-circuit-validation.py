@@ -12,16 +12,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from pathlib import Path
-
 from steane_code_patch import SteaneCodePatch
-from junction_patch import JunctionPatch
-from surface_code_patch import SurfaceCodePatch
 
 import itertools
 import stim
 
-from utils.circuit_expectations import count_cnots, compute_observable_expectation
+from utils.circuit_expectations import count_cnots
 from utils.circuit_flows import check_state_preparation, check_flow_preservation, check_syndrome_extraction
 
 if __name__ == "__main__":
@@ -61,7 +57,7 @@ if __name__ == "__main__":
     print("")
 
     # Validate the Steane Code cultivation stage (under S-injection)
-    print("Modified Steane Code (w/ S-injection) --- Double-Check-T")
+    print("Modified Steane Code (w/ S-injection) --- Double-Check-S")
     circuit = stim.Circuit()
     steane.append_metadata(circuit)
     for moment in range(steane.cultivation_moments):

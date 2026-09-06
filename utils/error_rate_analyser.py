@@ -18,14 +18,18 @@ import sinter
 import matplotlib.pyplot as plt
 from tqec import NoiseModel
 
-# Based on stim's getting started notebook.
-def analyse_error_rates(circuit, name = "circuit", shots= 1e6, minimal_noise = -6, points: int = 10):
+# Based on stim's getting started notebook
+# cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
+def analyse_error_rates(
+    scenarios, name ="circuit", shots= 1e6, minimal_noise = -6, points: int = 10
+):
     tasks = [
         sinter.Task(
-            circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(circuit),
-            json_metadata={'d': d, 'p': noise},
+            circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(scenarios[case]['circuit']),
+            postselection_mask=np.packbits(scenarios[case].get('postselection')) if 'postselection' in scenarios[case] else None,
+            json_metadata={'case': case, 'per': noise},
         )
-        for d, noise in itertools.product([5], np.logspace(-1, minimal_noise, num=points))
+        for case, noise in itertools.product(scenarios, np.logspace(-1, minimal_noise, num=points))
     ]
 
     collected_stats: list[sinter.TaskStats] = sinter.collect(
@@ -40,16 +44,16 @@ def analyse_error_rates(circuit, name = "circuit", shots= 1e6, minimal_noise = -
     sinter.plot_error_rate(
         ax=ax,
         stats=collected_stats,
-        x_func=lambda stats: stats.json_metadata['p'],
-        group_func=lambda stats: stats.json_metadata['d'],
+        x_func=lambda stats: stats.json_metadata['per'],
+        group_func=lambda stats: stats.json_metadata['case'],
     )
     ax.set_ylim(1e-9, 1.5)
     ax.set_xlim(10**minimal_noise, 0.125)
     ax.loglog()
     ax.set_title(f"Analysis of {name}")
     ax.set_xlabel("Physical Error Rate")
-    ax.set_ylabel("Logical Error Rate per Shot")
+    ax.set_ylabel("Logical Error Rate")
     ax.grid(which='major')
     ax.grid(which='minor')
-    ax.legend()
+    ax.legend(loc='lower right')
     fig.set_dpi(120)

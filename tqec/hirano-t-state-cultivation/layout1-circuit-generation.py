@@ -12,17 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 from pathlib import Path
 
 from steane_code_patch import SteaneCodePatch
 from junction_patch import JunctionPatch
 from surface_code_patch import SurfaceCodePatch
 
-import itertools
 import stim
 
 from utils.circuit_expectations import count_cnots
-from utils.circuit_flows import check_state_preparation
+
+logging.basicConfig(level=logging.ERROR)
 
 def write_file_with_polygons(
     circuit: stim.Circuit, steane: SteaneCodePatch, junction: JunctionPatch, surface: SurfaceCodePatch
@@ -66,6 +67,7 @@ def write_file_with_polygons(
 
     with open(FILENAME, "w", encoding="utf-8") as file:
         file.writelines(lines)
+        print(f"Generated circuit : {FILENAME}")
 
 FILENAME = str(Path(__file__).resolve().parent) + "/generated/hirano-magic-state-cultivation-layout1.stim"
 
@@ -114,9 +116,9 @@ if __name__ == "__main__":
             surface.append_syndrome_slice(circuit, moment, preparation=(moment==0), expansion=True)
             circuit.append("TICK")
 
-    write_file_with_polygons(circuit, steane, junction, surface)
-
     print(f"Circuit statistics")
     count_cnots(circuit)
 
     print(f"Crumble URL : {circuit.to_crumble_url()}")
+
+    write_file_with_polygons(circuit, steane, junction, surface)
