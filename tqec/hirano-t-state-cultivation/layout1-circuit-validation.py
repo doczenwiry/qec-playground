@@ -40,7 +40,7 @@ if __name__ == "__main__":
     print("")
 
     # Validate the Steane Code Superdense Syndrome Measurement (under S-injection)
-    print("Modified Steane Code (w/ S-injection) --- Superdense Code Cycle [w/ Bell pairs]")
+    print("Modified Steane Code (w/ S-injection) --- Superdense Code Cycle [w/ GHZ states]")
     circuit = stim.Circuit()
     steane.append_metadata(circuit)
     for moment in range(steane.superdense_moments):
