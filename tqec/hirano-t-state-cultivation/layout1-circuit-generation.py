@@ -46,22 +46,22 @@ def write_file_with_polygons(
         for polygon in steane.get_prepared_polygons():
             lines.insert(insertion, polygon)
             insertion += 1
-        insertion += 3 * (2 * steane.superdense_instructions + steane.superdense_moments + 2)
+        insertion += 3 * (2 * steane.superdense_instructions + steane.superdense_moments)
 
-        # for polygon in steane.get_prepared_polygons():
-        #     lines.insert(insertion, polygon)
-        #     insertion += 1
-        # for polygon in junction.get_polygons():
-        #     lines.insert(insertion, polygon)
-        #     insertion += 1
-        # for polygon in surface.get_polygons(expansion=False):
-        #     lines.insert(insertion, polygon)
-        #     insertion += 1
-        # insertion += 3 * (2 * steane.superdense_instructions + steane.superdense_moments + 2)
+        for polygon in steane.get_prepared_polygons():
+            lines.insert(insertion, polygon)
+            insertion += 1
+        for polygon in junction.get_polygons():
+            lines.insert(insertion, polygon)
+            insertion += 1
+        for polygon in surface.get_polygons(expansion=False):
+            lines.insert(insertion, polygon)
+            insertion += 1
+        insertion += 3 * (2 * steane.superdense_instructions + steane.superdense_moments - 3)
 
-        # for polygon in surface.get_polygons(expansion=True):
-        #     lines.insert(insertion, polygon)
-        #     insertion += 1
+        for polygon in surface.get_polygons(expansion=True):
+            lines.insert(insertion, polygon)
+            insertion += 1
         # insertion += surface.moments + surface.instructions
 
     with open(FILENAME, "w", encoding="utf-8") as file:
@@ -83,40 +83,34 @@ if __name__ == "__main__":
     surface.append_metadata(circuit)
     junction.append_metadata(circuit)
 
-    # Append the modified Steane Code moments with the T-injection
+    # Append the modified Steane Code moments with the S/T-injection
     for moment in range(steane.preparation_moments):
         steane.append_preparation_slice(circuit, moment)
         circuit.append("TICK")
 
-    # Append the superdense syndrome measurement code cycle
-    for round in range(3):
+    # Append the superdense syndrome measurement code cycle (3 rounds)
+    for rnd in range(3):
         for moment in range(steane.superdense_moments):
             steane.append_superdense_slice(circuit, moment, postselection=True)
             circuit.append("TICK")
 
-    # Append the cultivation stage with the Double-Check-T
+    # Append the cultivation stage with the Double-Check-S/T
     for moment in range(steane.cultivation_moments):
         steane.append_cultivation_slice(circuit, moment, postselection=True)
         circuit.append("TICK")
 
-    steane.append_observable(circuit, 'Y', steane.logical)
+    # Append the teleportation stage (3 rounds)
+    for rnd in range(3):
+        for moment in range(steane.superdense_moments):
+            steane.append_superdense_slice(circuit, moment, measure=(rnd == 2))
+            surface.append_syndrome_slice(circuit, moment, preparation=(rnd == 0))
+            junction.append_syndrome_slice(circuit, moment)
+            circuit.append("TICK")
 
-    # # Append the teleportation stage
-    # for round in range(3):
-    #     for moment in range(steane.superdense_moments):
-    #         steane.append_superdense_slice(circuit, moment, measure=(round == 2))
-    #         if moment % 2 == 0:
-    #             surface.append_syndrome_slice(circuit, moment // 2, preparation=(round == 0))
-    #         elif moment == 9:
-    #             surface.append_syndrome_slice(circuit, 5, preparation=(round == 0))
-    #         junction.append_syndrome_slice(circuit, moment)
-    #         circuit.append("TICK")
-    #
-    # # Rounds waiting for complementary gap
-    # for round in range(5):
-    #     for moment in range(surface.moments):
-    #         surface.append_syndrome_slice(circuit, moment, preparation=(moment==0), expansion=True)
-    #         circuit.append("TICK")
+    # Rounds waiting for complementary gap
+    for moment in range(surface.moments):
+        surface.append_syndrome_slice(circuit, moment, preparation=(moment==0), expansion=True)
+        circuit.append("TICK")
 
     print(f"Circuit statistics")
     count_cnots(circuit)

@@ -74,10 +74,10 @@ class JunctionPatch:
         match moment:
             case 0:
                 circuit.append("RX", self.z_ancilla.keys())
-            case 1 | 3 | 5 | 7:
+            case 1 | 2 | 3 | 4:
                 cz_gates = []
                 for za, (px,py) in self.z_ancilla.items():
-                    dx, dy = SurfaceCodePatch.SCHEDULE_Z[(moment-1) // 2]
+                    dx, dy = SurfaceCodePatch.SCHEDULE_Z[moment-1]
                     if za == self.base_qubit and dx == +0.5 and dy == -0.5:
                         continue
                     target = self.__get_qubit_at_location(px + dx, py + dy)
@@ -85,7 +85,7 @@ class JunctionPatch:
                         cz_gates.append(za)
                         cz_gates.append(target)
                 circuit.append("CZ", cz_gates)
-            case 9:
+            case 5:
                 circuit.append("MX", self.z_ancilla.keys())
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
