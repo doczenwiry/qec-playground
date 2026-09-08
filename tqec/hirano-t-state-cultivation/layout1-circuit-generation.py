@@ -16,9 +16,9 @@ import logging
 from collections import Counter
 from pathlib import Path
 
-from steane_code_patch import SteaneCodePatch
-from junction_patch import JunctionPatch
-from surface_code_patch import SurfaceCodePatch
+from library.steane_code_patch import SteaneCodePatch
+from library.junction_patch import JunctionPatch
+from library.expanding_surface_code_patch import SurfaceCodePatch
 
 import stim
 
@@ -79,38 +79,38 @@ if __name__ == "__main__":
     instructions['metadata'] = len(circuit)
 
     # Append the modified Steane Code moments with the S/T-injection
-    for moment in range(steane.preparation_moments):
+    for moment in steane.preparation_moments:
         steane.append_preparation_slice(circuit, moment)
         circuit.append("TICK")
     instructions['preparation'] = len(circuit)
 
     # Append the superdense syndrome measurement code cycle (3 rounds)
     for rnd in range(3):
-        for moment in range(steane.superdense_moments):
+        for moment in steane.superdense_moments:
             steane.append_superdense_slice(circuit, moment, postselection=True)
             circuit.append("TICK")
     instructions['superdense'] = len(circuit)
 
     # Append the cultivation stage with the Double-Check-S/T
-    for moment in range(steane.cultivation_moments):
+    for moment in steane.cultivation_moments:
         steane.append_cultivation_slice(circuit, moment, postselection=True)
         circuit.append("TICK")
     instructions['cultivation'] = len(circuit)
 
     # Append the teleportation stage (3 rounds)
-    for moment in range(steane.teleportation_round1_moments):
+    for moment in steane.teleportation_round1_moments:
         steane.append_teleportation_round1_slice(circuit, moment, postselection=True)
         surface.append_syndrome_slice(circuit, moment, preparation=True)
         junction.append_syndrome_slice(circuit, moment)
         circuit.append("TICK")
 
-    for moment in range(steane.teleportation_round2_moments):
+    for moment in steane.teleportation_round2_moments:
         steane.append_teleportation_round2_slice(circuit, moment, postselection=True)
         surface.append_syndrome_slice(circuit, moment, preparation=False)
         junction.append_syndrome_slice(circuit, moment)
         circuit.append("TICK")
 
-    for moment in range(surface.moments):
+    for moment in surface.moments:
         steane.append_teleportation_round3_slice(circuit, moment, postselection=True)
         surface.append_syndrome_slice(circuit, moment, preparation=False)
         junction.append_syndrome_slice(circuit, moment)
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     instructions['teleportation'] = len(circuit)
 
     # Single round waiting for complementary gap (should be repeated by the control system at runtime)
-    for moment in range(surface.moments):
+    for moment in surface.moments:
         surface.append_syndrome_slice(circuit, moment, preparation=(moment==0), expansion=True)
         circuit.append("TICK")
 

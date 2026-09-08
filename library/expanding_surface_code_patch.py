@@ -12,7 +12,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import itertools
 import stim
 
 import logging
@@ -46,7 +45,7 @@ class SurfaceCodePatch:
 
     @property
     def moments(self):
-        return 6
+        return range(6)
 
     @property
     def num_qubits(self):

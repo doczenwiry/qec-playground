@@ -93,10 +93,10 @@ class SteaneCodePatch:
 
     @property
     def preparation_moments(self):
-        return 11
+        return range(11)
 
     def append_preparation(self, circuit: stim.Circuit):
-        for moment in range(self.preparation_moments):
+        for moment in self.preparation_moments:
             self.append_preparation_slice(circuit, moment)
             circuit.append("TICK")
 
@@ -131,10 +131,10 @@ class SteaneCodePatch:
 
     @property
     def superdense_moments(self):
-        return 15
+        return range(15)
 
     def append_superdense(self, circuit: stim.Circuit, postselection: bool = False):
-        for moment in range(self.superdense_moments):
+        for moment in self.superdense_moments:
             self.append_superdense_slice(circuit, moment, postselection)
             circuit.append("TICK")
 
@@ -180,10 +180,10 @@ class SteaneCodePatch:
 
     @property
     def cultivation_moments(self):
-        return 12
+        return range(12)
 
     def append_cultivation(self, circuit: stim.Circuit, postselection: bool = False):
-        for moment in range(self.cultivation_moments):
+        for moment in self.cultivation_moments:
             self.append_cultivation_slice(circuit, moment, postselection)
             circuit.append("TICK")
 
@@ -225,10 +225,10 @@ class SteaneCodePatch:
 
     @property
     def teleportation_round1_moments(self):
-        return 15
+        return range(15)
 
     def append_teleportation_round1(self, circuit: stim.Circuit, postselection: bool = False):
-        for moment in range(self.teleportation_round1_moments):
+        for moment in self.teleportation_round1_moments:
             self.append_teleportation_round1_slice(circuit, moment, postselection)
             circuit.append("TICK")
 
@@ -277,10 +277,10 @@ class SteaneCodePatch:
 
     @property
     def teleportation_round2_moments(self):
-        return 9
+        return range(9)
 
     def append_teleportation_round2(self, circuit: stim.Circuit, postselection: bool = False):
-        for moment in range(self.teleportation_round2_moments):
+        for moment in self.teleportation_round2_moments:
             self.append_teleportation_round2_slice(circuit, moment, postselection)
             circuit.append("TICK")
 
@@ -316,10 +316,10 @@ class SteaneCodePatch:
 
     @property
     def teleportation_round3_moments(self):
-        return 6
+        return range(6)
 
     def append_teleportation_round3(self, circuit: stim.Circuit, postselection: bool = False):
-        for moment in range(self.teleportation_round2_moments):
+        for moment in self.teleportation_round3_moments:
             self.append_teleportation_round3_slice(circuit, moment, postselection)
             circuit.append("TICK")
 

@@ -13,8 +13,8 @@
 #   limitations under the License.
 
 import stim
-from steane_code_patch import SteaneCodePatch
-from surface_code_patch import SurfaceCodePatch
+from library.steane_code_patch import SteaneCodePatch
+from library.expanding_surface_code_patch import SurfaceCodePatch
 
 import logging
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class JunctionPatch:
 
     @property
     def moments(self):
-        return 6
+        return range(6)
 
     def __get_qubit_at_location(
         self, px: float, py: float,

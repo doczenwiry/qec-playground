@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from steane_code_patch import SteaneCodePatch
+from library.steane_code_patch import SteaneCodePatch
 
 import itertools
 import stim
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     print("Modified Steane Code (w/ S-injection) --- Preparation")
     circuit = stim.Circuit()
     steane.append_metadata(circuit)
-    for moment in range(steane.preparation_moments):
+    for moment in steane.preparation_moments:
         steane.append_preparation_slice(circuit, moment)
     for stabilizer, support in itertools.product(['X', 'Z'], steane.stabilizers.values()):
         check_state_preparation(circuit, stabilizer, support)
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     print("Modified Steane Code (w/ S-injection) --- Superdense Code Cycle [w/ GHZ states]")
     circuit = stim.Circuit()
     steane.append_metadata(circuit)
-    for moment in range(steane.superdense_moments):
+    for moment in steane.superdense_moments:
         steane.append_superdense_slice(circuit, moment)
     print(f"Stabilizer flows")
     for stabilizer, support in itertools.product(['X', 'Z'], steane.stabilizers.values()):
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     print("Modified Steane Code (w/ S-injection) --- Double-Check-S")
     circuit = stim.Circuit()
     steane.append_metadata(circuit)
-    for moment in range(steane.cultivation_moments):
+    for moment in steane.cultivation_moments:
         steane.append_cultivation_slice(circuit, moment)
 
     print(f"Stabilizer flows")
