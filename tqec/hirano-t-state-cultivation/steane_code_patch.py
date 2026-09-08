@@ -173,8 +173,8 @@ class SteaneCodePatch:
                 circuit.append("MX", self.__shift_qubit_ids([10, 13, 15]))
                 circuit.append("MZ", self.__shift_qubit_ids([11, 12, 14]))
                 if postselection:
-                    for i in range(1, 7):
-                        circuit.append("DETECTOR", [stim.target_rec(-i)])
+                    for i in range(6):
+                        circuit.append("DETECTOR", [stim.target_rec(-(i+1))])
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
@@ -217,8 +217,8 @@ class SteaneCodePatch:
             case 11:
                 circuit.append("MX", [10, 11, 13, 14, 15])
                 if postselection:
-                    for i in range(1, 6):
-                        circuit.append("DETECTOR", [stim.target_rec(-i)])
+                    for i in range(5):
+                        circuit.append("DETECTOR", [stim.target_rec(-(i+1))])
                 circuit.append("S", self.logical)
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
@@ -270,8 +270,8 @@ class SteaneCodePatch:
                 circuit.append("MX", self.__shift_qubit_ids([10, 13, 15]))
                 circuit.append("MZ", self.__shift_qubit_ids([11, 12, 14]))
                 if postselection:
-                    for i in range(1, 7):
-                        circuit.append("DETECTOR", [stim.target_rec(-i)])
+                    for i in range(6):
+                        circuit.append("DETECTOR", [stim.target_rec(-(i+1))])
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
@@ -309,8 +309,8 @@ class SteaneCodePatch:
             case 8:
                 circuit.append("MX", self.__shift_qubit_ids([10, 13, 15]))
                 if postselection:
-                    for i in range(1, 4):
-                        circuit.append("DETECTOR", [stim.target_rec(-i)])
+                    for i in range(3):
+                        circuit.append("DETECTOR", [stim.target_rec(-(i+1))])
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
@@ -323,11 +323,14 @@ class SteaneCodePatch:
             self.append_teleportation_round3_slice(circuit, moment, postselection)
             circuit.append("TICK")
 
+    def to_detector(self, support: list[int]):
+        return [ stim.target_rec(-(q+1)) for q in support ]
+
     def append_teleportation_round3_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False):
         match moment:
             case 5:
                 circuit.append("MX", self.__shift_qubit_ids(self.logical))
                 if postselection:
-                    raise NotImplementedError("Postselection for round 3 requires XOR'ing the various MX.")
+                    logger.error("NotImplemented: Postselection in round 3 of teleportation requires XOR'ing the various MX.")
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")

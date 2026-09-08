@@ -13,7 +13,6 @@
 #   limitations under the License.
 
 import logging
-import re
 from collections import Counter
 from pathlib import Path
 
@@ -100,19 +99,19 @@ if __name__ == "__main__":
 
     # Append the teleportation stage (3 rounds)
     for moment in range(steane.teleportation_round1_moments):
-        steane.append_teleportation_round1_slice(circuit, moment)
+        steane.append_teleportation_round1_slice(circuit, moment, postselection=True)
         surface.append_syndrome_slice(circuit, moment, preparation=True)
         junction.append_syndrome_slice(circuit, moment)
         circuit.append("TICK")
 
     for moment in range(steane.teleportation_round2_moments):
-        steane.append_teleportation_round2_slice(circuit, moment)
+        steane.append_teleportation_round2_slice(circuit, moment, postselection=True)
         surface.append_syndrome_slice(circuit, moment, preparation=False)
         junction.append_syndrome_slice(circuit, moment)
         circuit.append("TICK")
 
     for moment in range(surface.moments):
-        steane.append_teleportation_round3_slice(circuit, moment)
+        steane.append_teleportation_round3_slice(circuit, moment, postselection=True)
         surface.append_syndrome_slice(circuit, moment, preparation=False)
         junction.append_syndrome_slice(circuit, moment)
         circuit.append("TICK")
