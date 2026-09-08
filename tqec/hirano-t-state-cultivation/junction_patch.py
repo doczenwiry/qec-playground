@@ -28,6 +28,8 @@ class JunctionPatch:
     ]
 
     def __init__(self, base_qubit: int = 0, anchor: tuple[int, int] = (1, 3)):
+        self.steane = None
+        self.surface = None
         self.base_qubit = base_qubit
         self.anchor = anchor
         px, py = anchor
@@ -41,7 +43,7 @@ class JunctionPatch:
 
     @property
     def moments(self):
-        return 1
+        return 6
 
     def __get_qubit_at_location(
         self, px: float, py: float,

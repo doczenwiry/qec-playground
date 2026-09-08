@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 import logging
+import re
+from collections import Counter
 from pathlib import Path
 
 from steane_code_patch import SteaneCodePatch
@@ -25,53 +27,46 @@ from utils.circuit_expectations import count_cnots
 
 logging.basicConfig(level=logging.ERROR)
 
-def write_file_with_polygons(
-    circuit: stim.Circuit, steane: SteaneCodePatch, junction: JunctionPatch, surface: SurfaceCodePatch
+def rewrite_file_with_polygons(
+    filename: str, instructions: Counter[str], steane: SteaneCodePatch, junction: JunctionPatch, surface: SurfaceCodePatch
 ):
-    circuit.to_file(FILENAME)
-
     # Insert all the polygons into the Stim file for readability.
-    with open(FILENAME, "r", encoding="utf-8") as file:
+    with open(filename, "r", encoding="utf-8") as file:
         lines = file.readlines()
 
-        insertion = 0
-        while insertion < len(lines) and lines[insertion].startswith("QUBIT_COORDS"):
-            insertion += 1
+        inserted = 0
 
         for polygon in steane.get_initial_polygons():
-            lines.insert(insertion, polygon)
-            insertion += 1
-        insertion += steane.preparation_instructions + steane.preparation_moments
+            lines.insert(instructions['metadata'] + inserted, polygon)
+            inserted += 1
 
         for polygon in steane.get_prepared_polygons():
-            lines.insert(insertion, polygon)
-            insertion += 1
-        insertion += 3 * (2 * steane.superdense_instructions + steane.superdense_moments)
+            lines.insert(instructions['preparation'] + inserted, polygon)
+            inserted += 1
 
         for polygon in steane.get_prepared_polygons():
-            lines.insert(insertion, polygon)
-            insertion += 1
+            lines.insert(instructions['cultivation'] + inserted, polygon)
+            inserted += 1
         for polygon in junction.get_polygons():
-            lines.insert(insertion, polygon)
-            insertion += 1
+            lines.insert(instructions['cultivation'] + inserted, polygon)
+            inserted += 1
         for polygon in surface.get_polygons(expansion=False):
-            lines.insert(insertion, polygon)
-            insertion += 1
-        insertion += 3 * (2 * steane.superdense_instructions + steane.superdense_moments - 3)
+            lines.insert(instructions['cultivation'] + inserted, polygon)
+            inserted += 1
 
         for polygon in surface.get_polygons(expansion=True):
-            lines.insert(insertion, polygon)
-            insertion += 1
-        # insertion += surface.moments + surface.instructions
+            lines.insert(instructions['teleportation'] + inserted, polygon)
+            inserted += 1
 
-    with open(FILENAME, "w", encoding="utf-8") as file:
+    with open(filename, "w", encoding="utf-8") as file:
         file.writelines(lines)
-        print(f"Generated circuit : {FILENAME}")
+        print(f"Generated circuit : {filename}")
 
 FILENAME = str(Path(__file__).resolve().parent) + "/generated/hirano-magic-state-cultivation-layout1.stim"
 
 if __name__ == "__main__":
     circuit = stim.Circuit()
+    instructions = Counter()
 
     steane = SteaneCodePatch()
     junction = JunctionPatch(base_qubit=steane.num_qubits)
@@ -82,32 +77,49 @@ if __name__ == "__main__":
     steane.append_metadata(circuit)
     surface.append_metadata(circuit)
     junction.append_metadata(circuit)
+    instructions['metadata'] = len(circuit)
 
     # Append the modified Steane Code moments with the S/T-injection
     for moment in range(steane.preparation_moments):
         steane.append_preparation_slice(circuit, moment)
         circuit.append("TICK")
+    instructions['preparation'] = len(circuit)
 
     # Append the superdense syndrome measurement code cycle (3 rounds)
     for rnd in range(3):
         for moment in range(steane.superdense_moments):
             steane.append_superdense_slice(circuit, moment, postselection=True)
             circuit.append("TICK")
+    instructions['superdense'] = len(circuit)
 
     # Append the cultivation stage with the Double-Check-S/T
     for moment in range(steane.cultivation_moments):
         steane.append_cultivation_slice(circuit, moment, postselection=True)
         circuit.append("TICK")
+    instructions['cultivation'] = len(circuit)
 
     # Append the teleportation stage (3 rounds)
-    for rnd in range(3):
-        for moment in range(steane.superdense_moments):
-            steane.append_superdense_slice(circuit, moment, measure=(rnd == 2))
-            surface.append_syndrome_slice(circuit, moment, preparation=(rnd == 0))
-            junction.append_syndrome_slice(circuit, moment)
-            circuit.append("TICK")
+    for moment in range(steane.teleportation_round1_moments):
+        steane.append_teleportation_round1_slice(circuit, moment)
+        surface.append_syndrome_slice(circuit, moment, preparation=True)
+        junction.append_syndrome_slice(circuit, moment)
+        circuit.append("TICK")
 
-    # Rounds waiting for complementary gap
+    for moment in range(steane.teleportation_round2_moments):
+        steane.append_teleportation_round2_slice(circuit, moment)
+        surface.append_syndrome_slice(circuit, moment, preparation=False)
+        junction.append_syndrome_slice(circuit, moment)
+        circuit.append("TICK")
+
+    for moment in range(surface.moments):
+        steane.append_teleportation_round3_slice(circuit, moment)
+        surface.append_syndrome_slice(circuit, moment, preparation=False)
+        junction.append_syndrome_slice(circuit, moment)
+        circuit.append("TICK")
+
+    instructions['teleportation'] = len(circuit)
+
+    # Single round waiting for complementary gap (should be repeated by the control system at runtime)
     for moment in range(surface.moments):
         surface.append_syndrome_slice(circuit, moment, preparation=(moment==0), expansion=True)
         circuit.append("TICK")
@@ -117,4 +129,5 @@ if __name__ == "__main__":
 
     print(f"Crumble URL : {circuit.to_crumble_url()}")
 
-    write_file_with_polygons(circuit, steane, junction, surface)
+    circuit.to_file(FILENAME)
+    rewrite_file_with_polygons(FILENAME, instructions, steane, junction, surface)

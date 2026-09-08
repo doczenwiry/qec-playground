@@ -95,10 +95,6 @@ class SteaneCodePatch:
     def preparation_moments(self):
         return 11
 
-    @property
-    def preparation_instructions(self):
-        return 14
-
     def append_preparation(self, circuit: stim.Circuit):
         for moment in range(self.preparation_moments):
             self.append_preparation_slice(circuit, moment)
@@ -108,8 +104,7 @@ class SteaneCodePatch:
         match moment:
             case 0:
                 circuit.append("RX", self.__shift_qubit_ids([0, 2, 6, 11]))
-                circuit.append("RZ", self.__shift_qubit_ids([1, 3, 4, 5]))
-                circuit.append("RZ", self.__shift_qubit_ids([7, 8, 9, 10, 12, 13, 14, 15]))
+                circuit.append("RZ", self.__shift_qubit_ids([1, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15]))
             case 1:
                 circuit.append("CX", self.__shift_qubit_ids([11, 7, 2, 15, 0, 14]))
             case 2:
@@ -138,16 +133,12 @@ class SteaneCodePatch:
     def superdense_moments(self):
         return 15
 
-    @property
-    def superdense_instructions(self):
-        return 17
-
     def append_superdense(self, circuit: stim.Circuit, postselection: bool = False):
         for moment in range(self.superdense_moments):
             self.append_superdense_slice(circuit, moment, postselection)
             circuit.append("TICK")
 
-    def append_superdense_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False, measure: bool = False):
+    def append_superdense_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False):
         match moment:
             case 0:
                 circuit.append("RX", self.__shift_qubit_ids([10, 13, 15]))
@@ -184,18 +175,12 @@ class SteaneCodePatch:
                 if postselection:
                     for i in range(1, 7):
                         circuit.append("DETECTOR", [stim.target_rec(-i)])
-                if measure:
-                    circuit.append("MX", self.logical)
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
     @property
     def cultivation_moments(self):
         return 12
-
-    @property
-    def cultivation_instructions(self):
-        return 14
 
     def append_cultivation(self, circuit: stim.Circuit, postselection: bool = False):
         for moment in range(self.cultivation_moments):
@@ -237,3 +222,112 @@ class SteaneCodePatch:
                 circuit.append("S", self.logical)
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
+
+    @property
+    def teleportation_round1_moments(self):
+        return 15
+
+    def append_teleportation_round1(self, circuit: stim.Circuit, postselection: bool = False):
+        for moment in range(self.teleportation_round1_moments):
+            self.append_teleportation_round1_slice(circuit, moment, postselection)
+            circuit.append("TICK")
+
+    def append_teleportation_round1_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False):
+        match moment:
+            # GHZ-state formation
+            case 0:
+                circuit.append("RX", self.__shift_qubit_ids([10, 13, 15]))
+                circuit.append("RZ", self.__shift_qubit_ids([7, 8, 9, 11, 12, 14]))
+            case 1:
+                circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
+            case 2:
+                circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12]))
+            case 3:
+                circuit.append("CX", self.__shift_qubit_ids([11, 7, 14, 9, 12, 8]))
+            # Syndrome extractions
+            case 4:
+                circuit.append("CX", self.__shift_qubit_ids([10, 6, 11, 2, 15, 3]))
+            case 5:
+                circuit.append("CX", self.__shift_qubit_ids([10, 5, 11, 4, 15, 0]))
+            case 6:
+                circuit.append("CX", self.__shift_qubit_ids([12, 4, 15, 2]))
+            case 7:
+                circuit.append("CX", self.__shift_qubit_ids([1, 13, 2, 15, 4, 12, 6, 14]))
+            case 8:
+                circuit.append("CX", self.__shift_qubit_ids([0, 15, 2, 14, 4, 11, 5, 10]))
+            case 9:
+                circuit.append("CX", self.__shift_qubit_ids([0, 14, 2, 11, 3, 15, 6, 10]))
+            # GHZ-state contraction
+            case 10:
+                circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12]))
+            case 11:
+                circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
+            case 12:
+                circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12]))
+            case 13:
+                circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
+            case 14:
+                circuit.append("MX", self.__shift_qubit_ids([10, 13, 15]))
+                circuit.append("MZ", self.__shift_qubit_ids([11, 12, 14]))
+                if postselection:
+                    for i in range(1, 7):
+                        circuit.append("DETECTOR", [stim.target_rec(-i)])
+            case _:
+                logger.warning(f"Nothing to do at requested moment [{moment}]")
+
+    @property
+    def teleportation_round2_moments(self):
+        return 9
+
+    def append_teleportation_round2(self, circuit: stim.Circuit, postselection: bool = False):
+        for moment in range(self.teleportation_round2_moments):
+            self.append_teleportation_round2_slice(circuit, moment, postselection)
+            circuit.append("TICK")
+
+    def append_teleportation_round2_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False):
+        match moment:
+            # GHZ-state formation
+            case 0:
+                circuit.append("RX", self.__shift_qubit_ids([10, 13, 15]))
+                circuit.append("RZ", self.__shift_qubit_ids([7, 8, 9, 11, 12, 14]))
+            case 1:
+                circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
+            case 2:
+                circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12, 3, 15]))
+            # Syndrome extractions
+            case 3:
+                circuit.append("CX", self.__shift_qubit_ids([0, 14, 2, 11, 6, 10]))
+            case 4:
+                circuit.append("CX", self.__shift_qubit_ids([0, 15, 2, 14, 4, 11, 5, 10]))
+            case 5:
+                circuit.append("CX", self.__shift_qubit_ids([1, 13, 2, 15, 4, 12, 6, 14]))
+            # GHZ-state contraction
+            case 6:
+                circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12]))
+            case 7:
+                circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
+            case 8:
+                circuit.append("MX", self.__shift_qubit_ids([10, 13, 15]))
+                if postselection:
+                    for i in range(1, 4):
+                        circuit.append("DETECTOR", [stim.target_rec(-i)])
+            case _:
+                logger.warning(f"Nothing to do at requested moment [{moment}]")
+
+    @property
+    def teleportation_round3_moments(self):
+        return 6
+
+    def append_teleportation_round3(self, circuit: stim.Circuit, postselection: bool = False):
+        for moment in range(self.teleportation_round2_moments):
+            self.append_teleportation_round3_slice(circuit, moment, postselection)
+            circuit.append("TICK")
+
+    def append_teleportation_round3_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False):
+        match moment:
+            case 5:
+                circuit.append("MX", self.__shift_qubit_ids(self.logical))
+                if postselection:
+                    raise NotImplementedError("Postselection for round 3 requires XOR'ing the various MX.")
+            case _:
+                logger.warning(f"Nothing to do at requested moment [{moment}]")

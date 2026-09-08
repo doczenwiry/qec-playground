@@ -49,10 +49,6 @@ class SurfaceCodePatch:
         return 6
 
     @property
-    def instructions(self):
-        return 4
-
-    @property
     def num_qubits(self):
         return len(self.qubits) + len(self.z_ancilla) + len(self.x_ancilla)
 
@@ -130,6 +126,8 @@ class SurfaceCodePatch:
     ):
         match moment:
             case 0:
+                circuit.append("RX", self.active_z_ancilla(expansion))
+                circuit.append("RX", self.active_x_ancilla(expansion))
                 if preparation:
                     if not expansion:
                         circuit.append("RX", self.active_data_qubits(expansion))
@@ -145,8 +143,6 @@ class SurfaceCodePatch:
                             if self.is_qubit_expansion(q) and self.qubits[q][0] - ax > self.qubits[q][1] - ay
                         ]
                         circuit.append("RZ", rz_targets)
-                circuit.append("RX", self.active_z_ancilla(expansion))
-                circuit.append("RX", self.active_x_ancilla(expansion))
             case 1 | 2 | 3 | 4:
                 for gate, active, ancilla, schedule in [
                     ("CZ", self.active_z_ancilla(expansion), self.z_ancilla, SurfaceCodePatch.SCHEDULE_Z),
