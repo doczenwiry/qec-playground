@@ -6,7 +6,7 @@
 
 \usepackage{amsmath, amssymb, amsfonts}
 \usepackage{subcaption, hyperref}
-
+\usepackage{fancyvrb}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 
@@ -79,12 +79,12 @@
 
 	\section{Overview}
 
-	Note that the goal here is to clearly separate the responsibilities belonging to compile-time or at execution-time. In the remainder of this document, we will use a few terms that might be worth pointing out straightaway.
+	Note that the goal here is to clearly separate the responsibilities belonging at compile-time or at execution-time. In the remainder of this document, we will use a few terms that might be worth pointing out straightaway.
 	
 	\begin{itemize}
-		\item the cultivation stage is composed of the three stages at the bottom of Figure \ref{fig:cultivation-specification}
+		\item the cultivation stage is composed of the pink prisms at the bottom of Figure \ref{fig:cultivation-specification}
 		\item the cultivation process is what happens at execution-time where the control system must post-select, abort, restart, \etc
-		\item we say that the cultivation stage has completed if there has been no non-trivial syndrome during the three stages it covers
+		\item we say that the cultivation stage has completed if there has been no non-trivial syndrome during any of the parts that involve a post-selection
 		\item we say that the cultivation process has completed if the cultivation stage has completed and the complementary gap came back with a sufficient confidence that we have a logical T-state
 	\end{itemize}
 
@@ -95,7 +95,7 @@
 		\begin{subfigure}[c]{0.4\textwidth}
 			\centering
 			\includegraphics[scale=2]{topologiq-cultivation-connection.png}
-			\caption{An representation of cultivation in topologiq (\cfr \href{https://github.com/tqec/topologiq.git}{https://github.com/tqec/topologiq.git})}
+			\caption{A representation of cultivation in topologiq (\cfr \href{https://github.com/tqec/topologiq.git}{https://github.com/tqec/topologiq.git})}
 		\end{subfigure}
 		\hspace{1cm}
 		\begin{subfigure}[c]{0.4\textwidth}
@@ -105,19 +105,31 @@
 					prism={d=4, h=0.75, l=injection, colorX=quantumP, colorY=quantumP}
 				};
 				\pic at (1, 1, 0.75) {
-					prism={d=4, h=0.75, l=cultivation, colorX=quantumP, colorY=quantumP}
+					prism={d=4, h=0.75, l=superdense, colorX=quantumP, colorY=quantumP}
 				};
 				\pic at (1, 1, 1.50) {
-					prism={d=4, h=0.75, l=expansion, colorX=quantumP, colorY=quantumP}
+					prism={d=4, h=0.75, l=check-t, colorX=quantumP, colorY=quantumP}
+				};
+				\pic at (1, 1, 2.25) {
+					prism={d=4, h=0.75, l=check-t, colorX=quantumP, colorY=quantumP}
 				};
 				\pic at (1, 1, 3.00) {
-					prism={d=4, l=syndrome, colorX=quantumB, colorY=quantumR}
+					prism={d=4, h=0.75, l=teleport, colorX=quantumP, colorY=quantumP}
+				};
+				\pic at (1, 1, 3.75) {
+					prism={d=4, h=0.75, l=teleport, colorX=quantumP, colorY=quantumP}
 				};
 				\pic at (1, 1, 4.50) {
-					prism={d=4, h=4, l=memory, colorX=quantumB, colorY=quantumR}
+					prism={d=4, h=0.75, l=teleport, colorX=quantumP, colorY=quantumP}
+				};
+				\pic at (1, 1, 5.25) {
+					prism={d=4, h=0.75, l=expansion, colorX=quantumP, colorY=quantumP}
+				};
+				\pic at (1, 1, 7.00) {
+					prism={d=4, l=syndrome, colorX=quantumB, colorY=quantumR}
 				};
 			\end{tikzpicture}
-			\caption{The circuits from which the cultivation process is built}
+			\caption{The parts from which the cultivation process is built}
 			\label{fig:cultivation-specification}
 		\end{subfigure}
 		\caption{Correspondence between the blockgraph and the specification of the circuits involved.}
@@ -125,23 +137,54 @@
 
 	\newpage
 
-	The \textsc{Injection}, \textsc{Cultivation} and \textsc{Expansion} stages represent the raw circuits to perform those operations in that specific region of the processor. In practice, there is a small patch inside the first two stages with the growth to the full code distance occurring in the third stage. Furthermore, we assume an upward expansion is used to conceal the initial Steane Code (distance $3$) inside the resulting column\footnote{\cfr TQEC meeting 2026/08/26: nothing fundamentally prevents this; just needs more work.}. The length in the $x$ and $y$ directions of those pieces is assumed to be full code distance $d$ of the surface code we're using. The height in the $z$ direction represents the number of steps of which those parts or constituted. Note that the visual height does not reflect the real depth of those circuits. In practice, the depth of the \textsc{Injection}, \textsc{Cultivation} and \textsc{Expansion} is constant while the depth of the \textsc{Memory} is some multiple of $d$. In particular, the \textsc{Syndrome} represents a single layer of syndrome extraction in the surface code of full distance $d$. \\ 
+	The parts of the cultivation represented by pink prisms represent the raw circuits to perform those operations in specific regions of the patch in order to prepare the logical $\ket{\Op{T}}$ state in the target surface code. In practice, there is a small patch inside the lower stages with the growth to the full code distance occurring in the \textsc{Expansion} part. Furthermore, we assume an upward expansion is used to conceal the initial Steane Code (distance $3$) inside the resulting column\footnote{\cfr TQEC meeting 2026/08/26: nothing fundamentally prevents this; just needs more work.}. These prisms can be thought of as representing the dedicated allocation of those regions for the cultivation; nothing else is  allowed to occur there, even though in the initial $d=3$ Steane and $d=5$ Surface Code, only a small part of those regions is effectively used. The length in the $x$ and $y$ directions of those prisms is assumed to represent the full code distance $d$ of the surface code we're using. The height in the $z$ direction represents the number of steps in those parts. Note that the visual height does not reflect the real depth of those circuits. \\ 
 
-	The \textsc{Memory} represents an entire memory experiment that can be used to stabilise (what we hope is) the logical T-state while we're waiting for the complementary gap or we have received it but we haven't reached the connection into the T-gate construct. Note that the color of the boundaries for the \textsc{Syndrome} and \textsc{Memory} directly come from the cube to which the cultivation is connected. \\
+	The \textsc{Injection} represents the modified Steane Code to attempt to prepare the logical $\ket{\Op{T}}$ state on $7$ qubits. The \textsc{Superdense} is the post-selected syndrome measurement that is performed to check the Steane Code has not been compromised. The \textsc{Check-T} represent the $\Op{H}_{\scriptscriptstyle XY}$ verification to check that the correct phase has been injected.
+	
+	The three \textsc{Teleport} represent the hybrid rounds where teleportation is performed from the $d=3$ Steane Code into the $d=5$ Surface Code. All three involve syndrome extraction and lattice surgery for the $d=5$ Surface Code while only the first two involve post-selection for the Steane Code. The last of those involves a measurement in the $X$-basis for the Steane Code to complete the post-teleportation correction.
 
-	These pieces represent the circuits required and must be complemented with a {\tt height} information which tells us how many steps into the future until the connection point into the T-gate construct.
+	The \textsc{Expansion} represents the growth from the $d=5$ Surface Code to the target Surface Code that we are working under at the scale of the computation.
+
+	The \textsc{Syndrome} represents a single layer of syndrome extraction in the target surface code with code distance $d$. This is used to pad the cultivation process all the way to the moment where it joins the rest of the computation (\ie connection point). This padding is used to stabilise (what we hope is) the logical T-state while the computation of the complementary gap is underway. Note that the color of the boundaries for the \textsc{Syndrome} come directly from the cube to which the cultivation is connected.
+
+	All the prisms in Figure \ref{fig:cultivation-specification} represent the static circuits required and must be complemented with a {\tt height} information which tells us how many steps into the future until the connection point into the T-gate construct. These provide all the information needed at runtime 
 
 	\section{Execution of the cultivation}
 
 	I assume that the tip of the pink pyramid in the output of topologiq is aligned with the bottom of all the cubes  that exist on that plane so that the "start" of the cultivation (\ie the preparation layer of the modified Steane Code of the first attempt) is synchronised with either the preparation layer for cubes/pipes that begin then or the layer lying at the interconnection of two consecutive memory experiments.
 
-	A cultivation block in the blockgraph has a pre-allocated {\tt height} as an attribute. When the cultivation process begins at runtime, an internal {\tt countdown} is initialised to {\tt height} and will be decremented by one at every successive steps. This {\tt countdown}, which is local for each cultivation process in the entire computation, can be used to know;
+	A cultivation block in the blockgraph has a {\tt <HEIGHT>} (expressed as a number of memory experiments) as an attribute that represents the number of steps pre-allocated to complete the process. The value {\tt <MEMORY>} describes the number of steps in a single memory experiment. If the process takes longer, it will become necessarily to idle/stabilise the rest of the computation. The proposed new instruction has the following syntax;
+	
+	\begin{figure}[h!]
+		\centering
+		\begin{BVerbatim}
+REPEAT_UNTIL_SUCCESS {
+    # Main body: Injection + Cultivation + Expansion circuitry (i.e. all the pink prisms)
+    # w/ DETECTOR annotations
+} PADDING {
+    # Syndrome Extraction circuitry
+    # w/ DETECTOR annotations
+} WITHIN <HEIGHT>, <MEMORY>
+		\end{BVerbatim}
+		\caption{Proposed syntax for the new instruction}	
+	\end{figure}
 
+	The behavior of this instruction should be as follows.
+	
 	\begin{enumerate}
-		\item if {\tt countdown} $\leqslant 0$ and the cultivation process is not complete, then the connection point has been reached and it is necessary to insert memory experiments in the rest of the computation while the cultivation continues
-		\item if {\tt countdown} $> 0$ and the cultivation stage is not complete, we insert the next step from the cultivation stages where we have arrived in the current attempt
-		\item if {\tt countdown} $> 0$ and the cultivation stage is complete, how many layers of \textsc{Syndrome} are needed to pad what we have done so far\footnote{That includes all the failed cultivation stages' attempts and the final successful one.} to synchronise with the start of the next cubes/pipes in the rest of the computation. After this padding, we can use {\tt counter} and the allocated {\tt height} to determine how many \textsc{Memory} must be inserted until the connection point.
+		\item Initialize {\tt COUNTDOWN} to {\tt <STEPS>}
+		\item Initialize {\tt LAYER} to {\tt 0}
+		\item Execute all the operations at {\tt LAYER} of the Main body
+		\item Increment {\tt LAYER} by {\tt 1} and go back to 3.
+		\item If any {\tt DETECTOR} fires, go back to 1.
 	\end{enumerate}
+
+
+%	\begin{enumerate}
+%		\item if {\tt countdown} $\leqslant 0$ and the cultivation process is not complete, then the connection point has been reached and it is necessary to insert memory experiments in the rest of the computation while the cultivation continues
+%		\item if {\tt countdown} $> 0$ and the cultivation stage is not complete, we insert the next step from the cultivation stages where we have arrived in the current attempt
+%		\item if {\tt countdown} $> 0$ and the cultivation stage is complete, how many layers of \textsc{Syndrome} are needed to pad what we have done so far\footnote{That includes all the failed cultivation stages' attempts and the final successful one.} to synchronise with the start of the next cubes/pipes in the rest of the computation. After this padding, we can use {\tt counter} and the allocated {\tt height} to determine how many \textsc{Memory} must be inserted until the connection point.
+%	\end{enumerate}
 
 	During the cultivation stage, if a non-trivial syndrome occurs, we abort the current attempt and restart it from the beginning.
 
@@ -157,12 +200,9 @@
 	
 	\begin{itemize}
 		\item if a non-trivial syndrome occurs during \textsc{Syndrome}, should we abort as well ?
-		\item if a non-trivial syndrome occurs during \textsc{Memory}, should we abort as well ?
 	\end{itemize}
 
 	\newpage
-
-	\section{Specification of the instruction}
 
 	\section{Postprocessing for simulation of circuits with Clifft}
 
