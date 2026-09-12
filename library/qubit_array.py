@@ -17,30 +17,33 @@ import numpy as np
 import stim
 
 
-class QubitAllocation:
-    def __init__(self, anchor: tuple[int, int] = (1, 1), dimensions: tuple[int, int] = (3, 3), ancilla: bool = True):
-        ax, ay = anchor
+class QubitArray:
+    def __init__(self, circuit: stim.Circuit, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True):
         width, height = dimensions
         self.qubits = dict()
+
         qubit = 0
-        for location in itertools.product(range(ax, ax + width + 1), range(ay, ay + height + 1)):
+        self.data = set()
+        for location in itertools.product(range(1, width + 1), range(1, height + 1)):
+            circuit.append("QUBIT_COORDS", [qubit], location)
             self.qubits[location] = qubit
+            self.data.add(qubit)
             qubit += 1
 
         if ancilla:
             for location in itertools.product(
-                np.arange(ax - 0.5, ax + width + 1.5, 1.0, dtype=float),
-                np.arange(ay - 0.5, ay + height + 1.5, 1.0, dtype=float),
+                np.arange(0.5, width + 1.5, 1.0, dtype=float),
+                np.arange(0.5, height + 1.5, 1.0, dtype=float),
             ):
+                circuit.append("QUBIT_COORDS", [qubit], location)
                 self.qubits[location] = qubit
                 qubit += 1
+
+    def is_data_qubit(self, qubit: int) -> bool:
+        return qubit in self.data
 
     def __contains__(self, location):
         return location in self.qubits
 
     def __getitem__(self, location):
         return self.qubits.get(location, -1)
-
-    def append_metadata(self, circuit: stim.Circuit):
-        for location, qubit in self.qubits.items():
-            circuit.append("QUBIT_COORDS", [qubit], location)
