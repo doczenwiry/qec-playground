@@ -85,10 +85,7 @@ class TeleportationSurgery:
             full_ft: bool = True
     ):
         self.__instructions['source'] = len(circuit)
-        if full_ft:
-            self.__source.append_memory(circuit, prepare=prepare)
-        else:
-            self.__source.append_round(circuit, prepare=prepare)
+        self.__source.append_memory(circuit, memory=0, prepare=prepare, full_ft=full_ft, prefix="S")
 
         start_round = 0
         final_round = self.__distance - 1
@@ -98,23 +95,26 @@ class TeleportationSurgery:
                 self.__source.append_round_slice(
                     circuit, mmt,
                     measure=PauliBasis.Z if (not full_ft or rnd == final_round) else None,
-                    inactive=self.__source_inactive
+                    inactive=self.__source_inactive,
+                    prefix=f"S:M1:R{rnd}"
                 )
                 self.__merger.append_round_slice(
                     circuit, mmt,
                     prepare=PauliBasis.Z if (not full_ft or rnd == start_round) else None,
                     measure=PauliBasis.Z if (not full_ft or rnd == final_round) else None,
-                    inactive=self.__merger_inactive
+                    inactive=self.__merger_inactive,
+                    prefix=f"M:M1:R{rnd}"
                 )
                 self.__target.append_round_slice(
                     circuit, mmt,
                     prepare=PauliBasis.Z if (not full_ft or rnd == start_round) else None,
-                    inactive=self.__target_inactive
+                    inactive=self.__target_inactive,
+                    prefix=f"T:M1:R{rnd}"
                 )
                 circuit.append("TICK")
 
         self.__instructions['target'] = len(circuit)
-        if full_ft:
-            self.__target.append_memory(circuit, measure=measure)
-        else:
-            self.__target.append_round(circuit, measure=measure)
+        self.__target.append_memory(circuit, memory=2, measure=measure, full_ft=full_ft, prefix="T")
+
+    def annotate_detector(self, circuit: stim.Circuit, *labels: str):
+        circuit.append("DETECTOR", [ stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels ])

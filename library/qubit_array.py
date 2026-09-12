@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 import itertools
+from collections import defaultdict
+
 import numpy as np
 import stim
 
@@ -39,8 +41,23 @@ class QubitArray:
                 self.qubits[location] = qubit
                 qubit += 1
 
+        self.measurements_index: dict[str, int] = dict()
+        self.measurements_qubit: dict[int, list[str]] = defaultdict(list)
+
+    def measurements(self, qubit: int):
+        return filter(lambda mr: mr[0].endswith(f"@Q{qubit}"), self.measurements_index.items())
+
     def is_data_qubit(self, qubit: int) -> bool:
         return qubit in self.data
+
+    def record_measurement(self, qubit: int, label: str):
+        if label in self.measurements_index:
+            raise ValueError("Attempting to overwrite existing measurement record: <label> already used.")
+        self.measurements_index[label] = len(self.measurements_index)
+        self.measurements_qubit[qubit].append(label)
+
+    def retrieve_measurement(self, label: str):
+        return - len(self.measurements_index) + self.measurements_index[label]
 
     def __contains__(self, location):
         return location in self.qubits
