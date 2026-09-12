@@ -18,10 +18,10 @@ from typing import Optional
 import stim
 
 from library.qubit_array import QubitArray
-from library.surface_code_patch import SurfaceCodePatch, PauliBasis
+from library.surface_code.patch import SurfaceCodePatch, PauliBasis
 
 
-class MovingSurfaceCodePatch:
+class TeleportationSurgery:
     def __init__(self, qubits: QubitArray, distance: int = 3, anchor: tuple[int,int] = (1,1)):
         self.__distance = distance
         self.__physical_qubits = qubits
