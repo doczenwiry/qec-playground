@@ -26,7 +26,7 @@ class QubitArray:
 
         qubit = 0
         self.data = set()
-        for location in itertools.product(range(1, width + 1), range(1, height + 1)):
+        for location in itertools.product(range(width + 1), range(height + 1)):
             circuit.append("QUBIT_COORDS", [qubit], location)
             self.qubits[location] = qubit
             self.data.add(qubit)

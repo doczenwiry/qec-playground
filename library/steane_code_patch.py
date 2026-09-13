@@ -31,8 +31,10 @@ class SteaneCodePatch:
         (1.5, 0.5), (2.5, 0.5), (3.5, 0.5), (0.5, 1.5), (1.5, 1.5), (2.5, 1.5),
     ]
 
-    INITIALIZED = {'R': [0, 2, 11, 15], 'G': [2, 6, 7, 11], 'B': [0, 14, 6, 2]}
-    STABILIZERS = {'R': [0, 2,  4,  3], 'G': [2, 4, 5,  6], 'B': [0,  1, 6, 2]}
+    STABILIZERS = {
+        'START' : {'R': [0, 2, 11, 15], 'G': [2, 6, 7, 11], 'B': [0, 14, 6, 2]},
+        'FINAL' : {'R': [0, 2,  4,  3], 'G': [2, 4, 5,  6], 'B': [0,  1, 6, 2]},
+    }
 
     def __init__(self, base_qubit: int = 0, anchor: tuple[int, int] = (1, 1)):
         px, py = anchor
@@ -55,7 +57,8 @@ class SteaneCodePatch:
     @property
     def stabilizers(self):
         return {
-            color : list(self.__shift_qubit_ids(stabs)) for color, stabs in SteaneCodePatch.STABILIZERS.items()
+            color : list(self.__shift_qubit_ids(stabs))
+            for color, stabs in SteaneCodePatch.STABILIZERS['FINAL'].items()
         }
 
     def get_qubit_at_location(self, px, py):
@@ -64,9 +67,8 @@ class SteaneCodePatch:
                 return qubit
         return -1
 
-    def __get_polygons(self, initial: bool):
+    def __get_polygons(self, stabilizers: dict[str, list[int]]):
         polygons = []
-        stabilizers = SteaneCodePatch.INITIALIZED if initial else SteaneCodePatch.STABILIZERS
         for color, support in stabilizers.items():
             x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
             polygons.append(
@@ -75,10 +77,10 @@ class SteaneCodePatch:
         return polygons
 
     def get_initial_polygons(self):
-        return self.__get_polygons(initial=True)
+        return self.__get_polygons(SteaneCodePatch.STABILIZERS['START'])
 
     def get_prepared_polygons(self):
-        return self.__get_polygons(initial=False)
+        return self.__get_polygons(SteaneCodePatch.STABILIZERS['FINAL'])
 
     def append_metadata(self, circuit: stim.Circuit):
         for qubit, location in self.qubits.items():
