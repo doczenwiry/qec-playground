@@ -127,6 +127,29 @@ class SurfaceCodePatch:
             self.append_round_slice(circuit, mmt, prepare, measure, inactive, prefix)
             circuit.append("TICK")
 
+    def locate_qubit(self, label: str):
+        index = int(label[1:])
+
+        repository = None
+        match label[0]:
+            case 'Z':
+                repository = self.z_ancilla
+            case 'X':
+                repository = self.x_ancilla
+            case 'D':
+                repository = self.data_qubits
+            # case _:
+            #     raise ValueError("Invalid label provided.")
+
+        if repository is None:
+            raise ValueError("Invalid label provided [qubit type must be X, Z or D].")
+
+        for lc, (_, i) in repository.items():
+            if i == index:
+                return lc
+
+        raise ValueError("Invalid label provided [qubit index not found].")
+
     def append_round_slice(
         self, circuit: stim.Circuit, moment: int, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
         inactive: Callable[[tuple[float,float]], bool] = lambda _: False, prefix: str = ""

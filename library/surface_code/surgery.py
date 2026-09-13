@@ -116,5 +116,17 @@ class TeleportationSurgery:
         self.__instructions['target'] = len(circuit)
         self.__target.append_memory(circuit, memory=2, measure=measure, full_ft=full_ft, prefix="T")
 
+    def locate_measurement(self, label: str):
+        if label.startswith("S"):
+            patch = self.__source
+        elif label.startswith("M"):
+            patch = self.__merger
+        elif label.startswith("T"):
+            patch = self.__target
+        else:
+            raise ValueError("Invalid label provided.")
+
+        return patch.locate_qubit(label.split(":")[-1])
+
     def annotate_detector(self, circuit: stim.Circuit, *labels: str):
         circuit.append("DETECTOR", [ stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels ])
