@@ -13,8 +13,9 @@
 #   limitations under the License.
 
 import logging
+import itertools
 import stim
-from typing import Iterable
+from typing import List
 
 from library.qubit_array import QubitArray
 
@@ -38,6 +39,11 @@ class SteaneCodePatch:
     PREPARATION_MOMENTS = range(11)
     SUPERDENSE_MOMENTS = range(15)
     CULTIVATION_MOMENTS = range(12)
+    TELEPORTATION_MOMENTS = {
+        'ROUND0' : range(15),
+        'ROUND1' : range(12),
+        'ROUND2' : range(6),
+    }
 
     def __init__(self, array: QubitArray, anchor: tuple[int, int] = (0,0)):
         self.__anchor = anchor
@@ -45,17 +51,17 @@ class SteaneCodePatch:
         px, py = anchor
         self.qubits = [ array.qubits[(px+dx, py+dy)] for dx, dy in SteaneCodePatch.QUBITS ]
 
-    def __shift_qubit_ids(self, *qubits: int) -> Iterable[int]:
-        return map(lambda q : self.qubits[q], qubits)
+    def __shift_qubit_ids(self, *qubits: int) -> List[int]:
+        return list(map(lambda q : self.qubits[q], qubits))
 
     @property
-    def logical(self):
+    def logical(self) -> List[int]:
         return self.qubits[:7]
 
     @property
     def stabilizers(self):
         return {
-            color : list(self.__shift_qubit_ids(*stabs))
+            color : self.__shift_qubit_ids(*stabs)
             for color, stabs in SteaneCodePatch.STABILIZERS['FINAL'].items()
         }
 
@@ -76,10 +82,50 @@ class SteaneCodePatch:
     def get_prepared_polygons(self):
         return self.__get_polygons(SteaneCodePatch.STABILIZERS['FINAL'])
 
+    def __make_target_rec(self, label: str):
+        return stim.target_rec(self.__physical_qubits.retrieve_measurement(label))
+
+    def annotate_detectors(self, circuit: stim.Circuit, sdc_rounds: int = 0, tpt_rounds: int = 0):
+        # Annotate all SUPERDENSE detectors
+        for color in self.stabilizers.keys():
+            if sdc_rounds >= 1:
+                self.annotate_detector(circuit, f"SDC0:X{color}")
+                self.annotate_detector(circuit, f"SDC0:Z{color}")
+            for prev, curr in itertools.pairwise(range(sdc_rounds)):
+                self.annotate_detector(circuit, f"SDC{curr}:Z{color}", f"SDC{prev}:Z{color}")
+
+        for prev, curr in itertools.pairwise(range(sdc_rounds)):
+            self.annotate_detector(circuit, f"SDC{curr}:XR")
+            self.annotate_detector(circuit, f"SDC{curr}:XG", f"SDC{prev}:XR", f"SDC{prev}:XG")
+            self.annotate_detector(circuit, f"SDC{curr}:XB", f"SDC{prev}:XG")
+
+        # Annotate the CULTIVATION detectors
+        for measurement in range(6):
+            self.annotate_detector(circuit, f"CULT:X{measurement}")
+
+        # Annotate the TELEPORTATION detectors
+        last = sdc_rounds-1
+        for color in self.stabilizers.keys():
+            self.annotate_detector(circuit, f"TPRT0:Z{color}", f"SDC{last}:Z{color}")
+            if tpt_rounds > 1:
+                self.annotate_detector(circuit, f"TPRT1:Z{color}", f"TPRT0:Z{color}")
+        self.annotate_detector(circuit, f"TPRT0:XR", f"SDC{last}:ZR")
+        self.annotate_detector(circuit, f"TPRT0:XG", f"SDC{last}:ZG", f"SDC{last}:ZR")
+        self.annotate_detector(circuit, f"TPRT0:XB")
+
+        # Annotate the TELEPORTATION final detectors
+        self.annotate_detector(
+            circuit, *map(lambda q: f"TPRT2:X{q}", SteaneCodePatch.STABILIZERS['FINAL']['G'])
+        )
+        # TODO: fix this one
+        # self.annotate_detector(
+        #     circuit, *map(lambda q: f"TPRT2:X{q}", SteaneCodePatch.STABILIZERS['FINAL']['R'])
+        # )
+
     def annotate_detector(self, circuit: stim.Circuit, *labels: str) -> bool:
         if all(self.__physical_qubits.has_record(label) for label in labels):
             circuit.append(
-                "DETECTOR", [stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels]
+                "DETECTOR", map(self.__make_target_rec, labels)
             )
             return True
         return False
@@ -125,13 +171,13 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_superdense(self, circuit: stim.Circuit, prefix: str = ""):
+    def append_superdense(self, circuit: stim.Circuit, prefix: str = "SDC"):
         for moment in self.SUPERDENSE_MOMENTS:
             self.append_superdense_slice(circuit, moment, prefix)
             circuit.append("TICK")
 
     def append_superdense_slice(
-            self, circuit: stim.Circuit, moment: int, prefix: str = ""
+            self, circuit: stim.Circuit, moment: int, prefix: str = "SDC"
     ):
         match moment:
             case 0:
@@ -164,11 +210,11 @@ class SteaneCodePatch:
             case 13:
                 circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
             case 14:
-                measured_x_ancilla = list(self.__shift_qubit_ids(10, 13, 15))
+                measured_x_ancilla = self.__shift_qubit_ids(10, 13, 15)
                 circuit.append("MX", measured_x_ancilla)
                 for xa, color in zip(measured_x_ancilla, ["G" , "B", "R"]):
                     self.__physical_qubits.record_measurement(xa, f"{prefix}:X{color}")
-                measured_z_ancilla = list(self.__shift_qubit_ids(11, 12, 14))
+                measured_z_ancilla = self.__shift_qubit_ids(11, 12, 14)
                 circuit.append("MZ", measured_z_ancilla)
                 for za, color in zip(measured_z_ancilla, ["G" , "R", "B"]):
                     self.__physical_qubits.record_measurement(za, f"{prefix}:Z{color}")
@@ -176,14 +222,14 @@ class SteaneCodePatch:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
     def append_cultivation(
-            self, circuit: stim.Circuit, prefix: str = ""
+            self, circuit: stim.Circuit, prefix: str = "CULT"
     ):
         for moment in self.CULTIVATION_MOMENTS:
             self.append_cultivation_slice(circuit, moment, prefix)
             circuit.append("TICK")
 
     def append_cultivation_slice(
-            self, circuit: stim.Circuit, moment: int, prefix: str = ""
+            self, circuit: stim.Circuit, moment: int, prefix: str = "CULT"
     ):
         match moment:
             case 0:
@@ -211,7 +257,7 @@ class SteaneCodePatch:
             case 10:
                 circuit.append("CX", self.__shift_qubit_ids(10, 5, 11, 4, 13, 1, 14, 2, 15, 3))
             case 11:
-                measured_ancilla = list(self.__shift_qubit_ids(10, 11, 13, 14, 15))
+                measured_ancilla = self.__shift_qubit_ids(10, 11, 13, 14, 15)
                 circuit.append("MX", measured_ancilla)
                 for index, xa in enumerate(measured_ancilla):
                     self.__physical_qubits.record_measurement(xa, f"{prefix}:X{index+1}")
@@ -219,114 +265,121 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    # @property
-    # def teleportation_round1_moments(self):
-    #     return range(15)
-    #
-    # def append_teleportation_round1(self, circuit: stim.Circuit, postselection: bool = False):
-    #     for moment in self.teleportation_round1_moments:
-    #         self.append_teleportation_round1_slice(circuit, moment, postselection)
-    #         circuit.append("TICK")
-    #
-    # def append_teleportation_round1_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False):
-    #     match moment:
-    #         # GHZ-state formation
-    #         case 0:
-    #             circuit.append("RX", self.__shift_qubit_ids([10, 13, 15]))
-    #             circuit.append("RZ", self.__shift_qubit_ids([7, 8, 9, 11, 12, 14]))
-    #         case 1:
-    #             circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
-    #         case 2:
-    #             circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12]))
-    #         case 3:
-    #             circuit.append("CX", self.__shift_qubit_ids([11, 7, 14, 9, 12, 8]))
-    #         # Syndrome extractions
-    #         case 4:
-    #             circuit.append("CX", self.__shift_qubit_ids([10, 6, 11, 2, 15, 3]))
-    #         case 5:
-    #             circuit.append("CX", self.__shift_qubit_ids([10, 5, 11, 4, 15, 0]))
-    #         case 6:
-    #             circuit.append("CX", self.__shift_qubit_ids([12, 4, 15, 2]))
-    #         case 7:
-    #             circuit.append("CX", self.__shift_qubit_ids([1, 13, 2, 15, 4, 12, 6, 14]))
-    #         case 8:
-    #             circuit.append("CX", self.__shift_qubit_ids([0, 15, 2, 14, 4, 11, 5, 10]))
-    #         case 9:
-    #             circuit.append("CX", self.__shift_qubit_ids([0, 14, 2, 11, 3, 15, 6, 10]))
-    #         # GHZ-state contraction
-    #         case 10:
-    #             circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12]))
-    #         case 11:
-    #             circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
-    #         case 12:
-    #             circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12]))
-    #         case 13:
-    #             circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
-    #         case 14:
-    #             circuit.append("MX", self.__shift_qubit_ids([10, 13, 15]))
-    #             circuit.append("MZ", self.__shift_qubit_ids([11, 12, 14]))
-    #             if postselection:
-    #                 for i in range(6):
-    #                     circuit.append("DETECTOR", [stim.target_rec(-(i+1))])
-    #         case _:
-    #             logger.warning(f"Nothing to do at requested moment [{moment}]")
-    #
-    # @property
-    # def teleportation_round2_moments(self):
-    #     return range(9)
-    #
-    # def append_teleportation_round2(self, circuit: stim.Circuit, postselection: bool = False):
-    #     for moment in self.teleportation_round2_moments:
-    #         self.append_teleportation_round2_slice(circuit, moment, postselection)
-    #         circuit.append("TICK")
-    #
-    # def append_teleportation_round2_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False):
-    #     match moment:
-    #         # GHZ-state formation
-    #         case 0:
-    #             circuit.append("RX", self.__shift_qubit_ids([10, 13, 15]))
-    #             circuit.append("RZ", self.__shift_qubit_ids([7, 8, 9, 11, 12, 14]))
-    #         case 1:
-    #             circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
-    #         case 2:
-    #             circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12, 3, 15]))
-    #         # Syndrome extractions
-    #         case 3:
-    #             circuit.append("CX", self.__shift_qubit_ids([0, 14, 2, 11, 6, 10]))
-    #         case 4:
-    #             circuit.append("CX", self.__shift_qubit_ids([0, 15, 2, 14, 4, 11, 5, 10]))
-    #         case 5:
-    #             circuit.append("CX", self.__shift_qubit_ids([1, 13, 2, 15, 4, 12, 6, 14]))
-    #         # GHZ-state contraction
-    #         case 6:
-    #             circuit.append("CX", self.__shift_qubit_ids([7, 11, 9, 14, 8, 12]))
-    #         case 7:
-    #             circuit.append("CX", self.__shift_qubit_ids([10, 7, 13, 9, 15, 8]))
-    #         case 8:
-    #             circuit.append("MX", self.__shift_qubit_ids([10, 13, 15]))
-    #             if postselection:
-    #                 for i in range(3):
-    #                     circuit.append("DETECTOR", [stim.target_rec(-(i+1))])
-    #         case _:
-    #             logger.warning(f"Nothing to do at requested moment [{moment}]")
-    #
-    # @property
-    # def teleportation_round3_moments(self):
-    #     return range(6)
-    #
-    # def append_teleportation_round3(self, circuit: stim.Circuit, postselection: bool = False):
-    #     for moment in self.teleportation_round3_moments:
-    #         self.append_teleportation_round3_slice(circuit, moment, postselection)
-    #         circuit.append("TICK")
-    #
-    # def to_detector(self, support: list[int]):
-    #     return [ stim.target_rec(-(q+1)) for q in support ]
-    #
-    # def append_teleportation_round3_slice(self, circuit: stim.Circuit, moment: int, postselection: bool = False):
-    #     match moment:
-    #         case 5:
-    #             circuit.append("MX", self.__shift_qubit_ids(self.logical))
-    #             if postselection:
-    #                 logger.error("NotImplemented: Postselection in round 3 of teleportation requires XOR'ing the various MX.")
-    #         case _:
-    #             logger.warning(f"Nothing to do at requested moment [{moment}]")
+    def append_teleportation(self, circuit: stim.Circuit, round: int, prefix: str = "TPRT"):
+        for moment in self.TELEPORTATION_MOMENTS[f"ROUND{round}"]:
+            self.append_teleportation_slice(circuit, moment, round, prefix)
+            circuit.append("TICK")
+
+    def append_teleportation_slice(self, circuit: stim.Circuit, moment: int, round: int, prefix: str = "TPRT"):
+        match round:
+            case 0:
+                self.__append_teleportation_round0_slice(circuit, moment, prefix)
+            case 1:
+                self.__append_teleportation_round1_slice(circuit, moment, prefix)
+            case 2:
+                self.__append_teleportation_round2_slice(circuit, moment, prefix)
+            case _:
+                raise ValueError(f"Invalid teleportation round requested [round={round}]")
+
+    def __append_teleportation_round0_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPRT"):
+        match moment:
+            # GHZ-state formation
+            case 0:
+                circuit.append("RX", self.__shift_qubit_ids(10, 13, 15))
+                circuit.append("RZ", self.__shift_qubit_ids(7, 8, 9, 11, 12, 14))
+            case 1:
+                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
+            case 2:
+                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
+            case 3:
+                circuit.append("CX", self.__shift_qubit_ids(11, 7, 14, 9, 12, 8))
+            # X-syndrome extractions
+            case 4:
+                circuit.append("CX", self.__shift_qubit_ids(10, 6, 11, 2, 15, 3))
+            case 5:
+                circuit.append("CX", self.__shift_qubit_ids(10, 5, 11, 4, 15, 0))
+            case 6:
+                circuit.append("CX", self.__shift_qubit_ids(12, 4, 15, 2))
+            # Z-syndrome extractions
+            case 7:
+                circuit.append("CX", self.__shift_qubit_ids(1, 13, 2, 15, 4, 12, 6, 14))
+            case 8:
+                circuit.append("CX", self.__shift_qubit_ids(0, 15, 2, 14, 4, 11, 5, 10))
+            case 9:
+                circuit.append("CX", self.__shift_qubit_ids(0, 14, 2, 11, 3, 15, 6, 10))
+            # GHZ-state contraction
+            case 10:
+                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
+            case 11:
+                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
+            case 12:
+                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
+            case 13:
+                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
+            case 14:
+                measured_x_ancilla = self.__shift_qubit_ids(10, 13, 15)
+                circuit.append("MX", measured_x_ancilla)
+                for xa, color in zip(measured_x_ancilla, ["G" , "B", "R"]):
+                    self.__physical_qubits.record_measurement(xa, f"{prefix}0:X{color}")
+                measured_z_ancilla = self.__shift_qubit_ids(11, 12, 14)
+                circuit.append("MZ", measured_z_ancilla)
+                for za, color in zip(measured_z_ancilla, ["G" , "R", "B"]):
+                    self.__physical_qubits.record_measurement(za, f"{prefix}0:Z{color}")
+            case _:
+                logger.warning(f"Nothing to do at requested moment [{moment}]")
+
+    def append_teleportation_round1(self, circuit: stim.Circuit, prefix: str = "TPRT"):
+        for moment in self.TELEPORTATION_MOMENTS['ROUND1']:
+            self.__append_teleportation_round1_slice(circuit, moment, prefix)
+            circuit.append("TICK")
+
+    def __append_teleportation_round1_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPRT"):
+        match moment:
+            # GHZ-state formation
+            case 0:
+                circuit.append("RX", self.__shift_qubit_ids(10, 13, 15))
+                circuit.append("RZ", self.__shift_qubit_ids(7, 8, 9, 11, 12, 14))
+            case 1:
+                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
+            case 2:
+                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
+            case 3:
+                circuit.append("CX", self.__shift_qubit_ids(11, 7, 14, 9, 12, 8))
+            # Syndrome extractions
+            case 4:
+                circuit.append("CX", self.__shift_qubit_ids(0, 14, 2, 11, 6, 10))
+            case 5:
+                circuit.append("CX", self.__shift_qubit_ids(0, 15, 2, 14, 4, 11, 5, 10))
+            case 6:
+                circuit.append("CX", self.__shift_qubit_ids(1, 13, 2, 15, 4, 12, 6, 14))
+            # GHZ-state contraction
+            case 7:
+                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
+            case 8:
+                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
+            case 9:
+                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
+            case 10:
+                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
+            case 11:
+                measured_z_ancilla = self.__shift_qubit_ids(10, 13, 15)
+                circuit.append("MX", measured_z_ancilla)
+                for za, color in zip(measured_z_ancilla, ["G" , "B", "R"]):
+                    self.__physical_qubits.record_measurement(za, f"{prefix}1:Z{color}")
+            case _:
+                logger.warning(f"Nothing to do at requested moment [{moment}]")
+
+    def append_teleportation_round2(self, circuit: stim.Circuit, prefix: str = "TPRT"):
+        for moment in self.TELEPORTATION_MOMENTS['ROUND2']:
+            self.__append_teleportation_round2_slice(circuit, moment, prefix)
+            circuit.append("TICK")
+
+    def __append_teleportation_round2_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPRT"):
+        match moment:
+            case 5:
+                measured_data_qubits = self.logical
+                circuit.append("MX", measured_data_qubits)
+                for index, qd in enumerate(measured_data_qubits):
+                    self.__physical_qubits.record_measurement(qd, f"{prefix}2:X{index}")
+            case _:
+                logger.warning(f"Nothing to do at requested moment [{moment}]")
