@@ -35,6 +35,10 @@ class SteaneCodePatch:
         'FINAL' : {'R': [0, 2,  4,  3], 'G': [2, 4, 5,  6], 'B': [0,  1, 6, 2]},
     }
 
+    PREPARATION_MOMENTS = range(11)
+    SUPERDENSE_MOMENTS = range(15)
+    CULTIVATION_MOMENTS = range(12)
+
     def __init__(self, array: QubitArray, anchor: tuple[int, int] = (0,0)):
         self.__anchor = anchor
         self.__physical_qubits = array
@@ -72,10 +76,13 @@ class SteaneCodePatch:
     def get_prepared_polygons(self):
         return self.__get_polygons(SteaneCodePatch.STABILIZERS['FINAL'])
 
-    def annotate_detector(self, circuit: stim.Circuit, *labels: str):
-        circuit.append(
-            "DETECTOR", [stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels]
-        )
+    def annotate_detector(self, circuit: stim.Circuit, *labels: str) -> bool:
+        if all(self.__physical_qubits.has_record(label) for label in labels):
+            circuit.append(
+                "DETECTOR", [stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels]
+            )
+            return True
+        return False
 
     def append_observable(self, circuit: stim.Circuit, observable: str, support: list[int]):
         circuit.append("MPP", stim.PauliString(
@@ -84,12 +91,8 @@ class SteaneCodePatch:
         circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-1)], 0)
         circuit.append("TICK")
 
-    @property
-    def preparation_moments(self):
-        return range(11)
-
     def append_preparation(self, circuit: stim.Circuit):
-        for moment in self.preparation_moments:
+        for moment in self.PREPARATION_MOMENTS:
             self.append_preparation_slice(circuit, moment)
             circuit.append("TICK")
 
@@ -122,12 +125,8 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    @property
-    def superdense_moments(self):
-        return range(15)
-
     def append_superdense(self, circuit: stim.Circuit, prefix: str = ""):
-        for moment in self.superdense_moments:
+        for moment in self.SUPERDENSE_MOMENTS:
             self.append_superdense_slice(circuit, moment, prefix)
             circuit.append("TICK")
 
@@ -176,14 +175,10 @@ class SteaneCodePatch:
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    @property
-    def cultivation_moments(self):
-        return range(12)
-
     def append_cultivation(
             self, circuit: stim.Circuit, prefix: str = ""
     ):
-        for moment in self.cultivation_moments:
+        for moment in self.CULTIVATION_MOMENTS:
             self.append_cultivation_slice(circuit, moment, prefix)
             circuit.append("TICK")
 

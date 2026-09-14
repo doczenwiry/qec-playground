@@ -13,23 +13,27 @@
 #   limitations under the License.
 
 import itertools
+import matplotlib.pyplot as plt
 import numpy as np
 import sinter
-import matplotlib.pyplot as plt
+import stim
 from tqec import NoiseModel
 
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def analyse_error_rates(
-    scenarios, name ="circuit", shots= 1e6, minimal_noise = -6, points: int = 10
+    scenarios: dict[str, stim.Circuit], name ="circuit",
+    postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10
 ):
     tasks = [
         sinter.Task(
-            circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(scenarios[case]['circuit']),
-            postselection_mask=np.packbits(scenarios[case].get('postselection')) if 'postselection' in scenarios[case] else None,
+            circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(circuit),
+            postselection_mask=np.packbits(np.ones(circuit.num_detectors, dtype=bool)) if postselection else None,
             json_metadata={'case': case, 'per': noise},
         )
-        for case, noise in itertools.product(scenarios, np.logspace(-1, minimal_noise, num=points))
+        for (case, circuit), noise in itertools.product(
+            scenarios.items(), np.logspace(-1, minimal_noise, num=points)
+        )
     ]
 
     collected_stats: list[sinter.TaskStats] = sinter.collect(

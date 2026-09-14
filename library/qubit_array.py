@@ -56,6 +56,9 @@ class QubitArray:
         self.measurements_index[label] = len(self.measurements_index)
         self.measurements_qubit[qubit].append(label)
 
+    def has_record(self, label: str) -> bool:
+        return label in self.measurements_index
+
     def retrieve_measurement(self, label: str):
         return - len(self.measurements_index) + self.measurements_index[label]
 
