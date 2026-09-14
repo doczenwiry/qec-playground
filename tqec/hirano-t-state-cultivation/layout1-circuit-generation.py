@@ -17,8 +17,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Callable
 
-import itertools
-
+from library.junction_patch import JunctionPatch
 from library.qubit_array import QubitArray
 from library.steane_code.patch import SteaneCodePatch
 from library.surface_code.patch import SurfaceCodePatch, PauliBasis
@@ -32,7 +31,7 @@ logging.basicConfig(level=logging.ERROR)
 def rewrite_file_with_polygons(
     filename: str, array: QubitArray, instructions: Counter[str], steane: SteaneCodePatch,
     surface: SurfaceCodePatch, inactive_surface: Callable[[tuple[float, float]], bool],
-    mark_region: bool = False
+    expanded: SurfaceCodePatch
 ):
     # Insert all the polygons into the Stim file for readability.
     with open(filename, "r", encoding="utf-8") as file:
@@ -40,19 +39,23 @@ def rewrite_file_with_polygons(
 
         inserted = 0
 
-        if mark_region:
-            for qubit in array.corners:
-                lines.insert(instructions['preparation'] + inserted, f"#!pragma MARKY(13) {qubit}\n")
-                inserted += 1
-
+        for polygon in expanded.get_polygons(opacity=0.075):
+            lines.insert(instructions['preparation'] + inserted, polygon)
+            inserted += 1
         for polygon in steane.get_initial_polygons():
             lines.insert(instructions['preparation'] + inserted, polygon)
             inserted += 1
 
+        for polygon in expanded.get_polygons(opacity=0.075):
+            lines.insert(instructions['superdense0'] + inserted, polygon)
+            inserted += 1
         for polygon in steane.get_prepared_polygons():
             lines.insert(instructions['superdense0'] + inserted, polygon)
             inserted += 1
 
+        for polygon in expanded.get_polygons(opacity=0.075):
+            lines.insert(instructions['teleportation'] + inserted, polygon)
+            inserted += 1
         for polygon in steane.get_prepared_polygons():
             lines.insert(instructions['teleportation'] + inserted, polygon)
             inserted += 1
@@ -78,8 +81,10 @@ if __name__ == "__main__":
     array = QubitArray(circuit, dimensions=(TARGET_DISTANCE+2, TARGET_DISTANCE+2))
     # steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-4, TARGET_DISTANCE-5))
     steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-7))
+    junction = JunctionPatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-5))
     surface = SurfaceCodePatch(array, distance=5, anchor=(TARGET_DISTANCE-4,TARGET_DISTANCE-4))
-    inactive_surface = lambda location: location[1] == 4.5
+    expanded = SurfaceCodePatch(array, distance=TARGET_DISTANCE)
+    inactive_surface = lambda location: location[1] == TARGET_DISTANCE - 4.5
     instructions = Counter()
 
     # Append the modified Steane Code moments with the S/T-injection
@@ -99,13 +104,17 @@ if __name__ == "__main__":
     for rnd in range(TELEPORT_ROUNDS):
         for mmt in steane.TELEPORTATION_MOMENTS[f"ROUND{rnd}"]:
             steane.append_teleportation_slice(circuit, moment=mmt, round=rnd)
+            junction.append_syndrome_slice(circuit, moment=mmt, prefix=f"JCT{rnd}")
             surface.append_round_slice(
                 circuit, moment=mmt, prepare=PauliBasis.X if rnd == 0 else None, prefix=f"SC{rnd}",
                 inactive = inactive_surface
             )
             circuit.append("TICK")
 
+    # TODO: add Surface Code expansion :)
+
     steane.annotate_detectors(circuit, sdc_rounds=SUPERDENSE_ROUNDS, tpt_rounds=TELEPORT_ROUNDS)
+    junction.annotate_detectors(circuit, rounds=TELEPORT_ROUNDS)
     surface.annotate_detectors(circuit, prepared=PauliBasis.X, rounds=2)
 
     # # Single round waiting for complementary gap (should be repeated by the control system at runtime)
@@ -120,4 +129,4 @@ if __name__ == "__main__":
     print(f"Crumble URL : {circuit.to_crumble_url()}")
 
     circuit.to_file(FILENAME)
-    rewrite_file_with_polygons(FILENAME, array, instructions, steane, surface, inactive_surface, mark_region=True)
+    rewrite_file_with_polygons(FILENAME, array, instructions, steane, surface, inactive_surface, expanded)

@@ -102,14 +102,14 @@ class SurfaceCodePatch:
             if self.get_qubit_at_location( (px+dx, py+dy) ) != -1
         ]
 
-    def get_polygons(self, inactive: Callable[[tuple[float,float]], bool] = lambda _: False):
+    def get_polygons(self, inactive: Callable[[tuple[float,float]], bool] = lambda _: False, opacity: float = 0.5):
         polygons = []
         for location, _ in self.__z_ancilla(inactive):
             polygon = self.__get_polygon(*location)
-            polygons.append(f"#!pragma POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}\n")
+            polygons.append(f"#!pragma POLYGON(0,0,1,{opacity}) {" ".join(map(str, polygon))}\n")
         for location, _ in self.__x_ancilla(inactive):
             polygon = self.__get_polygon(*location)
-            polygons.append(f"#!pragma POLYGON(1,0,0,0.5) {" ".join(map(str, polygon))}\n")
+            polygons.append(f"#!pragma POLYGON(1,0,0,{opacity}) {" ".join(map(str, polygon))}\n")
         return polygons
 
     def annotate_detectors(self, circuit: stim.Circuit, prepared: PauliBasis, rounds: int):
