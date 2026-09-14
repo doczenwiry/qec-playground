@@ -20,13 +20,17 @@ import stim
 
 
 class QubitArray:
-    def __init__(self, circuit: stim.Circuit, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True):
-        width, height = dimensions
+    def __init__(
+        self, circuit: stim.Circuit, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True
+    ):
+        dimX, dimY = dimensions
         self.qubits = dict()
+        self.dimX = dimX
+        self.dimY = dimY
 
         qubit = 0
         self.data = set()
-        for location in itertools.product(range(width + 1), range(height + 1)):
+        for location in itertools.product(range(dimX), range(dimY)):
             circuit.append("QUBIT_COORDS", [qubit], location)
             self.qubits[location] = qubit
             self.data.add(qubit)
@@ -34,8 +38,8 @@ class QubitArray:
 
         if ancilla:
             for location in itertools.product(
-                np.arange(0.5, width + 1.5, 1.0, dtype=float),
-                np.arange(0.5, height + 1.5, 1.0, dtype=float),
+                np.arange(0.5, dimX - 0.5, 1.0, dtype=float),
+                np.arange(0.5, dimY - 0.5, 1.0, dtype=float),
             ):
                 circuit.append("QUBIT_COORDS", [qubit], location)
                 self.qubits[location] = qubit
@@ -43,6 +47,13 @@ class QubitArray:
 
         self.measurements_index: dict[str, int] = dict()
         self.measurements_qubit: dict[int, list[str]] = defaultdict(list)
+
+    @property
+    def corners(self):
+        return map(
+            lambda l: self.qubits[l],
+            [ (0.5,0.5) , (self.dimX-1.5, 0.5), (0.5, self.dimY-1.5), (self.dimX-1.5, self.dimY-1.5) ]
+        )
 
     def measurements(self, qubit: int):
         return filter(lambda mr: mr[0].endswith(f"@Q{qubit}"), self.measurements_index.items())
