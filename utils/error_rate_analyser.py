@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 import itertools
+from typing import Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 import sinter
@@ -21,10 +23,13 @@ from tqec import NoiseModel
 
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
-def analyse_error_rates(
-    scenarios: dict[str, stim.Circuit], name ="circuit",
-    postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10
+def simulate(
+    scenarios: Union[stim.Circuit, dict[str, stim.Circuit]], title ="circuit",
+    postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10,
+    num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5)
 ):
+    if isinstance(scenarios, stim.Circuit):
+        scenarios = { 'circuit' : scenarios }
     tasks = [
         sinter.Task(
             circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(circuit),
@@ -37,65 +42,50 @@ def analyse_error_rates(
     ]
 
     collected_stats: list[sinter.TaskStats] = sinter.collect(
-        num_workers=4,
+        num_workers=num_workers,
         tasks=tasks,
         decoders=['pymatching'],
         max_shots=int(shots),
-        max_errors=5000,
+        max_errors=max_errors,
     )
 
-    fig, ax = plt.subplots(1, 1)
+    fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)
+    error_rates = axes[0] if postselection else axes
     sinter.plot_error_rate(
-        ax=ax,
+        ax=error_rates,
         stats=collected_stats,
         x_func=lambda stats: stats.json_metadata['per'],
         group_func=lambda stats: stats.json_metadata['case'],
     )
-    ax.set_ylim(1e-9, 1.5)
-    ax.set_xlim(10**minimal_noise, 0.125)
-    ax.loglog()
-    ax.set_title(f"Error rates of {name}")
-    ax.set_xlabel("Physical Error Rate")
-    ax.set_ylabel("Logical Error Rate")
-    ax.grid(which='major')
-    ax.grid(which='minor')
-    ax.legend(loc='lower right')
+    error_rates.set_ylim(1e-9, 1.5)
+    error_rates.set_xlim(10**minimal_noise, 0.125)
+    error_rates.loglog()
+    error_rates.set_title(f"Error rates")
+    error_rates.set_xlabel("Physical Error Rate")
+    error_rates.set_ylabel("Logical Error Rate")
+    error_rates.grid(which='major')
+    error_rates.grid(which='minor')
+    error_rates.legend(loc='lower right')
     fig.set_dpi(120)
 
-def analyse_discard_rates(
-    scenarios, name ="circuit", shots= 1e6, minimal_noise = -6, points: int = 10
-):
-    tasks = [
-        sinter.Task(
-            circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(scenarios[case]['circuit']),
-            postselection_mask=np.packbits(scenarios[case].get('postselection')) if 'postselection' in scenarios[case] else None,
-            json_metadata={'case': case, 'per': noise},
+    if postselection:
+        discard_rates = axes[1]
+        sinter.plot_discard_rate(
+            ax=discard_rates,
+            stats=collected_stats,
+            group_func=lambda stat: stat.json_metadata['case'],
+            x_func=lambda stat: stat.json_metadata['per'],
         )
-        for case, noise in itertools.product(scenarios, np.logspace(-1, minimal_noise, num=points))
-    ]
+        discard_rates.set_title(f"Discard rates")
+        discard_rates.set_xlabel('Physical Error Rate')
+        discard_rates.set_ylabel('Discard Rate')
+        discard_rates.set_ylim(1e-9, 1.5)
+        discard_rates.set_xlim(10**minimal_noise, 0.125)
+        discard_rates.grid(which='major')
+        discard_rates.grid(which='minor')
+        discard_rates.loglog()
+        discard_rates.legend(loc='lower right')
+        fig.set_dpi(120)
 
-    collected_stats: list[sinter.TaskStats] = sinter.collect(
-        num_workers=4,
-        tasks=tasks,
-        decoders=['pymatching'],
-        max_shots=int(shots),
-        max_errors=5000,
-    )
-
-    fig, ax = plt.subplots(1, 1)
-    sinter.plot_discard_rate(
-        ax=ax,
-        stats=collected_stats,
-        group_func=lambda stat: stat.json_metadata['case'],
-        x_func=lambda stat: stat.json_metadata['per'],
-    )
-    ax.set_title(f"Discard rates of {name}")
-    ax.set_xlabel('Physical Error Rate')
-    ax.set_ylabel('Discard Rate')
-    ax.set_ylim(1e-9, 1.5)
-    ax.set_xlim(10**minimal_noise, 0.125)
-    ax.grid(which='major')
-    ax.grid(which='minor')
-    ax.loglog()
-    ax.legend(loc='lower right')
-    fig.set_dpi(120)
+    fig.suptitle(title)
+    plt.tight_layout()
