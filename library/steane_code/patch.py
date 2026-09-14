@@ -76,11 +76,11 @@ class SteaneCodePatch:
             )
         return polygons
 
-    def get_initial_polygons(self):
-        return self.__get_polygons(SteaneCodePatch.STABILIZERS['START'])
-
-    def get_prepared_polygons(self):
-        return self.__get_polygons(SteaneCodePatch.STABILIZERS['FINAL'])
+    def get_polygons(self, initial: bool = False):
+        if initial:
+            return self.__get_polygons(SteaneCodePatch.STABILIZERS['START'])
+        else:
+            return self.__get_polygons(SteaneCodePatch.STABILIZERS['FINAL'])
 
     def annotate_detectors(self, circuit: stim.Circuit, sdc_rounds: int = 0, tpt_rounds: int = 0):
         # Annotate all SUPERDENSE detectors

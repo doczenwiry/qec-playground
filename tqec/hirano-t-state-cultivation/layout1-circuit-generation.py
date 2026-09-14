@@ -28,10 +28,12 @@ from utils.circuit_expectations import count_cnots
 
 logging.basicConfig(level=logging.ERROR)
 
+EXPANDED_OPACITY = 0.125
 def rewrite_file_with_polygons(
-    filename: str, array: QubitArray, instructions: Counter[str], steane: SteaneCodePatch,
+    filename: str, array: QubitArray, instructions: Counter[str],
+    steane: SteaneCodePatch, junction: JunctionPatch,
     surface: SurfaceCodePatch, inactive_surface: Callable[[tuple[float, float]], bool],
-    expanded: SurfaceCodePatch
+    completed: SurfaceCodePatch
 ):
     # Insert all the polygons into the Stim file for readability.
     with open(filename, "r", encoding="utf-8") as file:
@@ -39,28 +41,42 @@ def rewrite_file_with_polygons(
 
         inserted = 0
 
-        for polygon in expanded.get_polygons(opacity=0.075):
+        for polygon in completed.get_polygons(opacity=EXPANDED_OPACITY):
             lines.insert(instructions['preparation'] + inserted, polygon)
             inserted += 1
-        for polygon in steane.get_initial_polygons():
+        for polygon in steane.get_polygons(initial=True):
             lines.insert(instructions['preparation'] + inserted, polygon)
             inserted += 1
 
-        for polygon in expanded.get_polygons(opacity=0.075):
+        for polygon in completed.get_polygons(opacity=EXPANDED_OPACITY):
             lines.insert(instructions['superdense0'] + inserted, polygon)
             inserted += 1
-        for polygon in steane.get_prepared_polygons():
+        for polygon in steane.get_polygons():
             lines.insert(instructions['superdense0'] + inserted, polygon)
             inserted += 1
 
-        for polygon in expanded.get_polygons(opacity=0.075):
+        for polygon in completed.get_polygons(opacity=EXPANDED_OPACITY):
             lines.insert(instructions['teleportation'] + inserted, polygon)
             inserted += 1
-        for polygon in steane.get_prepared_polygons():
+        for polygon in steane.get_polygons():
+            lines.insert(instructions['teleportation'] + inserted, polygon)
+            inserted += 1
+        for polygon in junction.get_polygons():
             lines.insert(instructions['teleportation'] + inserted, polygon)
             inserted += 1
         for polygon in surface.get_polygons(inactive_surface):
             lines.insert(instructions['teleportation'] + inserted, polygon)
+            inserted += 1
+
+        for polygon in completed.get_polygons(opacity=EXPANDED_OPACITY):
+            lines.insert(instructions['expansion'] + inserted, polygon)
+            inserted += 1
+        for polygon in surface.get_polygons():
+            lines.insert(instructions['expansion'] + inserted, polygon)
+            inserted += 1
+
+        for polygon in completed.get_polygons():
+            lines.insert(instructions['conclusion'] + inserted, polygon)
             inserted += 1
 
     with open(filename, "w", encoding="utf-8") as file:
@@ -72,6 +88,7 @@ FILENAME = str(Path(__file__).resolve().parent) + "/generated/hirano-magic-state
 TARGET_DISTANCE = 9
 SUPERDENSE_ROUNDS = 3
 TELEPORT_ROUNDS = 2
+ROUNDS_FOR_COMPLEMENTARY_GAP = 2
 
 if __name__ == "__main__":
     if TARGET_DISTANCE % 2 != 1 and TARGET_DISTANCE < 9:
@@ -79,11 +96,10 @@ if __name__ == "__main__":
 
     circuit = stim.Circuit()
     array = QubitArray(circuit, dimensions=(TARGET_DISTANCE+2, TARGET_DISTANCE+2))
-    # steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-4, TARGET_DISTANCE-5))
     steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-7))
     junction = JunctionPatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-5))
     surface = SurfaceCodePatch(array, distance=5, anchor=(TARGET_DISTANCE-4,TARGET_DISTANCE-4))
-    expanded = SurfaceCodePatch(array, distance=TARGET_DISTANCE)
+    completed = SurfaceCodePatch(array, distance=TARGET_DISTANCE)
     inactive_surface = lambda location: location[1] == TARGET_DISTANCE - 4.5
     instructions = Counter()
 
@@ -112,15 +128,17 @@ if __name__ == "__main__":
             circuit.append("TICK")
 
     # TODO: add Surface Code expansion :)
+    instructions['expansion'] = len(circuit)
+    circuit.append("TICK")
+    instructions['conclusion'] = len(circuit)
+
+    # Waiting for complementary gap (should be repeated by the control system at runtime)
+    # for rnd in range(ROUNDS_FOR_COMPLEMENTARY_GAP):
+    #     completed.append_round(circuit, prefix=f"CG{rnd}")
 
     steane.annotate_detectors(circuit, sdc_rounds=SUPERDENSE_ROUNDS, tpt_rounds=TELEPORT_ROUNDS)
     junction.annotate_detectors(circuit, rounds=TELEPORT_ROUNDS)
     surface.annotate_detectors(circuit, prepared=PauliBasis.X, rounds=2)
-
-    # # Single round waiting for complementary gap (should be repeated by the control system at runtime)
-    # for moment in surface.moments:
-    #     surface.append_syndrome_slice(circuit, moment, preparation=(moment==0), expansion=True)
-    #     circuit.append("TICK")
 
     print(f"Circuit statistics")
     count_cnots(circuit)
@@ -129,4 +147,4 @@ if __name__ == "__main__":
     print(f"Crumble URL : {circuit.to_crumble_url()}")
 
     circuit.to_file(FILENAME)
-    rewrite_file_with_polygons(FILENAME, array, instructions, steane, surface, inactive_surface, expanded)
+    rewrite_file_with_polygons(FILENAME, array, instructions, steane, junction, surface, inactive_surface, completed)

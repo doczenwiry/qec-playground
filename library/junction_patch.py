@@ -47,7 +47,7 @@ class JunctionPatch:
         polygons = []
         for (px,py), stabilizer in zip(self.z_ancilla.keys(), JunctionPatch.STABILIZERS):
             polygon = map(
-                lambda d: self.z_ancilla[(px + d[0], py + d[1])], stabilizer
+                lambda d: self.__physical_qubits.qubits[(px + d[0], py + d[1])], stabilizer
             )
             polygons.append(f"#!pragma POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}\n")
         return polygons
