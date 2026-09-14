@@ -59,6 +59,9 @@ class QubitArray:
     def has_record(self, label: str) -> bool:
         return label in self.measurements_index
 
+    def retrieve_target_rec(self, label: str):
+        return stim.target_rec(self.retrieve_measurement(label))
+
     def retrieve_measurement(self, label: str):
         return - len(self.measurements_index) + self.measurements_index[label]
 

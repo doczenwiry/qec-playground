@@ -15,11 +15,13 @@
 import logging
 from collections import Counter
 from pathlib import Path
+from typing import Callable
 
 from library.qubit_array import QubitArray
 from library.steane_code.patch import SteaneCodePatch
+from library.surface_code.patch import SurfaceCodePatch, PauliBasis
 from library.junction_patch import JunctionPatch
-from library.expanding_surface_code_patch import SurfaceCodePatch
+# from library.expanding_surface_code_patch import SurfaceCodePatch
 
 import stim
 
@@ -28,7 +30,8 @@ from utils.circuit_expectations import count_cnots
 logging.basicConfig(level=logging.ERROR)
 
 def rewrite_file_with_polygons(
-    filename: str, instructions: Counter[str], steane: SteaneCodePatch#, junction: JunctionPatch, surface: SurfaceCodePatch
+    filename: str, instructions: Counter[str], steane: SteaneCodePatch,
+    surface: SurfaceCodePatch, inactive_surface: Callable[[tuple[float, float]], bool]
 ):
     # Insert all the polygons into the Stim file for readability.
     with open(filename, "r", encoding="utf-8") as file:
@@ -44,20 +47,12 @@ def rewrite_file_with_polygons(
             lines.insert(instructions['superdense0'] + inserted, polygon)
             inserted += 1
 
-        # for polygon in steane.get_prepared_polygons():
-        #     lines.insert(instructions['cultivation'] + inserted, polygon)
-        #     inserted += 1
-
-        # for polygon in junction.get_polygons():
-        #     lines.insert(instructions['cultivation'] + inserted, polygon)
-        #     inserted += 1
-        # for polygon in surface.get_polygons(expansion=False):
-        #     lines.insert(instructions['cultivation'] + inserted, polygon)
-        #     inserted += 1
-        #
-        # for polygon in surface.get_polygons(expansion=True):
-        #     lines.insert(instructions['teleportation'] + inserted, polygon)
-        #     inserted += 1
+        for polygon in steane.get_prepared_polygons():
+            lines.insert(instructions['teleportation'] + inserted, polygon)
+            inserted += 1
+        for polygon in surface.get_polygons(inactive_surface):
+            lines.insert(instructions['teleportation'] + inserted, polygon)
+            inserted += 1
 
     with open(filename, "w", encoding="utf-8") as file:
         file.writelines(lines)
@@ -70,8 +65,10 @@ TELEPORT_ROUNDS = 2
 
 if __name__ == "__main__":
     circuit = stim.Circuit()
-    array = QubitArray(circuit, dimensions=(5, 3))
-    steane = SteaneCodePatch(array)
+    array = QubitArray(circuit, dimensions=(10, 9))
+    steane = SteaneCodePatch(array, anchor=(1,1))
+    surface = SurfaceCodePatch(array, distance=5, anchor=(2,4))
+    inactive_surface = lambda location: location[1] == 3.5
     instructions = Counter()
 
     # Append the modified Steane Code moments with the S/T-injection
@@ -89,33 +86,18 @@ if __name__ == "__main__":
 
     instructions['teleportation'] = len(circuit)
     for rnd in range(TELEPORT_ROUNDS):
-        steane.append_teleportation(circuit, round=rnd)
+        for mmt in steane.TELEPORTATION_MOMENTS[f"ROUND{rnd}"]:
+            steane.append_teleportation_slice(circuit, moment=mmt, round=rnd)
+            surface.append_round_slice(
+                circuit, moment=mmt, prepare=PauliBasis.X if rnd == 0 else None, prefix=f"SC{rnd}",
+                inactive = inactive_surface
+            )
 
     for record in array.measurements_index.items():
         print(f"Record : {record}")
 
     steane.annotate_detectors(circuit, sdc_rounds=SUPERDENSE_ROUNDS, tpt_rounds=TELEPORT_ROUNDS)
-
-    # # Append the teleportation stage (3 rounds)
-    # for moment in steane.teleportation_round1_moments:
-    #     steane.append_teleportation_round1_slice(circuit, moment, postselection=True)
-    #     surface.append_syndrome_slice(circuit, moment, preparation=True)
-    #     junction.append_syndrome_slice(circuit, moment)
-    #     circuit.append("TICK")
-    #
-    # for moment in steane.teleportation_round2_moments:
-    #     steane.append_teleportation_round2_slice(circuit, moment, postselection=True)
-    #     surface.append_syndrome_slice(circuit, moment, preparation=False)
-    #     junction.append_syndrome_slice(circuit, moment)
-    #     circuit.append("TICK")
-    #
-    # for moment in surface.moments:
-    #     steane.append_teleportation_round3_slice(circuit, moment, postselection=True)
-    #     surface.append_syndrome_slice(circuit, moment, preparation=False)
-    #     junction.append_syndrome_slice(circuit, moment)
-    #     circuit.append("TICK")
-    #
-    # instructions['teleportation'] = len(circuit)
+    surface.annotate_detectors(circuit, prepared=PauliBasis.X, rounds=2)
 
     # # Single round waiting for complementary gap (should be repeated by the control system at runtime)
     # for moment in surface.moments:
@@ -129,4 +111,4 @@ if __name__ == "__main__":
     print(f"Crumble URL : {circuit.to_crumble_url()}")
 
     circuit.to_file(FILENAME)
-    rewrite_file_with_polygons(FILENAME, instructions, steane)
+    rewrite_file_with_polygons(FILENAME, instructions, steane, surface, inactive_surface)

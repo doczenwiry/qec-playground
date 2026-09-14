@@ -82,9 +82,6 @@ class SteaneCodePatch:
     def get_prepared_polygons(self):
         return self.__get_polygons(SteaneCodePatch.STABILIZERS['FINAL'])
 
-    def __make_target_rec(self, label: str):
-        return stim.target_rec(self.__physical_qubits.retrieve_measurement(label))
-
     def annotate_detectors(self, circuit: stim.Circuit, sdc_rounds: int = 0, tpt_rounds: int = 0):
         # Annotate all SUPERDENSE detectors
         for color in self.stabilizers.keys():
@@ -103,7 +100,7 @@ class SteaneCodePatch:
         for measurement in range(6):
             self.annotate_detector(circuit, f"CULT:X{measurement}")
 
-        # Annotate the TELEPORTATION detectors
+        # Annotate the TELEPORTATION stabilized detectors
         last = sdc_rounds-1
         for color in self.stabilizers.keys():
             self.annotate_detector(circuit, f"TPRT0:Z{color}", f"SDC{last}:Z{color}")
@@ -113,7 +110,7 @@ class SteaneCodePatch:
         self.annotate_detector(circuit, f"TPRT0:XG", f"SDC{last}:ZG", f"SDC{last}:ZR")
         self.annotate_detector(circuit, f"TPRT0:XB")
 
-        # Annotate the TELEPORTATION final detectors
+        # Annotate the TELEPORTATION destructive detectors
         self.annotate_detector(
             circuit, *map(lambda q: f"TPRT2:X{q}", SteaneCodePatch.STABILIZERS['FINAL']['G'])
         )
@@ -125,7 +122,7 @@ class SteaneCodePatch:
     def annotate_detector(self, circuit: stim.Circuit, *labels: str) -> bool:
         if all(self.__physical_qubits.has_record(label) for label in labels):
             circuit.append(
-                "DETECTOR", map(self.__make_target_rec, labels)
+                "DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels)
             )
             return True
         return False

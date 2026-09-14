@@ -69,6 +69,14 @@ class SurfaceCodePatch:
     def num_qubits(self):
         return len(self.data_qubits) + len(self.z_ancilla) + len(self.x_ancilla)
 
+    @property
+    def num_z_ancilla(self):
+        return len(self.z_ancilla)
+
+    @property
+    def num_x_ancilla(self):
+        return len(self.x_ancilla)
+
     def __data_qubits(self, inactive: Callable[[tuple[float,float]], bool] = lambda _: False):
         return iter(
             (dl, dqi) for dl, dqi in self.data_qubits.items() if not inactive(dl)
@@ -103,6 +111,26 @@ class SurfaceCodePatch:
             polygon = self.__get_polygon(*location)
             polygons.append(f"#!pragma POLYGON(1,0,0,0.5) {" ".join(map(str, polygon))}\n")
         return polygons
+
+    def annotate_detectors(self, circuit: stim.Circuit, prepared: PauliBasis, rounds: int):
+        stabilizer = prepared.name
+        count = self.num_x_ancilla if prepared == PauliBasis.X else self.num_z_ancilla
+        for qa in range(count):
+            label = f"SC0:{stabilizer}{qa}"
+            if self.__physical_qubits.has_record(label):
+                self.annotate_detector(circuit, label)
+        for stabilizer, ancilla in [ ("X", self.x_ancilla), ("Z", self.z_ancilla) ]:
+            for qa in range(len(ancilla)):
+                for prev, curr in itertools.pairwise(range(rounds)):
+                        self.annotate_detector(circuit, f"SC{curr}:{stabilizer}{qa}", f"SC{prev}:{stabilizer}{qa}")
+
+    def annotate_detector(self, circuit: stim.Circuit, *labels: str) -> bool:
+        if all(self.__physical_qubits.has_record(label) for label in labels):
+            circuit.append(
+                "DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels)
+            )
+            return True
+        return False
 
     def append_memory(
             self, circuit: stim.Circuit, memory: int,
