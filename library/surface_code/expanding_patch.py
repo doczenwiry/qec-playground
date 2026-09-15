@@ -35,40 +35,40 @@ class ExpandingSurfaceCodePatch:
         expanded = distance + expansion
         self.__expanded = expanded
         self.__physical_qubits = array
-        print(f"Distance {self.__distance} + Expansion {self.__expansion}")
+        self.__qubits = dict()
+
         ax, ay = anchor
-        self.data_qubits: dict[int, tuple[float, float]] = {
-            array.qubits[location] : location
+        data_qubits: dict[int, tuple[float, float]] = {
+            array.qubits[location] : (location, index)
             for index, location in enumerate(itertools.product(
                 range(ax, ax + expanded),
                 range(ay, ay + expanded),
             ))
         }
+        self.__qubits['D'] = data_qubits
 
         ancilla_count = (expanded**2 - 1) // 2
+
+        z_ancilla: dict[int, tuple[tuple[float,float], int]] = dict()
         width = (expanded // 2) + 1
-        self.z_ancilla: dict[int, tuple[float,float]] = dict()
-        for q in range(ancilla_count):
-            location = (ax + 0.5 + 2 * (q % width) - ((q // width) % 2), ay + 0.5 + (q // width))
-            self.z_ancilla[array.qubits[location]] = location
+        for qi in range(ancilla_count):
+            location = (ax + 0.5 + 2 * (qi % width) - ((qi // width) % 2), ay + 0.5 + (qi // width))
+            z_ancilla[array.qubits[location]] = (location, qi)
+        self.__qubits['Z'] = z_ancilla
+
+        x_ancilla: dict[int, tuple[tuple[float,float], int]] = dict()
         width = expanded // 2
-        self.x_ancilla: dict[int, tuple[float,float]] = dict()
-        for q in range(ancilla_count):
-            location = (ax + 0.5 + 2 * (q % width) + ((q // width) % 2), ay - 0.5 + (q // width))
-            self.x_ancilla[array.qubits[location]] = location
+        for qi in range(ancilla_count):
+            location = (ax + 0.5 + 2 * (qi % width) + ((qi // width) % 2), ay - 0.5 + (qi // width))
+            x_ancilla[array.qubits[location]] = (location, qi)
+        self.__qubits['X'] = x_ancilla
 
     @property
     def num_qubits(self):
-        return len(self.data_qubits) + len(self.z_ancilla) + len(self.x_ancilla)
+        return sum(len(self.__qubits[qtype]) for qtype in ['X', 'Z', 'D'])
 
-    def active_data_qubits(self, expansion: bool = False):
-        return iter(dq for dq in self.data_qubits if self.is_qubit_active(dq, expansion))
-
-    def active_x_ancilla(self, expansion: bool = False):
-        return iter(xq for xq in self.x_ancilla if self.is_qubit_active(xq, expansion))
-
-    def active_z_ancilla(self, expansion: bool = False):
-        return iter(zq for zq in self.z_ancilla if self.is_qubit_active(zq, expansion))
+    def active_qubits(self, qtype: str, expanded: bool = False):
+        return iter(dq for dq in self.__qubits[qtype] if self.is_qubit_active(dq, expanded))
 
     def is_qubit_active(self, qubit: int, expanded: bool) -> bool:
         ax, ay = self.__anchor
@@ -79,21 +79,21 @@ class ExpandingSurfaceCodePatch:
         upper_x = ax + self.__expanded + 0.5
         upper_y = ay + self.__expanded + 0.5
 
-        if qubit in self.data_qubits:
-            px, py = self.data_qubits[qubit]
+        if qubit in self.__qubits['D']:
+            (px, py), _ = self.__qubits['D'][qubit]
             return lower_x - 0.5 <= px <= upper_x and lower_y - 0.5 <= py <= upper_y
-        elif qubit in self.z_ancilla:
-            px, py = self.z_ancilla[qubit]
+        elif qubit in self.__qubits['Z']:
+            (px, py), _ = self.__qubits['Z'][qubit]
             return lower_x - 0.5 <= px <= upper_x and lower_y + 0.5 <= py <= upper_y
-        elif qubit in self.x_ancilla:
-            px, py = self.x_ancilla[qubit]
+        elif qubit in self.__qubits['X']:
+            (px, py), _ = self.__qubits['X'][qubit]
             return lower_x + 0.5 <= px <= upper_x and lower_y - 0.5 <= py <= upper_y
 
         return False
 
     def qubit_in_expansion(self, qubit: int) -> bool:
         ax, ay = self.__anchor
-        px, py = self.data_qubits[qubit]
+        (px, py), _ = self.__qubits['D'][qubit]
         return not(ax + self.__expansion <= px and ay + self.__expansion <= py)
 
     def __get_polygon(self, px, py, expanded: bool = False):
@@ -102,71 +102,55 @@ class ExpandingSurfaceCodePatch:
             if self.is_qubit_active(self.__physical_qubits.qubits[px + dx, py + dy], expanded)
         ]
 
-    def get_polygons(self, expanded: bool = False):
+    def get_polygons(self, expanded: bool = False, opacity: float = 0.5):
         polygons = []
-        for px, py in iter(zl for zq, zl in self.z_ancilla.items() if self.is_qubit_active(zq, expanded)):
-            polygon = self.__get_polygon(px, py, expanded)
-            polygons.append(f"#!pragma POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}\n")
-        for px, py in iter(xl for xq, xl in self.x_ancilla.items() if self.is_qubit_active(xq, expanded)):
-            polygon = self.__get_polygon(px, py, expanded)
-            polygons.append(f"#!pragma POLYGON(1,0,0,0.5) {" ".join(map(str, polygon))}\n")
+        for stabilizer in ['X', 'Z']:
+            for (px, py), _ in iter(zl for zq, zl in self.__qubits[stabilizer].items() if self.is_qubit_active(zq, expanded)):
+                polygon = self.__get_polygon(px, py, expanded)
+                x, y, z = int(stabilizer == 'X'), 0, int(stabilizer == 'Z')
+                polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}\n")
         return polygons
 
-    def append_syndrome_slice(
-        self, circuit: stim.Circuit, moment: int, preparation: bool = False, expanded: bool = False
+    def append_expansion_slice(
+        self, circuit: stim.Circuit, moment: int, prefix: str = ""
     ):
         match moment:
             case 0:
-                circuit.append("RZ", self.active_z_ancilla(expanded))
-                circuit.append("RX", self.active_x_ancilla(expanded))
-                if preparation:
-                    if not expanded:
-                        circuit.append("RX", self.active_data_qubits(expanded))
+                for stabilizer in ['X', 'Z']:
+                    circuit.append(f"R{stabilizer}", self.active_qubits(stabilizer, True))
+                rx_targets = []
+                rz_targets = []
+                ax, ay = self.__anchor
+                for dq in filter(self.qubit_in_expansion, self.active_qubits('D', True)):
+                    (px, py), _ = self.__qubits['D'][dq]
+                    if px - ax >= py - ay:
+                        rx_targets.append(dq)
                     else:
-                        ax, ay = self.__anchor
-                        active_qubits = [
-                            dq for dq in self.active_data_qubits(expanded) if self.qubit_in_expansion(dq)
-                        ]
-                        rx_targets = filter(
-                            lambda dq : self.data_qubits[dq][0] - ax >= self.data_qubits[dq][1] - ay, active_qubits
-                        )
-                        circuit.append("RX", rx_targets)
-                        rz_targets = filter(
-                            lambda dq : self.data_qubits[dq][0] - ax < self.data_qubits[dq][1] - ay, active_qubits
-                        )
-                        circuit.append("RZ", rz_targets)
+                        rz_targets.append(dq)
+                circuit.append("RX", rx_targets)
+                circuit.append("RZ", rz_targets)
             case 1 | 2 | 3 | 4:
                 targets = []
-                for za in self.active_z_ancilla(expanded):
-                    px, py = self.z_ancilla[za]
-                    dx, dy = SurfaceCodePatch.SCHEDULE_Z[moment - 1]
-                    data_qubit = self.__physical_qubits.qubits[px + dx, py + dy]
-                    if self.is_qubit_active(data_qubit, expanded):
-                        targets.append(data_qubit)
-                        targets.append(za)
-                for xa in self.active_x_ancilla(expanded):
-                    px, py = self.x_ancilla[xa]
-                    dx, dy = SurfaceCodePatch.SCHEDULE_X[moment - 1]
-                    data_qubit = self.__physical_qubits.qubits[px + dx, py + dy]
-                    if self.is_qubit_active(data_qubit, expanded):
-                        targets.append(xa)
-                        targets.append(data_qubit)
+                for atype in ['X', 'Z']:
+                    for qa in self.active_qubits(atype, True):
+                        (px, py), _ = self.__qubits[atype][qa]
+                        dx, dy = SurfaceCodePatch.SCHEDULE[atype][moment - 1]
+                        qd = self.__physical_qubits.qubits[px + dx, py + dy]
+                        if self.is_qubit_active(qd, True):
+                            if atype == 'X':
+                                targets.append(qa)
+                                targets.append(qd)
+                            else: # atype == 'Z'
+                                targets.append(qd)
+                                targets.append(qa)
                 circuit.append("CX", targets)
-                # for gate, active, ancilla, schedule in [
-                #     ("CZ", self.active_z_ancilla(expanded), self.z_ancilla, SurfaceCodePatch.SCHEDULE_Z),
-                #     ("CX", self.active_x_ancilla(expanded), self.x_ancilla, SurfaceCodePatch.SCHEDULE_X)
-                # ]:
-                #     gates = []
-                #     for za in active:
-                #         px, py = ancilla[za]
-                #         dx, dy = schedule[moment - 1]
-                #         target = self.get_qubit_at_location(px + dx, py + dy, expanded=expanded)
-                #         if target != -1:
-                #             gates.append(za)
-                #             gates.append(target)
-                #     circuit.append(gate, gates)
             case 5:
-                circuit.append("MX", self.active_z_ancilla(expanded))
-                circuit.append("MX", self.active_x_ancilla(expanded))
+                for stabilizer in ['X', 'Z']:
+                    measured = []
+                    for qa in self.active_qubits(stabilizer, True):
+                        _, qi = self.__qubits[stabilizer][qa]
+                        self.__physical_qubits.record_measurement(qa, f"{prefix}:{stabilizer}{qi}")
+                        measured.append(qa)
+                    circuit.append(f"M{stabilizer}", measured)
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")

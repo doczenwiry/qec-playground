@@ -86,46 +86,38 @@ class SteaneCodePatch:
         # Annotate all SUPERDENSE detectors
         for color in self.stabilizers.keys():
             if sdc_rounds >= 1:
-                self.annotate_detector(circuit, f"SDC0:X{color}")
-                self.annotate_detector(circuit, f"SDC0:Z{color}")
+                self.__physical_qubits.annotate_detector(circuit, f"SDC0:X{color}")
+                self.__physical_qubits.annotate_detector(circuit, f"SDC0:Z{color}")
             for prev, curr in itertools.pairwise(range(sdc_rounds)):
-                self.annotate_detector(circuit, f"SDC{curr}:Z{color}", f"SDC{prev}:Z{color}")
+                self.__physical_qubits.annotate_detector(circuit, f"SDC{curr}:Z{color}", f"SDC{prev}:Z{color}")
 
         for prev, curr in itertools.pairwise(range(sdc_rounds)):
-            self.annotate_detector(circuit, f"SDC{curr}:XR")
-            self.annotate_detector(circuit, f"SDC{curr}:XG", f"SDC{prev}:XR", f"SDC{prev}:XG")
-            self.annotate_detector(circuit, f"SDC{curr}:XB", f"SDC{prev}:XG")
+            self.__physical_qubits.annotate_detector(circuit, f"SDC{curr}:XR")
+            self.__physical_qubits.annotate_detector(circuit, f"SDC{curr}:XG", f"SDC{prev}:XR", f"SDC{prev}:XG")
+            self.__physical_qubits.annotate_detector(circuit, f"SDC{curr}:XB", f"SDC{prev}:XG")
 
         # Annotate the CULTIVATION detectors
         for measurement in range(6):
-            self.annotate_detector(circuit, f"CULT:X{measurement}")
+            self.__physical_qubits.annotate_detector(circuit, f"CULT:X{measurement}")
 
         # Annotate the TELEPORTATION stabilized detectors
         last = sdc_rounds-1
         for color in self.stabilizers.keys():
-            self.annotate_detector(circuit, f"TPRT0:Z{color}", f"SDC{last}:Z{color}")
+            self.__physical_qubits.annotate_detector(circuit, f"TPRT0:Z{color}", f"SDC{last}:Z{color}")
             if tpt_rounds > 1:
-                self.annotate_detector(circuit, f"TPRT1:Z{color}", f"TPRT0:Z{color}")
-        self.annotate_detector(circuit, f"TPRT0:XR", f"SDC{last}:ZR")
-        self.annotate_detector(circuit, f"TPRT0:XG", f"SDC{last}:ZG", f"SDC{last}:ZR")
-        self.annotate_detector(circuit, f"TPRT0:XB")
+                self.__physical_qubits.annotate_detector(circuit, f"TPRT1:Z{color}", f"TPRT0:Z{color}")
+        self.__physical_qubits.annotate_detector(circuit, f"TPRT0:XR", f"SDC{last}:ZR")
+        self.__physical_qubits.annotate_detector(circuit, f"TPRT0:XG", f"SDC{last}:ZG", f"SDC{last}:ZR")
+        self.__physical_qubits.annotate_detector(circuit, f"TPRT0:XB")
 
         # Annotate the TELEPORTATION destructive detectors
-        self.annotate_detector(
+        self.__physical_qubits.annotate_detector(
             circuit, *map(lambda q: f"TPRT2:X{q}", SteaneCodePatch.STABILIZERS['FINAL']['G'])
         )
-        # TODO: fix this one
+        # TODO: fix this one for the final round of teleportation
         # self.annotate_detector(
         #     circuit, *map(lambda q: f"TPRT2:X{q}", SteaneCodePatch.STABILIZERS['FINAL']['R'])
         # )
-
-    def annotate_detector(self, circuit: stim.Circuit, *labels: str) -> bool:
-        if all(self.__physical_qubits.has_record(label) for label in labels):
-            circuit.append(
-                "DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels)
-            )
-            return True
-        return False
 
     def append_observable(self, circuit: stim.Circuit, observable: str, support: list[int]):
         circuit.append("MPP", stim.PauliString(

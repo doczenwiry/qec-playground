@@ -128,8 +128,5 @@ class TeleportationSurgery:
 
         return patch.locate_qubit(label.split(":")[-1])
 
-    def annotate_detector(self, circuit: stim.Circuit, *labels: str):
-        circuit.append("DETECTOR", [ stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels ])
-
     def annotate_observable(self, circuit: stim.Circuit, id: int, *labels: str):
         circuit.append("OBSERVABLE_INCLUDE", [ stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels ], id)

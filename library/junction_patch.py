@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 import itertools
 import stim
 
@@ -54,15 +55,7 @@ class JunctionPatch:
 
     def annotate_detectors(self, circuit: stim.Circuit, rounds: int):
         for zi, (prev, curr) in itertools.product(range(3), itertools.pairwise(range(rounds))):
-            self.annotate_detector(circuit, f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}")
-
-    def annotate_detector(self, circuit: stim.Circuit, *labels: str) -> bool:
-        if all(self.__physical_qubits.has_record(label) for label in labels):
-            circuit.append(
-                "DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels)
-            )
-            return True
-        return False
+            self.__physical_qubits.annotate_detector(circuit, f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}")
 
     def append_syndrome_slice(self, circuit: stim.Circuit, moment: int, prefix: str = ""):
         match moment:
@@ -71,7 +64,7 @@ class JunctionPatch:
             case 1 | 2 | 3 | 4:
                 cz_gates = []
                 for zi, ((px,py), za) in enumerate(self.z_ancilla.items()):
-                    interaction = SurfaceCodePatch.SCHEDULE_Z[moment-1]
+                    interaction = SurfaceCodePatch.SCHEDULE['Z'][moment-1]
                     if interaction not in JunctionPatch.STABILIZERS[zi]:
                         continue
                     dx, dy = interaction

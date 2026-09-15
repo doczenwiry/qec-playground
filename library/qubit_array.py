@@ -55,6 +55,14 @@ class QubitArray:
             [ (0.5,0.5) , (self.dimX-1.5, 0.5), (0.5, self.dimY-1.5), (self.dimX-1.5, self.dimY-1.5) ]
         )
 
+    def annotate_detector(self, circuit: stim.Circuit, *labels: str) -> bool:
+        if all(self.has_record(label) for label in labels):
+            circuit.append(
+                "DETECTOR", map(self.retrieve_target_rec, labels)
+            )
+            return True
+        return False
+
     def measurements(self, qubit: int):
         return filter(lambda mr: mr[0].endswith(f"@Q{qubit}"), self.measurements_index.items())
 
