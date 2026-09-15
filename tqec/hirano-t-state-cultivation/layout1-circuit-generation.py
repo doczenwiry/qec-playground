@@ -169,12 +169,13 @@ if __name__ == "__main__":
     print(f"> Measurement records : {len(array.measurements_index)}")
     print(f"> Number of detectors : {circuit.num_detectors}")
     print(f"> Missing detectors : {len(circuit.missing_detectors())}")
+    for detector in circuit.missing_detectors():
+        records = list(map(lambda neg: array.retrieve_record(neg.value), detector.targets_copy()))
+        print(f">> Detector : {records}")
     print(f"> Gauge detectors : {"FOUND" if gauge_found else "NONE"}")
 
     print(f"Circuit statistics")
     count_cnots(circuit)
-
-    print(f"Crumble URL : {circuit.to_crumble_url()}")
 
     circuit.to_file(FILENAME)
     rewrite_file_with_polygons(FILENAME, instructions, steane, junction, source, inactive_surface, target)

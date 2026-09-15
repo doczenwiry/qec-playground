@@ -112,16 +112,20 @@ class SteaneCodePatch:
             self.__physical_qubits.annotate_detector(circuit, f"TPT{curr}:XG", f"TPT{prev}:XR", f"TPT{prev}:XG")
             self.__physical_qubits.annotate_detector(circuit, f"TPT{curr}:XB", f"TPT{prev}:XG")
 
-        return
-
         # Annotate the TELEPORTATION destructive detectors
+        # The X_{0126ab} detector.
         self.__physical_qubits.annotate_detector(
-            circuit, *map(lambda q: f"TPT2:X{q}", SteaneCodePatch.STABILIZERS['FINAL']['G'])
+            circuit, f"SDC{last}:XG", f"TPT0:XG", f"TPT0:XB", f"TPT1:XG", f"TPT1:XB", f"TPT2:XG", f"TPT2:XB",
+            f"DST:X0", f"DST:X1", f"DST:X2", f"DST:X6", f"SC3:X0"
         )
-        # TODO: fix this one for the final round of teleportation
-        # self.annotate_detector(
-        #     circuit, *map(lambda q: f"TPRT2:X{q}", SteaneCodePatch.STABILIZERS['FINAL']['R'])
-        # )
+        # The X_{2456} detector
+        self.__physical_qubits.annotate_detector(
+            circuit, f"TPT2:XG", f"TPT2:XR", f"DST:X2", f"DST:X4", f"DST:X5", f"DST:X6"
+        )
+        # The X_{0234} detector
+        self.__physical_qubits.annotate_detector(
+            circuit, f"DST:X0", f"DST:X2", f"DST:X3", f"DST:X4"
+        )
 
     def append_observable(self, circuit: stim.Circuit, observable: str, support: list[int]):
         circuit.append("MPP", stim.PauliString(

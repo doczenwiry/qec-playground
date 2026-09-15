@@ -15,6 +15,7 @@
 import itertools
 from collections import defaultdict
 
+import logging
 import numpy as np
 import stim
 
@@ -61,6 +62,10 @@ class QubitArray:
                 "DETECTOR", map(self.retrieve_target_rec, labels)
             )
             return True
+        logging.warning(f"Requested some unrecorded measurement [request:{labels}]")
+        for label in labels:
+            if not self.has_record(label):
+                logging.warning(f"> {label} not recorded")
         return False
 
     def measurements(self, qubit: int):
@@ -80,6 +85,13 @@ class QubitArray:
 
     def retrieve_target_rec(self, label: str):
         return stim.target_rec(self.retrieve_measurement(label))
+
+    def retrieve_record(self, negative: int) -> str:
+        index = len(self.measurements_index) + negative + 1
+        for rcd, idx in self.measurements_index.items():
+            if index == idx:
+                return rcd
+        return "NONE"
 
     def retrieve_measurement(self, label: str):
         return - len(self.measurements_index) + self.measurements_index[label]
