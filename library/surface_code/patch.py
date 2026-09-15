@@ -127,6 +127,18 @@ class SurfaceCodePatch:
                             circuit, f"{prefix}{curr}:{stabilizer}{qa}", f"{prefix}{prev}:{stabilizer}{qa}"
                         )
 
+    def append_general_observable(
+            self, circuit: stim.Circuit, logical: dict[tuple[float,float], str], *labels: str
+    ):
+        ax, ay = self.__anchor
+        physical = {
+            self.__qubits['D'][(px+ax, py+ay)][0] : pauli for (px,py), pauli in logical.items()
+        }
+        circuit.append("MPP", stim.PauliString(physical))
+        self.__physical_qubits.record_measurement(-1, "AGO")
+        circuit.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, ["AGO", *labels]), 0)
+        circuit.append("TICK")
+
     def append_memory(
             self, circuit: stim.Circuit, memory: int,
             prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,

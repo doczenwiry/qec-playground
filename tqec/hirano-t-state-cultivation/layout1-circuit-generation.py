@@ -139,13 +139,20 @@ if __name__ == "__main__":
 
     instructions['recovery'] = len(circuit)
     steane.append_destruction(circuit)
-    source.append_round(circuit, prefix=f"SC{TELEPORT_ROUNDS}")
+    circuit.append("TICK")
+    source.append_general_observable(circuit, {
+        (0,0) : "Y", (1,0) : "Z", (2,0) : "Z", (3,0) : "Z", (4,0) : "Z",
+        (0,1) : "X", (0,2) : "X", (0,3) : "X", (0,4) : "X",
+    }, "JCT0:Z0", "JCT0:Z1", "JCT0:Z2", "TPT0:XB", "TPT1:XB", "TPT2:XB", "DST:X1", "DST:X5", "DST:X6")
+    circuit.append("TICK")
+    # source.append_round(circuit, prefix=f"SC{TELEPORT_ROUNDS}")
+    circuit.append("TICK")
 
     # Handle the left-upwards expansion :) Almost there !
     instructions['expansion'] = len(circuit)
-    for mmt in expanding.MOMENTS:
-        expanding.append_expansion_slice(circuit, moment=mmt, prefix=f"EXP")
-        circuit.append("TICK")
+    # for mmt in expanding.MOMENTS:
+    #     expanding.append_expansion_slice(circuit, moment=mmt, prefix=f"EXP")
+    circuit.append("TICK")
 
     # Waiting for complementary gap (should be repeated by the control system at runtime)
     instructions['completed'] = len(circuit)

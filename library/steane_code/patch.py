@@ -134,6 +134,14 @@ class SteaneCodePatch:
         circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-1)], 0)
         circuit.append("TICK")
 
+    def append_general_observable(self, circuit: stim.Circuit, logical: dict[int, str]):
+        physical = {
+            self.qubits[q] : pauli for q, pauli in logical.items()
+        }
+        circuit.append("MPP", stim.PauliString(physical))
+        circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-1)], 0)
+        circuit.append("TICK")
+
     def append_preparation(self, circuit: stim.Circuit):
         for moment in self.PREPARATION_MOMENTS:
             self.append_preparation_slice(circuit, moment)
