@@ -124,9 +124,13 @@ class ExpandingSurfaceCodePatch:
                     if stabilizer == 'X' and px - ax > py - ay:
                         if py - ay < self.__expansion - 1:
                             self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}")
+                        elif py - ay == self.__expansion - 0.5:
+                            self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
                     elif stabilizer == 'Z' and px - ax < py - ay:
                         if px - ax < self.__expansion - 1:
                             self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}")
+                        elif px - ax == self.__expansion - 0.5:
+                            self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
 
     def append_expansion_slice(
         self, circuit: stim.Circuit, moment: int, prefix: str = ""

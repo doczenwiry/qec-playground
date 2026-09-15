@@ -138,7 +138,7 @@ if __name__ == "__main__":
             circuit.append("TICK")
 
     instructions['recovery'] = len(circuit)
-    # steane.append_destruction(circuit)
+    steane.append_destruction(circuit)
     source.append_round(circuit, prefix=f"SC{TELEPORT_ROUNDS}")
 
     # Handle the left-upwards expansion :) Almost there !
