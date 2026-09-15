@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 class PauliBasis(Enum):
     X = 0
-    Y = 1
     Z = 2
 
 class SurfaceCodePatch:
@@ -90,6 +89,12 @@ class SurfaceCodePatch:
             (al, ai) for al, ai in self.__qubits[qtype].items() if not inactive(al)
         )
 
+    def get_qubit_index(self, qtype: str, qubit: int) -> int:
+        for qb, qi in self.__qubits[qtype].values():
+            if qb == qubit:
+                return qi
+        raise ValueError(f"Invalid qubit {qubit} requested.")
+
     def get_qubit_at_location(self, location: tuple[float, float]) -> int:
         return self.__qubits['D'][location][0] if location in self.__qubits['D']  else -1
 
@@ -109,16 +114,18 @@ class SurfaceCodePatch:
                 polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}\n")
         return polygons
 
-    def annotate_detectors(self, circuit: stim.Circuit, prepared: PauliBasis, rounds: int):
-        stabilizer = prepared.name
-        count = self.num_x_ancilla if prepared == PauliBasis.X else self.num_z_ancilla
-        for qa in range(count):
-            label = f"SC0:{stabilizer}{qa}"
-            self.__physical_qubits.annotate_detector(circuit, label)
+    def annotate_detectors(self, circuit: stim.Circuit, rounds: int, prefix: str = "SC", prepared: Optional[PauliBasis] = None):
+        if prepared is not None:
+            stabilizer = prepared.name
+            for qa in range(len(self.__qubits[prepared.name])):
+                label = f"SC0:{stabilizer}{qa}"
+                self.__physical_qubits.annotate_detector(circuit, label)
         for stabilizer in ['X', 'Z']:
             for qa in range(len(self.__qubits[stabilizer])):
                 for prev, curr in itertools.pairwise(range(rounds)):
-                        self.__physical_qubits.annotate_detector(circuit, f"SC{curr}:{stabilizer}{qa}", f"SC{prev}:{stabilizer}{qa}")
+                        self.__physical_qubits.annotate_detector(
+                            circuit, f"{prefix}{curr}:{stabilizer}{qa}", f"{prefix}{prev}:{stabilizer}{qa}"
+                        )
 
     def append_memory(
             self, circuit: stim.Circuit, memory: int,

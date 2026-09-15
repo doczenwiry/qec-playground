@@ -39,11 +39,7 @@ class SteaneCodePatch:
     PREPARATION_MOMENTS = range(11)
     SUPERDENSE_MOMENTS = range(15)
     CULTIVATION_MOMENTS = range(12)
-    TELEPORTATION_MOMENTS = {
-        'ROUND0' : range(15),
-        'ROUND1' : range(12),
-        'ROUND2' : range(6),
-    }
+    TELEPORTATION_MOMENTS = range(15)
 
     def __init__(self, array: QubitArray, anchor: tuple[int, int] = (0,0)):
         self.__anchor = anchor
@@ -103,16 +99,24 @@ class SteaneCodePatch:
         # Annotate the TELEPORTATION stabilized detectors
         last = sdc_rounds-1
         for color in self.stabilizers.keys():
-            self.__physical_qubits.annotate_detector(circuit, f"TPRT0:Z{color}", f"SDC{last}:Z{color}")
-            if tpt_rounds > 1:
-                self.__physical_qubits.annotate_detector(circuit, f"TPRT1:Z{color}", f"TPRT0:Z{color}")
-        self.__physical_qubits.annotate_detector(circuit, f"TPRT0:XR", f"SDC{last}:ZR")
-        self.__physical_qubits.annotate_detector(circuit, f"TPRT0:XG", f"SDC{last}:ZG", f"SDC{last}:ZR")
-        self.__physical_qubits.annotate_detector(circuit, f"TPRT0:XB")
+            self.__physical_qubits.annotate_detector(circuit, f"TPT0:Z{color}", f"SDC{last}:Z{color}")
+            for prev, curr in itertools.pairwise(range(tpt_rounds)):
+                self.__physical_qubits.annotate_detector(circuit, f"TPT{curr}:Z{color}", f"TPT{prev}:Z{color}")
+
+        self.__physical_qubits.annotate_detector(circuit, f"TPT0:XR")
+        self.__physical_qubits.annotate_detector(circuit, f"TPT0:XG", f"SDC{last}:XR", f"SDC{last}:XG")
+        self.__physical_qubits.annotate_detector(circuit, f"TPT0:XB", f"SDC{last}:XG")
+
+        for prev, curr in itertools.pairwise(range(tpt_rounds)):
+            self.__physical_qubits.annotate_detector(circuit, f"TPT{curr}:XR")
+            self.__physical_qubits.annotate_detector(circuit, f"TPT{curr}:XG", f"TPT{prev}:XR", f"TPT{prev}:XG")
+            self.__physical_qubits.annotate_detector(circuit, f"TPT{curr}:XB", f"TPT{prev}:XG")
+
+        return
 
         # Annotate the TELEPORTATION destructive detectors
         self.__physical_qubits.annotate_detector(
-            circuit, *map(lambda q: f"TPRT2:X{q}", SteaneCodePatch.STABILIZERS['FINAL']['G'])
+            circuit, *map(lambda q: f"TPT2:X{q}", SteaneCodePatch.STABILIZERS['FINAL']['G'])
         )
         # TODO: fix this one for the final round of teleportation
         # self.annotate_detector(
@@ -254,23 +258,15 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_teleportation(self, circuit: stim.Circuit, round: int, prefix: str = "TPRT"):
-        for moment in self.TELEPORTATION_MOMENTS[f"ROUND{round}"]:
-            self.append_teleportation_slice(circuit, moment, round, prefix)
+    def append_teleportation(self, circuit: stim.Circuit, prefix: str = "TPT"):
+        for moment in self.TELEPORTATION_MOMENTS:
+            self.append_teleportation_slice(circuit, moment, prefix)
             circuit.append("TICK")
 
-    def append_teleportation_slice(self, circuit: stim.Circuit, moment: int, round: int, prefix: str = "TPRT"):
-        match round:
-            case 0:
-                self.__append_teleportation_round0_slice(circuit, moment, prefix)
-            case 1:
-                self.__append_teleportation_round1_slice(circuit, moment, prefix)
-            case 2:
-                self.__append_teleportation_round2_slice(circuit, moment, prefix)
-            case _:
-                raise ValueError(f"Invalid teleportation round requested [round={round}]")
+    def append_teleportation_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPT"):
+        self.__append_teleportation_slice(circuit, moment, prefix)
 
-    def __append_teleportation_round0_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPRT"):
+    def __append_teleportation_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPT"):
         match moment:
             # GHZ-state formation
             case 0:
@@ -309,66 +305,16 @@ class SteaneCodePatch:
                 measured_x_ancilla = self.__shift_qubit_ids(10, 13, 15)
                 circuit.append("MX", measured_x_ancilla)
                 for xa, color in zip(measured_x_ancilla, ["G" , "B", "R"]):
-                    self.__physical_qubits.record_measurement(xa, f"{prefix}0:X{color}")
+                    self.__physical_qubits.record_measurement(xa, f"{prefix}:X{color}")
                 measured_z_ancilla = self.__shift_qubit_ids(11, 12, 14)
                 circuit.append("MZ", measured_z_ancilla)
                 for za, color in zip(measured_z_ancilla, ["G" , "R", "B"]):
-                    self.__physical_qubits.record_measurement(za, f"{prefix}0:Z{color}")
+                    self.__physical_qubits.record_measurement(za, f"{prefix}:Z{color}")
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    def append_teleportation_round1(self, circuit: stim.Circuit, prefix: str = "TPRT"):
-        for moment in self.TELEPORTATION_MOMENTS['ROUND1']:
-            self.__append_teleportation_round1_slice(circuit, moment, prefix)
-            circuit.append("TICK")
-
-    def __append_teleportation_round1_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPRT"):
-        match moment:
-            # GHZ-state formation
-            case 0:
-                circuit.append("RX", self.__shift_qubit_ids(10, 13, 15))
-                circuit.append("RZ", self.__shift_qubit_ids(7, 8, 9, 11, 12, 14))
-            case 1:
-                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
-            case 2:
-                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
-            case 3:
-                circuit.append("CX", self.__shift_qubit_ids(11, 7, 14, 9, 12, 8))
-            # Syndrome extractions
-            case 4:
-                circuit.append("CX", self.__shift_qubit_ids(0, 14, 2, 11, 6, 10))
-            case 5:
-                circuit.append("CX", self.__shift_qubit_ids(0, 15, 2, 14, 4, 11, 5, 10))
-            case 6:
-                circuit.append("CX", self.__shift_qubit_ids(1, 13, 2, 15, 4, 12, 6, 14))
-            # GHZ-state contraction
-            case 7:
-                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
-            case 8:
-                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
-            case 9:
-                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
-            case 10:
-                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
-            case 11:
-                measured_z_ancilla = self.__shift_qubit_ids(10, 13, 15)
-                circuit.append("MX", measured_z_ancilla)
-                for za, color in zip(measured_z_ancilla, ["G" , "B", "R"]):
-                    self.__physical_qubits.record_measurement(za, f"{prefix}1:Z{color}")
-            case _:
-                logger.warning(f"Nothing to do at requested moment [{moment}]")
-
-    def append_teleportation_round2(self, circuit: stim.Circuit, prefix: str = "TPRT"):
-        for moment in self.TELEPORTATION_MOMENTS['ROUND2']:
-            self.__append_teleportation_round2_slice(circuit, moment, prefix)
-            circuit.append("TICK")
-
-    def __append_teleportation_round2_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPRT"):
-        match moment:
-            case 5:
-                measured_data_qubits = self.logical
-                circuit.append("MX", measured_data_qubits)
-                for index, qd in enumerate(measured_data_qubits):
-                    self.__physical_qubits.record_measurement(qd, f"{prefix}2:X{index}")
-            case _:
-                logger.warning(f"Nothing to do at requested moment [{moment}]")
+    def append_destruction(self, circuit: stim.Circuit, prefix: str = "DST"):
+        measured_data_qubits = self.logical
+        circuit.append("MX", measured_data_qubits)
+        for index, qd in enumerate(measured_data_qubits):
+            self.__physical_qubits.record_measurement(qd, f"{prefix}:X{index}")

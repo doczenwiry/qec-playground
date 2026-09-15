@@ -60,20 +60,20 @@ class JunctionPatch:
     def append_syndrome_slice(self, circuit: stim.Circuit, moment: int, prefix: str = ""):
         match moment:
             case 0:
-                circuit.append("RX", self.z_ancilla.values())
+                circuit.append("RZ", self.z_ancilla.values())
             case 1 | 2 | 3 | 4:
-                cz_gates = []
+                cx_targets = []
                 for zi, ((px,py), za) in enumerate(self.z_ancilla.items()):
                     interaction = SurfaceCodePatch.SCHEDULE['Z'][moment-1]
                     if interaction not in JunctionPatch.STABILIZERS[zi]:
                         continue
                     dx, dy = interaction
-                    target = self.__physical_qubits.qubits[px + dx, py + dy]
-                    cz_gates.append(za)
-                    cz_gates.append(target)
-                circuit.append("CZ", cz_gates)
+                    qd = self.__physical_qubits.qubits[px + dx, py + dy]
+                    cx_targets.append(qd)
+                    cx_targets.append(za)
+                circuit.append("CX", cx_targets)
             case 5:
-                circuit.append("MX", self.z_ancilla.values())
+                circuit.append("MZ", self.z_ancilla.values())
                 for qi, qz in enumerate(self.z_ancilla.values()):
                     self.__physical_qubits.record_measurement(qz, f"{prefix}:Z{qi}")
             case _:

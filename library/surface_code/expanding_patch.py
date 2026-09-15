@@ -93,7 +93,8 @@ class ExpandingSurfaceCodePatch:
 
     def qubit_in_expansion(self, qubit: int) -> bool:
         ax, ay = self.__anchor
-        (px, py), _ = self.__qubits['D'][qubit]
+        repository = 'D' if qubit in self.__qubits['D'] else 'Z' if qubit in self.__qubits['Z'] else 'X'
+        (px, py), _ = self.__qubits[repository][qubit]
         return not(ax + self.__expansion <= px and ay + self.__expansion <= py)
 
     def __get_polygon(self, px, py, expanded: bool = False):
@@ -111,24 +112,42 @@ class ExpandingSurfaceCodePatch:
                 polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}\n")
         return polygons
 
+    def annotate_detectors(self, circuit: stim.Circuit, sc_rounds: int, source: SurfaceCodePatch, prefix: str = "EXP"):
+        last = sc_rounds-1
+        for stabilizer in ['X', 'Z']:
+            for qi, qa in enumerate(self.__qubits[stabilizer]):
+                if not self.qubit_in_expansion(qa):
+                    self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
+                else: # self.qubit_in_expansion(qa)
+                    ax, ay = self.__anchor
+                    (px, py), _ = self.__qubits[stabilizer][qa]
+                    if stabilizer == 'X' and px - ax > py - ay:
+                        if py - ay < self.__expansion - 1:
+                            self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}")
+                    elif stabilizer == 'Z' and px - ax < py - ay:
+                        if px - ax < self.__expansion - 1:
+                            self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}")
+
     def append_expansion_slice(
         self, circuit: stim.Circuit, moment: int, prefix: str = ""
     ):
         match moment:
             case 0:
+                # Handle the reset of the ancilla
                 for stabilizer in ['X', 'Z']:
                     circuit.append(f"R{stabilizer}", self.active_qubits(stabilizer, True))
-                rx_targets = []
-                rz_targets = []
+                # Handle the reset of the data qubits
+                rx_data_qubits = []
+                rz_data_qubits = []
                 ax, ay = self.__anchor
                 for dq in filter(self.qubit_in_expansion, self.active_qubits('D', True)):
                     (px, py), _ = self.__qubits['D'][dq]
-                    if px - ax >= py - ay:
-                        rx_targets.append(dq)
-                    else:
-                        rz_targets.append(dq)
-                circuit.append("RX", rx_targets)
-                circuit.append("RZ", rz_targets)
+                    if px - ax >= py - ay: # Above the diagonal must be RX'd
+                        rx_data_qubits.append(dq)
+                    else: # Below the diagonal must be RZ'd
+                        rz_data_qubits.append(dq)
+                circuit.append("RX", rx_data_qubits)
+                circuit.append("RZ", rz_data_qubits)
             case 1 | 2 | 3 | 4:
                 targets = []
                 for atype in ['X', 'Z']:
