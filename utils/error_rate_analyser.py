@@ -26,7 +26,8 @@ from tqec import NoiseModel
 def simulate(
     scenarios: Union[stim.Circuit, dict[str, stim.Circuit]], title ="circuit",
     postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10,
-    num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5)
+    num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5),
+    savefile: str = "simulation-run.csv",
 ):
     if isinstance(scenarios, stim.Circuit):
         scenarios = { 'circuit' : scenarios }
@@ -48,6 +49,7 @@ def simulate(
         max_shots=int(shots),
         max_errors=max_errors,
         print_progress=True,
+        save_resume_filepath=savefile,
     )
 
     fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)

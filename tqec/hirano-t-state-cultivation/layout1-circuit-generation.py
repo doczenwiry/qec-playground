@@ -73,6 +73,9 @@ def rewrite_file_with_polygons(
         for polygon in completed.get_polygons(opacity=EXPANDED_OPACITY):
             lines.insert(instructions['recovery'] + inserted, polygon)
             inserted += 1
+        for polygon in steane.get_polygons(opacity=2.25*EXPANDED_OPACITY):
+            lines.insert(instructions['recovery'] + inserted, polygon)
+            inserted += 1
         for polygon in surface.get_polygons():
             lines.insert(instructions['recovery'] + inserted, polygon)
             inserted += 1
@@ -103,7 +106,7 @@ if __name__ == "__main__":
     source = SurfaceCodePatch(array, distance=5, anchor=(TARGET_DISTANCE - 4, TARGET_DISTANCE - 4))
     expanding = ExpandingSurfaceCodePatch(array, distance=5, anchor=(1, 1), expansion=TARGET_DISTANCE - 5)
     target = SurfaceCodePatch(array, distance=TARGET_DISTANCE, anchor=(1, 1))
-    inactive_surface = lambda location: location[1] == TARGET_DISTANCE - 4.5
+    inactive_source = lambda location: location[1] == TARGET_DISTANCE - 4.5
     instructions = Counter()
 
     # Append the modified Steane Code moments with the S/T-injection
@@ -113,7 +116,7 @@ if __name__ == "__main__":
     # Append the superdense syndrome measurement code cycle (3 rounds)
     for rnd in range(SUPERDENSE_ROUNDS):
         instructions[f"superdense{rnd}"] = len(circuit)
-        steane.append_superdense(circuit, prefix=f"SDC{rnd}")
+        steane.append_superdense_cycle(circuit, prefix=f"SDC{rnd}")
 
     # Append the cultivation stage with the Double-Check-S/T
     instructions['cultivation'] = len(circuit)
@@ -126,7 +129,7 @@ if __name__ == "__main__":
             junction.append_syndrome_slice(circuit, moment=mmt, prefix=f"JCT{rnd}")
             source.append_round_slice(
                 circuit, moment=mmt, prepare=PauliBasis.X if rnd == 0 else None, prefix=f"SC{rnd}",
-                inactive = inactive_surface
+                inactive = inactive_source
             )
             circuit.append("TICK")
 
@@ -134,6 +137,16 @@ if __name__ == "__main__":
     steane.append_destruction(circuit)
     source.append_round(circuit, prefix=f"SC{TELEPORT_ROUNDS}")
     circuit.append("TICK")
+
+    # Observable if expansion is commented out.
+    # logical_observable = {(0, 0): "Y"}
+    # for i in range(1, 5):
+    #     logical_observable[(i, 0)] = "Z"
+    #     logical_observable[(0, i)] = "X"
+    # source.append_general_observable(
+    #     circuit, logical_observable,
+    #     "JCT0:Z0", "JCT0:Z1", "JCT0:Z2", "TPT0:XB", "TPT1:XB", "TPT2:XB", "DST:X1", "DST:X5", "DST:X6"
+    # )
 
     # Handle the left-upwards expansion :) Almost there !
     instructions['expansion'] = len(circuit)
@@ -153,6 +166,7 @@ if __name__ == "__main__":
     )
     circuit.append("TICK")
 
+    # Stabilizing the target Surface Code
     # Waiting for complementary gap (should be repeated by the control system at runtime)
     instructions['completed'] = len(circuit)
     # for rnd in range(ROUNDS_FOR_COMPLEMENTARY_GAP):
@@ -167,8 +181,8 @@ if __name__ == "__main__":
 
     gauge_found = False
     try:
-        dem = circuit.detector_error_model(allow_gauge_detectors=False)
-    except ValueError as e:
+        circuit.detector_error_model(allow_gauge_detectors=False)
+    except ValueError:
         gauge_found = True
 
     print(f"Detector statistics : ")
@@ -184,4 +198,4 @@ if __name__ == "__main__":
     count_cnots(circuit)
 
     circuit.to_file(FILENAME)
-    rewrite_file_with_polygons(FILENAME, instructions, steane, junction, source, inactive_surface, target)
+    rewrite_file_with_polygons(FILENAME, instructions, steane, junction, source, inactive_source, target)

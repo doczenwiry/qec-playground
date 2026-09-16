@@ -61,22 +61,22 @@ class SteaneCodePatch:
             for color, stabs in SteaneCodePatch.STABILIZERS['FINAL'].items()
         }
 
-    def __get_polygons(self, stabilizers: dict[str, list[int]]):
+    def __get_polygons(self, stabilizers: dict[str, list[int]], opacity: float = 0.5):
         polygons = []
         for color, support in stabilizers.items():
             x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
             polygons.append(
-                f"#!pragma POLYGON({x},{y},{z},0.5) {" ".join(
+                f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(
                     map(str, self.__shift_qubit_ids(*support))
                 )}\n"
             )
         return polygons
 
-    def get_polygons(self, initial: bool = False):
+    def get_polygons(self, initial: bool = False, opacity: float = 0.5):
         if initial:
-            return self.__get_polygons(SteaneCodePatch.STABILIZERS['START'])
+            return self.__get_polygons(SteaneCodePatch.STABILIZERS['START'], opacity)
         else:
-            return self.__get_polygons(SteaneCodePatch.STABILIZERS['FINAL'])
+            return self.__get_polygons(SteaneCodePatch.STABILIZERS['FINAL'], opacity)
 
     def annotate_detectors(self, circuit: stim.Circuit, sdc_rounds: int = 0, tpt_rounds: int = 0):
         # Annotate all SUPERDENSE detectors
@@ -176,12 +176,12 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_superdense(self, circuit: stim.Circuit, prefix: str = "SDC"):
+    def append_superdense_cycle(self, circuit: stim.Circuit, prefix: str = "SDC"):
         for moment in self.SUPERDENSE_MOMENTS:
-            self.append_superdense_slice(circuit, moment, prefix)
+            self.append_superdense_cycle_slice(circuit, moment, prefix)
             circuit.append("TICK")
 
-    def append_superdense_slice(
+    def append_superdense_cycle_slice(
             self, circuit: stim.Circuit, moment: int, prefix: str = "SDC"
     ):
         match moment:

@@ -136,15 +136,12 @@ class ExpandingSurfaceCodePatch:
             self, circuit: stim.Circuit, logical: dict[tuple[float,float], str], *labels: str
     ):
         ax, ay = self.__anchor
-        try:
-            physical = {
-                self.__physical_qubits[(px+ax, py+ay)] : pauli for (px,py), pauli in logical.items()
-            }
-        except Exception as e:
-            print(f"Error : {self.__qubits['D'].keys()}")
+        physical = {
+            self.__physical_qubits[(px+ax, py+ay)] : pauli for (px,py), pauli in logical.items()
+        }
         circuit.append("MPP", stim.PauliString(physical))
-        self.__physical_qubits.record_measurement(-1, "AGO")
-        circuit.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, ["AGO", *labels]), 0)
+        self.__physical_qubits.record_measurement(-1, "EXP_AGO")
+        circuit.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, ["EXP_AGO", *labels]), 0)
         circuit.append("TICK")
 
     def append_expansion_slice(

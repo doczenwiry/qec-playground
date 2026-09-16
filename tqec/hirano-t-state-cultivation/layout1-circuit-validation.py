@@ -40,7 +40,7 @@ if __name__ == "__main__":
     print("Modified Steane Code (w/ S-injection) --- Superdense Code Cycle [w/ GHZ states]")
     circuit = stim.Circuit()
     steane = SteaneCodePatch(array = QubitArray(circuit, dimensions=(5, 3)))
-    steane.append_superdense(circuit)
+    steane.append_superdense_cycle(circuit)
 
     print(f"Stabilizer flows")
     for stabilizer, support in itertools.product(['X', 'Z'], steane.stabilizers.values()):
