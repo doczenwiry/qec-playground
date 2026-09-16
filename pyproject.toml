@@ -4,7 +4,7 @@ description = "a collection of notebooks and stim circuits to study QEC"
 version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = [
-    "crochet",
+    "clifft>=0.10.1",
     "ipykernel>=7.3.0",
     "ipython>=9.16.0",
     "matplotlib>=3.11.1",
@@ -13,6 +13,3 @@ dependencies = [
     "stim>=1.16.0",
     "tqec>=0.2.0",
 ]
-
-[tool.uv.sources]
-crochet = { git = "ssh://git@github.com/doczenwiry/crochet.git" }
