@@ -132,6 +132,21 @@ class ExpandingSurfaceCodePatch:
                         elif px - ax == self.__expansion - 0.5:
                             self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
 
+    def append_general_observable(
+            self, circuit: stim.Circuit, logical: dict[tuple[float,float], str], *labels: str
+    ):
+        ax, ay = self.__anchor
+        try:
+            physical = {
+                self.__physical_qubits[(px+ax, py+ay)] : pauli for (px,py), pauli in logical.items()
+            }
+        except Exception as e:
+            print(f"Error : {self.__qubits['D'].keys()}")
+        circuit.append("MPP", stim.PauliString(physical))
+        self.__physical_qubits.record_measurement(-1, "AGO")
+        circuit.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, ["AGO", *labels]), 0)
+        circuit.append("TICK")
+
     def append_expansion_slice(
         self, circuit: stim.Circuit, moment: int, prefix: str = ""
     ):

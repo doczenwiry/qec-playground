@@ -47,6 +47,7 @@ def simulate(
         decoders=['pymatching'],
         max_shots=int(shots),
         max_errors=max_errors,
+        print_progress=True,
     )
 
     fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)
