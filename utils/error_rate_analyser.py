@@ -27,7 +27,7 @@ def simulate(
     scenarios: Union[stim.Circuit, dict[str, stim.Circuit]], title ="circuit",
     postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10,
     num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5),
-    savefile: str = "simulation-run.csv",
+    savefile: str = "generated/simulation-run.csv",
 ):
     if isinstance(scenarios, stim.Circuit):
         scenarios = { 'circuit' : scenarios }
