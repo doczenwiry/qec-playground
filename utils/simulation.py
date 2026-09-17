@@ -20,14 +20,32 @@ import numpy as np
 import sinter
 import stim
 from tqec import NoiseModel
+from tqec.utils.noise_model import NoiseRule
 
 from library.circuitry import Circuitry
 
+def make_noisy_circuit(circuit: stim.Circuit, per: float) -> stim.Circuit:
+    return NoiseModel(
+        idle_depolarization=per,
+        any_clifford_1q_rule=NoiseRule(after={"DEPOLARIZE1": per}),
+        any_clifford_2q_rule=NoiseRule(after={"DEPOLARIZE2": per}),
+        gate_rules={
+            "RX": NoiseRule(after={"Z_ERROR": per}),
+            "RY": NoiseRule(after={"X_ERROR": per}),
+            "R": NoiseRule(after={"X_ERROR": per}),
+            "MPP": NoiseRule(after={}),
+        },
+        measure_rules={
+            "X": NoiseRule(after={}, flip_result=per),
+            "Y": NoiseRule(after={}, flip_result=per),
+            "Z": NoiseRule(after={}, flip_result=per),
+        },
+    ).noisy_circuit(circuit)
 
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def simulate(
-    scenarios: Union[Circuitry, dict[str, Circuitry]], title ="circuit",
+    scenarios: Union[Circuitry, dict[str, Circuitry]], title: str ="Simulation results",
     postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10,
     num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5),
     filename: Optional[str] = None,
@@ -36,11 +54,11 @@ def simulate(
         scenarios = { 'circuit' : scenarios }
     tasks = [
         sinter.Task(
-            circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(circuitry.as_stim),
+            circuit=make_noisy_circuit(circuitry.as_stim, physical_error_rate),
             postselection_mask=np.packbits(np.ones(circuitry.num_detectors, dtype=bool)) if postselection else None,
-            json_metadata={'case': case, 'per': noise},
+            json_metadata={'case': case, 'per': physical_error_rate},
         )
-        for (case, circuitry), noise in itertools.product(
+        for (case, circuitry), physical_error_rate in itertools.product(
             scenarios.items(), np.logspace(-1, minimal_noise, num=points)
         )
     ]
