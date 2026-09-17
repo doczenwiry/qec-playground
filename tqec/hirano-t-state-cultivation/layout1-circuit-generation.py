@@ -30,7 +30,7 @@ TELEPORT_ROUNDS = 3
 ROUNDS_FOR_COMPLEMENTARY_GAP = 1
 EXPANDED_OPACITY = 0.125
 
-FILENAME = str(Path(__file__).resolve().parent) + "/generated/hirano-magic-state-cultivation-layout1.stim"
+FILENAME = str(Path(__file__).resolve().parent) + "/generated/hirano-magic-state-cultivation-layout1"
 
 if __name__ == "__main__":
     if TARGET_DISTANCE % 2 != 1 and TARGET_DISTANCE < 9:

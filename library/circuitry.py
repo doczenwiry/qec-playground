@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from collections import defaultdict
-from typing import Union, Iterable, Optional
+from typing import Union, Iterable
 
 import stim
 
@@ -21,10 +21,12 @@ import stim
 class Circuitry:
     """A wrapper to easily move between Stim and Clifft when switching between Clifford and non-Clifford."""
     def __init__(self, clifford: bool = True):
-        if not clifford:
-            raise NotImplementedError("Non-Clifford circuit not supported yet.")
         self.__clifford = clifford
-        self.__circuit: stim.Circuit = stim.Circuit()
+        self.__circuit: Union[stim.Circuit, list[str]] = stim.Circuit() if clifford else []
+        self.__used_qubits: set[int] = set()
+        self.__num_cnots = 0
+        self.__num_measurements = 0
+        self.__num_detectors = 0
         self.__polygons: dict[int, list[str]] = defaultdict(list)
 
     @property
@@ -33,46 +35,39 @@ class Circuitry:
 
     @property
     def as_stim(self):
-        if self.__clifford:
-            return self.__circuit
-        else:
-            raise ValueError("Circuit is non-Clifford and not supported by STIM.")
+        if not self.__clifford:
+            raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
+
+        return self.__circuit
 
     @property
     def num_qubits(self):
-        if not self.__clifford:
-            raise ValueError("Non-Clifford circuit not supported yet.")
-
-        used_qubits = set()
-        for instruction in self.as_stim.flattened():
-            if instruction.name not in ("QUBIT_COORDS", "DETECTOR", "OBSERVABLE_INCLUDE"):
-                used_qubits.update(instruction.targets_copy())
-
-        return len(used_qubits)
+        return len(self.__used_qubits)
 
     @property
     def num_cnots(self):
-        return sum(
-            len(instruction.targets_copy()) // 2
-            for instruction in self.as_stim.flattened() if instruction.name == "CX"
-        )
+        return self.__num_cnots
 
     @property
     def num_measurements(self):
-        return self.as_stim.num_measurements
+        return self.__num_measurements
 
     @property
     def num_detectors(self):
-        return self.as_stim.num_detectors
+        return self.__num_detectors
 
     def __len__(self):
         return len(self.__circuit) if self.__clifford else -1
 
     def to_file(self, filename: str, polygons: bool = True, spacing: bool = False):
-        self.__circuit.to_file(filename)
+        if not self.__clifford:
+            raise NotImplementedError("Non-Clifford circuit not supported yet.")
+
+        filepath = filename + ".stim"
+        self.__circuit.to_file(filepath)
 
         if polygons:
-            with open(filename, "r", encoding="utf-8") as file:
+            with open(filepath, "r", encoding="utf-8") as file:
                 lines = file.readlines()
                 inserted = 0
 
@@ -85,10 +80,8 @@ class Circuitry:
                         lines.insert(line_number + inserted, "TICK\n")
                         inserted += 1
 
-            with open(filename, "w", encoding="utf-8") as file:
+            with open(filepath, "w", encoding="utf-8") as file:
                 file.writelines(lines)
-
-        print(f"Generated circuit : {filename}")
 
     def annotate_polygons(self, polygons: list[str]):
         self.__polygons[len(self.__circuit)].extend(polygons)
@@ -99,11 +92,34 @@ class Circuitry:
         else:
             raise NotImplementedError("Non-Clifford circuit not supported yet.")
 
+    def __update_internal_counters(self, name: str, targets: list[Union[int, stim.GateTarget, stim.PauliString]]):
+        match name:
+            case "CX":
+                self.__num_cnots += sum(1 for _ in targets) // 2
+            case "DETECTOR":
+                self.__num_detectors += 1
+            case "M" | "MR" | "MX" | "MRX" | "MY" | "MRY" | "MZ" | "MRZ" | "MPP":
+                self.__num_measurements += 1 if name == "MPP" else sum(1 for _ in targets)
+        if name not in ("QUBIT_COORDS", "DETECTOR", "OBSERVABLE_INCLUDE"):
+            for target in targets:
+                if isinstance(target, int):
+                    self.__used_qubits.add(target)
+                elif isinstance(target, stim.GateTarget):
+                    self.__used_qubits.add(target.value)
+                elif isinstance(target, stim.PauliString):
+                    self.__used_qubits.update(target.pauli_indices())
+                else:
+                    raise ValueError(f"Target is unacceptable [{target}].")
+
     def append(self,
         name: str,
         targets: Union[int, stim.GateTarget, stim.PauliString, Iterable[Union[int, stim.GateTarget, stim.PauliString]]],
         arg: Union[float, Iterable[float], None] = None,
     ):
+        targets = list(targets) if isinstance(targets, Iterable) else [ targets ]
+
+        self.__update_internal_counters(name, targets)
+
         if self.__clifford:
             self.__circuit.append(name, targets, arg)
         else:
