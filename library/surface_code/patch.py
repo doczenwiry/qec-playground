@@ -16,9 +16,11 @@ import itertools
 from enum import Enum
 from typing import Optional, Final, Callable
 
-import stim
 import logging
 
+import stim
+
+from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
 
 logger = logging.getLogger(__name__)
@@ -114,7 +116,7 @@ class SurfaceCodePatch:
                 polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}\n")
         return polygons
 
-    def annotate_detectors(self, circuit: stim.Circuit, rounds: int, prefix: str = "SC", prepared: Optional[PauliBasis] = None):
+    def annotate_detectors(self, circuit: Circuitry, rounds: int, prefix: str = "SC", prepared: Optional[PauliBasis] = None):
         if prepared is not None:
             stabilizer = prepared.name
             for qa in range(len(self.__qubits[prepared.name])):
@@ -128,7 +130,7 @@ class SurfaceCodePatch:
                         )
 
     def append_general_observable(
-            self, circuit: stim.Circuit, logical: dict[tuple[float,float], str], *labels: str
+            self, circuit: Circuitry, logical: dict[tuple[float,float], str], *labels: str
     ):
         ax, ay = self.__anchor
         physical = {
@@ -137,10 +139,10 @@ class SurfaceCodePatch:
         circuit.append("MPP", stim.PauliString(physical))
         self.__physical_qubits.record_measurement(-1, "SC_AGO")
         circuit.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, ["SC_AGO", *labels]), 0)
-        circuit.append("TICK")
+        circuit.append_tick()
 
     def append_memory(
-            self, circuit: stim.Circuit, memory: int,
+            self, circuit: Circuitry, memory: int,
             prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
             full_ft: bool = True, prefix: str = ""
     ):
@@ -155,12 +157,12 @@ class SurfaceCodePatch:
             )
 
     def append_round(
-        self, circuit: stim.Circuit, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
+        self, circuit: Circuitry, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
         inactive: Callable[[tuple[float,float]], bool] = lambda _: False, prefix: str = ""
     ):
         for mmt in SurfaceCodePatch.MOMENTS:
             self.append_round_slice(circuit, mmt, prepare, measure, inactive, prefix)
-            circuit.append("TICK")
+            circuit.append_tick()
 
     def locate_qubit(self, label: str):
         index = int(label[1:])
@@ -172,7 +174,7 @@ class SurfaceCodePatch:
         raise ValueError("Invalid label provided [qubit index not found].")
 
     def append_round_slice(
-        self, circuit: stim.Circuit, moment: int, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
+        self, circuit: Circuitry, moment: int, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
         inactive: Callable[[tuple[float,float]], bool] = lambda _: False, prefix: str = ""
     ):
         match moment:

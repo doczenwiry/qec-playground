@@ -19,10 +19,12 @@ import logging
 import numpy as np
 import stim
 
+from library.circuitry import Circuitry
+
 
 class QubitArray:
     def __init__(
-        self, circuit: stim.Circuit, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True
+        self, circuit: Circuitry, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True
     ):
         dimX, dimY = dimensions
         self.qubits = dict()
@@ -56,11 +58,9 @@ class QubitArray:
             [ (0.5,0.5) , (self.dimX-1.5, 0.5), (0.5, self.dimY-1.5), (self.dimX-1.5, self.dimY-1.5) ]
         )
 
-    def annotate_detector(self, circuit: stim.Circuit, *labels: str) -> bool:
+    def annotate_detector(self, circuit: Circuitry, *labels: str) -> bool:
         if all(self.has_record(label) for label in labels):
-            circuit.append(
-                "DETECTOR", map(self.retrieve_target_rec, labels)
-            )
+            circuit.append("DETECTOR", map(self.retrieve_target_rec, labels))
             return True
         logging.warning(f"Requested some unrecorded measurement [request:{labels}]")
         for label in labels:

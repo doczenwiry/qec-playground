@@ -13,8 +13,8 @@
 #   limitations under the License.
 
 import itertools
-import stim
 
+from library.circuitry import Circuitry
 from library.surface_code.patch import SurfaceCodePatch
 from library.qubit_array import QubitArray
 
@@ -53,11 +53,11 @@ class JunctionPatch:
             polygons.append(f"#!pragma POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}\n")
         return polygons
 
-    def annotate_detectors(self, circuit: stim.Circuit, rounds: int):
+    def annotate_detectors(self, circuit: Circuitry, rounds: int):
         for zi, (prev, curr) in itertools.product(range(3), itertools.pairwise(range(rounds))):
             self.__physical_qubits.annotate_detector(circuit, f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}")
 
-    def append_syndrome_slice(self, circuit: stim.Circuit, moment: int, prefix: str = ""):
+    def append_syndrome_slice(self, circuit: Circuitry, moment: int, prefix: str = ""):
         match moment:
             case 0:
                 circuit.append("RZ", self.z_ancilla.values())

@@ -21,23 +21,26 @@ import sinter
 import stim
 from tqec import NoiseModel
 
+from library.circuitry import Circuitry
+
+
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def simulate(
-    scenarios: Union[stim.Circuit, dict[str, stim.Circuit]], title ="circuit",
+    scenarios: Union[Circuitry, dict[str, Circuitry]], title ="circuit",
     postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10,
     num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5),
     filename: Optional[str] = None,
 ):
-    if isinstance(scenarios, stim.Circuit):
+    if isinstance(scenarios, Circuitry):
         scenarios = { 'circuit' : scenarios }
     tasks = [
         sinter.Task(
-            circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(circuit),
-            postselection_mask=np.packbits(np.ones(circuit.num_detectors, dtype=bool)) if postselection else None,
+            circuit=NoiseModel.uniform_depolarizing(noise).noisy_circuit(circuitry.as_stim),
+            postselection_mask=np.packbits(np.ones(circuitry.num_detectors, dtype=bool)) if postselection else None,
             json_metadata={'case': case, 'per': noise},
         )
-        for (case, circuit), noise in itertools.product(
+        for (case, circuitry), noise in itertools.product(
             scenarios.items(), np.logspace(-1, minimal_noise, num=points)
         )
     ]

@@ -19,6 +19,7 @@ from typing import Final
 
 import stim
 
+from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
 from library.surface_code.patch import SurfaceCodePatch
 
@@ -112,7 +113,7 @@ class ExpandingSurfaceCodePatch:
                 polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}\n")
         return polygons
 
-    def annotate_detectors(self, circuit: stim.Circuit, sc_rounds: int, source: SurfaceCodePatch, prefix: str = "EXP"):
+    def annotate_detectors(self, circuit: Circuitry, sc_rounds: int, source: SurfaceCodePatch, prefix: str = "EXP"):
         last = sc_rounds-1
         for stabilizer in ['X', 'Z']:
             for qi, qa in enumerate(self.__qubits[stabilizer]):
@@ -133,7 +134,7 @@ class ExpandingSurfaceCodePatch:
                             self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
 
     def append_general_observable(
-            self, circuit: stim.Circuit, logical: dict[tuple[float,float], str], *labels: str
+            self, circuit: Circuitry, logical: dict[tuple[float,float], str], *labels: str
     ):
         ax, ay = self.__anchor
         physical = {
@@ -142,10 +143,10 @@ class ExpandingSurfaceCodePatch:
         circuit.append("MPP", stim.PauliString(physical))
         self.__physical_qubits.record_measurement(-1, "EXP_AGO")
         circuit.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, ["EXP_AGO", *labels]), 0)
-        circuit.append("TICK")
+        circuit.append_tick()
 
     def append_expansion_slice(
-        self, circuit: stim.Circuit, moment: int, prefix: str = ""
+        self, circuit: Circuitry, moment: int, prefix: str = ""
     ):
         match moment:
             case 0:

@@ -12,11 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from collections import Counter
 from typing import Optional
 
 import stim
 
+from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
 from library.surface_code.patch import SurfaceCodePatch, PauliBasis
 
@@ -34,7 +34,6 @@ class TeleportationSurgery:
         self.__source_inactive = lambda ql : ql[0] == sx + distance - 0.5
         self.__target_inactive = lambda ql : ql[0] == tx - 0.5
         self.__merger_inactive = lambda ql : not(jx + 0.5 <= ql[0] < jx + 2)
-        self.__instructions = Counter()
 
     @property
     def source(self):
@@ -44,52 +43,19 @@ class TeleportationSurgery:
     def target(self):
         return self.__target
 
-    def rewrite_with_polygons(self, filename: str):
-        # Insert all the polygons into the Stim file for readability.
-        with open(filename, "r", encoding="utf-8") as file:
-            lines = file.readlines()
-            inserted = 0
-
-            # Insert polygons for the source surface code patch
-            for polygon in self.__source.get_polygons():
-                lines.insert(self.__instructions['source'] + inserted, polygon)
-                inserted += 1
-            lines.insert(self.__instructions['source'] + inserted, "TICK\n")
-            inserted += 1
-
-            # Insert polygons for the source+merger+target surface code patches
-            for surface, inactive in [
-                (self.__source, self.__source_inactive),
-                (self.__target, self.__target_inactive),
-                (self.__merger, self.__merger_inactive)
-            ]:
-                for polygon in surface.get_polygons(inactive):
-                    lines.insert(self.__instructions['merger'] + inserted, polygon)
-                    inserted += 1
-            lines.insert(self.__instructions['merger'] + inserted, "TICK\n")
-            inserted += 1
-
-            # Insert polygons for the target surface code patch
-            for polygon in self.__target.get_polygons():
-                lines.insert(self.__instructions['target'] + inserted, polygon)
-                inserted += 1
-            lines.insert(self.__instructions['target'] + inserted, "TICK\n")
-            inserted += 1
-
-        with open(filename, "w", encoding="utf-8") as file:
-            file.writelines(lines)
-            print(f"Generated circuit : {filename}")
-
     def append_movement(
-            self, circuit: stim.Circuit, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
+            self, circuit: Circuitry, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
             full_ft: bool = True
     ):
-        self.__instructions['source'] = len(circuit)
+        circuit.annotate_polygons(self.__source.get_polygons())
         self.__source.append_memory(circuit, memory=0, prepare=prepare, full_ft=full_ft, prefix="S")
+
+        circuit.annotate_polygons(self.__source.get_polygons(self.__source_inactive))
+        circuit.annotate_polygons(self.__merger.get_polygons(self.__merger_inactive))
+        circuit.annotate_polygons(self.__target.get_polygons(self.__target_inactive))
 
         start_round = 0
         final_round = self.__distance - 1
-        self.__instructions['merger'] = len(circuit)
         for rnd in range(self.__distance if full_ft else 1):
             for mmt in SurfaceCodePatch.MOMENTS:
                 self.__source.append_round_slice(
@@ -111,9 +77,9 @@ class TeleportationSurgery:
                     inactive=self.__target_inactive,
                     prefix=f"T:M1:R{rnd}"
                 )
-                circuit.append("TICK")
+                circuit.append_tick()
 
-        self.__instructions['target'] = len(circuit)
+        circuit.annotate_polygons(self.__target.get_polygons())
         self.__target.append_memory(circuit, memory=2, measure=measure, full_ft=full_ft, prefix="T")
 
     def locate_measurement(self, label: str):
@@ -128,5 +94,9 @@ class TeleportationSurgery:
 
         return patch.locate_qubit(label.split(":")[-1])
 
-    def annotate_observable(self, circuit: stim.Circuit, id: int, *labels: str):
-        circuit.append("OBSERVABLE_INCLUDE", [ stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels ], id)
+    def annotate_observable(self, circuit: Circuitry, identifier: int, *labels: str):
+        circuit.append(
+            "OBSERVABLE_INCLUDE",
+            [ stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels ],
+            identifier
+        )

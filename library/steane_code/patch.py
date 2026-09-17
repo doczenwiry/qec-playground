@@ -17,6 +17,7 @@ import itertools
 import stim
 from typing import List
 
+from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ class SteaneCodePatch:
         else:
             return self.__get_polygons(SteaneCodePatch.STABILIZERS['FINAL'], opacity)
 
-    def annotate_detectors(self, circuit: stim.Circuit, sdc_rounds: int = 0, tpt_rounds: int = 0):
+    def annotate_detectors(self, circuit: Circuitry, sdc_rounds: int = 0, tpt_rounds: int = 0):
         # Annotate all SUPERDENSE detectors
         for color in self.stabilizers.keys():
             if sdc_rounds >= 1:
@@ -127,27 +128,27 @@ class SteaneCodePatch:
             circuit, f"DST:X0", f"DST:X2", f"DST:X3", f"DST:X4"
         )
 
-    def append_observable(self, circuit: stim.Circuit, observable: str, support: list[int]):
+    def append_observable(self, circuit: Circuitry, observable: str, support: list[int]):
         circuit.append("MPP", stim.PauliString(
             "*".join(map(lambda q: observable + str(q), support))
         ))
         circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-1)], 0)
-        circuit.append("TICK")
+        circuit.append_tick()
 
-    def append_general_observable(self, circuit: stim.Circuit, logical: dict[int, str]):
+    def append_general_observable(self, circuit: Circuitry, logical: dict[int, str]):
         physical = {
             self.qubits[q] : pauli for q, pauli in logical.items()
         }
         circuit.append("MPP", stim.PauliString(physical))
         circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-1)], 0)
-        circuit.append("TICK")
+        circuit.append_tick()
 
-    def append_preparation(self, circuit: stim.Circuit):
+    def append_preparation(self, circuit: Circuitry):
         for moment in self.PREPARATION_MOMENTS:
             self.append_preparation_slice(circuit, moment)
-            circuit.append("TICK")
+            circuit.append_tick()
 
-    def append_preparation_slice(self, circuit: stim.Circuit, moment: int):
+    def append_preparation_slice(self, circuit: Circuitry, moment: int):
         match moment:
             case 0:
                 circuit.append("RX", self.__shift_qubit_ids(0, 2, 6, 11))
@@ -176,13 +177,13 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_superdense_cycle(self, circuit: stim.Circuit, prefix: str = "SDC"):
+    def append_superdense_cycle(self, circuit: Circuitry, prefix: str = "SDC"):
         for moment in self.SUPERDENSE_MOMENTS:
             self.append_superdense_cycle_slice(circuit, moment, prefix)
-            circuit.append("TICK")
+            circuit.append_tick()
 
     def append_superdense_cycle_slice(
-            self, circuit: stim.Circuit, moment: int, prefix: str = "SDC"
+            self, circuit: Circuitry, moment: int, prefix: str = "SDC"
     ):
         match moment:
             case 0:
@@ -227,14 +228,14 @@ class SteaneCodePatch:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
     def append_cultivation(
-            self, circuit: stim.Circuit, prefix: str = "CULT"
+            self, circuit: Circuitry, prefix: str = "CULT"
     ):
         for moment in self.CULTIVATION_MOMENTS:
             self.append_cultivation_slice(circuit, moment, prefix)
-            circuit.append("TICK")
+            circuit.append_tick()
 
     def append_cultivation_slice(
-            self, circuit: stim.Circuit, moment: int, prefix: str = "CULT"
+            self, circuit: Circuitry, moment: int, prefix: str = "CULT"
     ):
         match moment:
             case 0:
@@ -270,15 +271,15 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_teleportation(self, circuit: stim.Circuit, prefix: str = "TPT"):
+    def append_teleportation(self, circuit: Circuitry, prefix: str = "TPT"):
         for moment in self.TELEPORTATION_MOMENTS:
             self.append_teleportation_slice(circuit, moment, prefix)
-            circuit.append("TICK")
+            circuit.append_tick()
 
-    def append_teleportation_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPT"):
+    def append_teleportation_slice(self, circuit: Circuitry, moment: int, prefix: str = "TPT"):
         self.__append_teleportation_slice(circuit, moment, prefix)
 
-    def __append_teleportation_slice(self, circuit: stim.Circuit, moment: int, prefix: str = "TPT"):
+    def __append_teleportation_slice(self, circuit: Circuitry, moment: int, prefix: str = "TPT"):
         match moment:
             # GHZ-state formation
             case 0:
@@ -325,7 +326,7 @@ class SteaneCodePatch:
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    def append_destruction(self, circuit: stim.Circuit, prefix: str = "DST"):
+    def append_destruction(self, circuit: Circuitry, prefix: str = "DST"):
         measured_data_qubits = self.logical
         circuit.append("MX", measured_data_qubits)
         for index, qd in enumerate(measured_data_qubits):
