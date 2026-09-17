@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import itertools
-from typing import Union
+from typing import Union, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,7 +27,7 @@ def simulate(
     scenarios: Union[stim.Circuit, dict[str, stim.Circuit]], title ="circuit",
     postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10,
     num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5),
-    savefile: str = "generated/simulation-run.csv",
+    filename: Optional[str] = None,
 ):
     if isinstance(scenarios, stim.Circuit):
         scenarios = { 'circuit' : scenarios }
@@ -49,7 +49,7 @@ def simulate(
         max_shots=int(shots),
         max_errors=max_errors,
         print_progress=True,
-        save_resume_filepath=savefile,
+        save_resume_filepath=filename + ".results.csv" if filename else None,
     )
 
     fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)
