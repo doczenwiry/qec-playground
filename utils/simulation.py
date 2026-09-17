@@ -13,16 +13,23 @@
 #   limitations under the License.
 
 import itertools
-from typing import Union, Optional
+from typing import Union, Optional, cast
 
+import clifft
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 import sinter
 import stim
+from matplotlib.container import BarContainer
+from seaborn.categorical import BoxPlotContainer
 from tqec import NoiseModel
 from tqec.utils.noise_model import NoiseRule
 
 from library.circuitry import Circuitry
+
+__all__ = ['simulate', 'sample']
 
 def make_noisy_circuit(circuit: stim.Circuit, per: float) -> stim.Circuit:
     return NoiseModel(
@@ -113,3 +120,44 @@ def simulate(
 
     fig.suptitle(title)
     plt.tight_layout()
+
+# Thanks, Claude.AI (September 2026)
+def sample(
+    scenarios: Union[Circuitry, dict[str, Circuitry]],
+    title: str = "Sampling results", scenario_label: str = "Scenario",
+    shots=1e6, figsize: tuple[float, float] = (11, 5)
+):
+    if isinstance(scenarios, Circuitry):
+        scenarios = { 'circuit' : scenarios }
+
+    dataframes: list[pd.DataFrame] = []
+
+    for scenario, circuitry in scenarios.items():
+        if circuitry.is_clifford:
+            sampler = circuitry.as_stim.compile_sampler()
+            outcomes = sampler.sample(shots=int(shots)).astype(int)
+        else:
+            program = clifft.compile(str(circuitry))
+            outcomes = clifft.sample(program, shots=int(shots), seed=42).measurements
+
+        df = pd.DataFrame()
+        df["Measured"] = outcomes.flatten()
+        df[scenario_label] = scenario
+        dataframes.append(df)
+
+    dataframe = pd.concat(dataframes, ignore_index=True)
+
+    plt.figure(figsize=figsize)
+    ax = sns.histplot(
+        data=dataframe, x=scenario_label, hue="Measured",
+        discrete=True, multiple="dodge", shrink=0.9,
+        palette={1: "seagreen", 0: "indianred"}
+    )
+    sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+
+    for container in ax.containers:
+        ax.bar_label(cast(BarContainer, container), fmt=lambda x: f"{float(100.0 * x / shots):.2f}%")
+
+    plt.ylim(0, int(1.075 * shots))
+    plt.suptitle(title)
+    plt.show()
