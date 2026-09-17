@@ -110,7 +110,7 @@ class ExpandingSurfaceCodePatch:
             for (px, py), _ in iter(zl for zq, zl in self.__qubits[stabilizer].items() if self.is_qubit_active(zq, expanded)):
                 polygon = self.__get_polygon(px, py, expanded)
                 x, y, z = int(stabilizer == 'X'), 0, int(stabilizer == 'Z')
-                polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}\n")
+                polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}")
         return polygons
 
     def annotate_detectors(self, circuit: Circuitry, sc_rounds: int, source: SurfaceCodePatch, prefix: str = "EXP"):

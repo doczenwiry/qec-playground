@@ -24,7 +24,11 @@ from library.surface_code.patch import SurfaceCodePatch, PauliBasis
 
 logging.basicConfig(level=logging.ERROR)
 
+# Primary parameters
 TARGET_DISTANCE = 9
+INJECTION = SteaneCodePatch.Injection.S
+
+# Internal parameters
 SUPERDENSE_ROUNDS = 3
 TELEPORT_ROUNDS = 3
 ROUNDS_FOR_COMPLEMENTARY_GAP = 1
@@ -36,9 +40,9 @@ if __name__ == "__main__":
     if TARGET_DISTANCE % 2 != 1 and TARGET_DISTANCE < 9:
         raise ValueError("TARGET_DISTANCE must be odd and above 9.")
 
-    circuitry = Circuitry()
+    circuitry = Circuitry(clifford=INJECTION == SteaneCodePatch.Injection.S)
     array = QubitArray(circuitry, dimensions=(TARGET_DISTANCE + 2, TARGET_DISTANCE + 2))
-    steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-7))
+    steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-7), injection=INJECTION)
     junction = JunctionPatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-5))
     source = SurfaceCodePatch(array, distance=5, anchor=(TARGET_DISTANCE - 4, TARGET_DISTANCE - 4))
     expanding = ExpandingSurfaceCodePatch(array, distance=5, anchor=(1, 1), expansion=TARGET_DISTANCE - 5)
@@ -125,23 +129,26 @@ if __name__ == "__main__":
     expanding.annotate_detectors(circuitry, sc_rounds=TELEPORT_ROUNDS + 1, source=source)
     # target.annotate_detectors(circuit, rounds=ROUNDS_FOR_COMPLEMENTARY_GAP, prefix="CG")
 
-    gauge_found = False
-    try:
-        circuitry.as_stim.detector_error_model(allow_gauge_detectors=False)
-    except ValueError:
-        gauge_found = True
-
     print(f"Detector statistics : ")
     print(f"> Measurement records : {len(array.measurements_index)}")
-    print(f"> Number of detectors : {circuitry.as_stim.num_detectors}")
-    print(f"> Missing detectors : {len(circuitry.as_stim.missing_detectors())}")
-    for detector in circuitry.as_stim.missing_detectors():
-        records = list(map(lambda neg: array.retrieve_record(neg.value), detector.targets_copy()))
-        print(f">> Detector : {records}")
-    print(f"> Gauge detectors : {"FOUND" if gauge_found else "NONE"}")
-
+    print(f"> Number of detectors : {circuitry.num_detectors}")
+    if circuitry.is_clifford:
+        gauge_found = False
+        try:
+            circuitry.as_stim.detector_error_model(allow_gauge_detectors=False)
+        except ValueError:
+            gauge_found = True
+        print(f"> Missing detectors : {len(circuitry.as_stim.missing_detectors())}")
+        for detector in circuitry.as_stim.missing_detectors():
+            records = list(map(lambda neg: array.retrieve_record(neg.value), detector.targets_copy()))
+            print(f">> Detector : {records}")
+        print(f"> Gauge detectors : {"FOUND" if gauge_found else "NONE"}")
+    else:
+        print(f"> Missing detectors : n/a [non-Clifford circuit]")
+        print(f"> Gauge detectors : n/a [non-Clifford circuit]")
     print(f"Circuit statistics")
     print(f"> #qubits: {circuitry.num_qubits}")
     print(f"> #CNOTs : {circuitry.num_cnots}")
 
     circuitry.to_file(FILENAME)
+    print(f"Written as file : {FILENAME}.{"stim" if circuitry.is_clifford else "clifft"}")

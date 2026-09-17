@@ -14,6 +14,8 @@
 
 import logging
 import itertools
+from enum import Enum
+
 import stim
 from typing import List
 
@@ -23,6 +25,10 @@ from library.qubit_array import QubitArray
 logger = logging.getLogger(__name__)
 
 class SteaneCodePatch:
+    class Injection(Enum):
+        S = 0
+        T = 1
+
     QUBITS = [
         # Data qubits
         (2,2), (0,2), (2,1), (3,2), (3,0), (1,0), (1,1),
@@ -42,8 +48,9 @@ class SteaneCodePatch:
     CULTIVATION_MOMENTS = range(12)
     TELEPORTATION_MOMENTS = range(15)
 
-    def __init__(self, array: QubitArray, anchor: tuple[int, int] = (0,0)):
+    def __init__(self, array: QubitArray, anchor: tuple[int, int] = (0,0), injection: Injection = Injection.S):
         self.__anchor = anchor
+        self.__injection_gate = injection.name
         self.__physical_qubits = array
         px, py = anchor
         self.qubits = [ array.qubits[(px+dx, py+dy)] for dx, dy in SteaneCodePatch.QUBITS ]
@@ -69,7 +76,7 @@ class SteaneCodePatch:
             polygons.append(
                 f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(
                     map(str, self.__shift_qubit_ids(*support))
-                )}\n"
+                )}"
             )
         return polygons
 
@@ -167,7 +174,7 @@ class SteaneCodePatch:
                 circuit.append("CX", self.__shift_qubit_ids(13, 1, 9, 14, 10, 6, 15, 3, 8, 11))
             case 7:
                 circuit.append("CX", self.__shift_qubit_ids(10, 5, 11, 8, 3, 15, 13, 9))
-                circuit.append("S_DAG", self.__shift_qubit_ids(6))
+                circuit.append(f"{self.__injection_gate}_DAG", self.__shift_qubit_ids(6))
             case 8:
                 circuit.append("CX", self.__shift_qubit_ids(13, 6, 11, 4))
             case 9:
@@ -239,7 +246,7 @@ class SteaneCodePatch:
     ):
         match moment:
             case 0:
-                circuit.append("S_DAG", self.logical)
+                circuit.append(f"{self.__injection_gate}_DAG", self.logical)
                 circuit.append("RX", self.__shift_qubit_ids(10, 11, 13, 14, 15))
             case 1:
                 circuit.append("CX", self.__shift_qubit_ids(10, 5, 11, 4, 13, 1, 14, 2, 15, 3))
@@ -267,7 +274,7 @@ class SteaneCodePatch:
                 circuit.append("MX", measured_ancilla)
                 for index, xa in enumerate(measured_ancilla):
                     self.__physical_qubits.record_measurement(xa, f"{prefix}:X{index+1}")
-                circuit.append("S", self.logical)
+                circuit.append(f"{self.__injection_gate}", self.logical)
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 

@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from collections import defaultdict
-from typing import Union, Iterable
+from typing import Union, Iterable, cast
 
 import stim
 
@@ -60,37 +60,29 @@ class Circuitry:
         return len(self.__circuit) if self.__clifford else -1
 
     def to_file(self, filename: str, polygons: bool = True, spacing: bool = False):
-        if not self.__clifford:
-            raise NotImplementedError("Non-Clifford circuit not supported yet.")
-
-        filepath = filename + ".stim"
-        self.__circuit.to_file(filepath)
+        filename += ".stim" if self.__clifford else ".clifft"
+        lines = str(self.__circuit).split("\n") if self.__clifford else cast(list, self.__circuit)
 
         if polygons:
-            with open(filepath, "r", encoding="utf-8") as file:
-                lines = file.readlines()
-                inserted = 0
+            inserted = 0
 
-                # Insert all registered polygons where they belong
-                for line_number, polygons in self.__polygons.items():
-                    for polygon in polygons:
-                        lines.insert(line_number + inserted, polygon)
-                        inserted += 1
-                    if spacing:
-                        lines.insert(line_number + inserted, "TICK\n")
-                        inserted += 1
+            # Insert all registered polygons where they belong
+            for line_number, polygons in self.__polygons.items():
+                for polygon in polygons:
+                    lines.insert(line_number + inserted, polygon)
+                    inserted += 1
+                if spacing:
+                    lines.insert(line_number + inserted, "TICK")
+                    inserted += 1
 
-            with open(filepath, "w", encoding="utf-8") as file:
-                file.writelines(lines)
+        with open(filename, "w", encoding="utf-8") as file:
+            file.write("\n".join(lines) + "\n")
 
     def annotate_polygons(self, polygons: list[str]):
         self.__polygons[len(self.__circuit)].extend(polygons)
 
     def append_tick(self):
-        if self.__clifford:
-            self.__circuit.append("TICK")
-        else:
-            raise NotImplementedError("Non-Clifford circuit not supported yet.")
+        self.__circuit.append("TICK")
 
     def __update_internal_counters(self, name: str, targets: list[Union[int, stim.GateTarget, stim.PauliString]]):
         match name:
@@ -123,4 +115,25 @@ class Circuitry:
         if self.__clifford:
             self.__circuit.append(name, targets, arg)
         else:
-            raise NotImplementedError("Non-Clifford circuit not supported yet.")
+            match name:
+                case "DETECTOR" | "OBSERVABLE_INCLUDE":
+                    targets = " ".join(map(lambda sr: f"rec[{sr.value}]", targets))
+                case "MPP":
+                    labels = "_XYZ"
+                    terms = [f"{labels[p]}{i}" for i, p in enumerate(targets[0]) if p != 0]
+                    targets = "*".join(terms) if terms else "I"
+                case _:
+                    targets = " ".join(map(str, targets))
+
+            argument = ""
+            match name:
+                case "QUBIT_COORDS":
+                    args = arg if isinstance(arg, Iterable) else [ arg ]
+                    argument = tuple(map(float, args))
+                case "OBSERVABLE_INCLUDE":
+                    argument = f"({arg})"
+
+            self.__circuit.append(f"{name}{argument} {targets}")
+
+    def __str__(self):
+        return str(self.__circuit) if self.__clifford else str("\n".join(map(str, cast(list, self.__circuit))))
