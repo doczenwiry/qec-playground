@@ -35,7 +35,7 @@ class SteaneCodePatch:
         # Data-ancilla qubits
         (2, 0), (3, 1), (1, 2),
         # Meas-ancilla qubits
-        (1.5, 0.5), (2.5, 0.5), (3.5, 0.5), (0.5, 1.5), (1.5, 1.5), (2.5, 1.5),
+        (1.5, 0.5), (2.5, 0.5), (3.5, 0.5), (0.5, 1.5), (1.5, 1.5), (2.5, 1.5), (0.5, 0.5)
     ]
 
     STABILIZERS = {
@@ -47,6 +47,7 @@ class SteaneCodePatch:
     SUPERDENSE_MOMENTS = range(15)
     CULTIVATION_MOMENTS = range(12)
     TELEPORTATION_MOMENTS = range(15)
+    DESTRUCTION_MOMENTS = range(6)
 
     def __init__(self, array: QubitArray, anchor: tuple[int, int] = (0,0), injection: Injection = Injection.S):
         self.__anchor = anchor
@@ -275,9 +276,6 @@ class SteaneCodePatch:
             circuit.append_tick()
 
     def append_teleportation_slice(self, circuit: Circuitry, moment: int, prefix: str = "TPT"):
-        self.__append_teleportation_slice(circuit, moment, prefix)
-
-    def __append_teleportation_slice(self, circuit: Circuitry, moment: int, prefix: str = "TPT"):
         match moment:
             # GHZ-state formation
             case 0:
@@ -325,7 +323,20 @@ class SteaneCodePatch:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
     def append_destruction(self, circuit: Circuitry, prefix: str = "DST"):
-        measured_data_qubits = self.support
-        circuit.append("MX", measured_data_qubits)
-        for index, qd in enumerate(measured_data_qubits):
-            self.__physical_qubits.record_measurement(qd, f"{prefix}:X{index}")
+        for moment in self.DESTRUCTION_MOMENTS:
+            self.append_destruction_slice(circuit, moment, prefix)
+            circuit.append_tick()
+
+    def append_destruction_slice(self, circuit: Circuitry, moment: int, prefix: str = "DST"):
+        match moment:
+            case 0:
+                circuit.append("R", self.__shift_qubit_ids(10, 11, 12, 13, 14, 15, 16))
+            case 1:
+                circuit.append("CX", self.__shift_qubit_ids(5, 16, 4, 12, 6, 10, 2, 11, 0, 14, 3, 15, 1, 13))
+            case 3:
+                circuit.append("CX", self.__shift_qubit_ids(16, 5, 12, 4, 10, 6, 11, 2, 14, 0, 15, 3, 13, 1))
+            case 5:
+                measured_data_qubits = self.__shift_qubit_ids(14, 13, 11, 15, 12, 16, 10)
+                circuit.append("MX", measured_data_qubits)
+                for index, qd in enumerate(measured_data_qubits):
+                    self.__physical_qubits.record_measurement(qd, f"{prefix}:X{index}")

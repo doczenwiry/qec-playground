@@ -83,9 +83,10 @@ if __name__ == "__main__":
     circuitry.annotate_polygons(steane.get_polygons(opacity=2.25 * EXPANDED_OPACITY))
     circuitry.annotate_polygons(source.get_polygons())
 
-    steane.append_destruction(circuitry)
-    source.append_round(circuitry, prefix=f"SC{TELEPORT_ROUNDS}")
-    circuitry.append_tick()
+    for mmt in steane.DESTRUCTION_MOMENTS:
+        steane.append_destruction_slice(circuitry, moment=mmt)
+        source.append_round_slice(circuitry, moment=mmt, prefix=f"SC{TELEPORT_ROUNDS}")
+        circuitry.append_tick()
 
     # Observable if expansion is commented out.
     # circuitry.append_observable(
