@@ -52,7 +52,7 @@ def make_noisy_circuit(circuit: stim.Circuit, per: float) -> stim.Circuit:
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def simulate(
-    scenarios: Union[Circuitry, dict[str, Circuitry]], title: str ="Simulation results",
+    scenarios: Union[Circuitry, dict[str, Circuitry]], title: str ="Simulation results", label: str = "",
     postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10,
     num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5),
     filename: Optional[str] = None,
@@ -81,12 +81,16 @@ def simulate(
     )
 
     fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)
+    labels = {
+        scenario : f"Point {index} - {scenario}"
+        for index, scenario in enumerate(scenarios)
+    }
     error_rates = axes[0] if postselection else axes
     sinter.plot_error_rate(
         ax=error_rates,
         stats=collected_stats,
         x_func=lambda stats: stats.json_metadata['per'],
-        group_func=lambda stats: stats.json_metadata['case'],
+        group_func=lambda stats: labels.get(stats.json_metadata['case']),
     )
     error_rates.set_ylim(1e-9, 1.5)
     error_rates.set_xlim(10**minimal_noise, 0.125)
@@ -104,8 +108,8 @@ def simulate(
         sinter.plot_discard_rate(
             ax=discard_rates,
             stats=collected_stats,
-            group_func=lambda stat: stat.json_metadata['case'],
             x_func=lambda stat: stat.json_metadata['per'],
+            group_func=lambda stats: labels.get(stats.json_metadata['case']),
         )
         discard_rates.set_title(f"Discard rates")
         discard_rates.set_xlabel('Physical Error Rate')
@@ -121,10 +125,11 @@ def simulate(
     fig.suptitle(title)
     plt.tight_layout()
 
+SEED=42
 # Thanks, Claude.AI (September 2026)
 def sample(
-    scenarios: Union[Circuitry, dict[str, Circuitry]],
-    title: str = "Sampling results", scenario_label: str = "Scenario",
+    scenarios: Union[Circuitry, dict[str, Circuitry]], correction: bool = True,
+    title: str = "Sampling results", label: str = "Scenario",
     shots=1e6, figsize: tuple[float, float] = (11, 5)
 ):
     if isinstance(scenarios, Circuitry):
@@ -134,30 +139,42 @@ def sample(
 
     for scenario, circuitry in scenarios.items():
         if circuitry.is_clifford:
-            sampler = circuitry.as_stim.compile_sampler()
-            outcomes = sampler.sample(shots=int(shots)).astype(int)
+            # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
+            if correction:
+                _, outcomes = circuitry.as_stim.compile_detector_sampler(seed=SEED).sample(
+                    shots=int(shots), separate_observables=True
+                )
+                outcomes = outcomes.astype(int)[:, 0]
+            else:
+                outcomes = circuitry.as_stim.compile_sampler().sample(
+                    shots=int(shots)
+                ).astype(int)[:, -1]
         else:
-            program = clifft.compile(str(circuitry))
-            outcomes = clifft.sample(program, shots=int(shots), seed=42).measurements
+            results = clifft.sample(
+                clifft.compile(str(circuitry)), shots=int(shots), seed=SEED
+            )
+            outcomes = results.observables[:, 0] if correction else results.measurements[:, -1]
 
         df = pd.DataFrame()
         df["Measured"] = outcomes.flatten()
-        df[scenario_label] = scenario
+        df[label] = scenario
         dataframes.append(df)
 
     dataframe = pd.concat(dataframes, ignore_index=True)
+    dataframe["Measured"] = pd.Categorical(dataframe["Measured"], categories=[0, 1])
+    n_categories = dataframe[label].nunique()
 
     plt.figure(figsize=figsize)
     ax = sns.histplot(
-        data=dataframe, x=scenario_label, hue="Measured",
-        discrete=True, multiple="dodge", shrink=0.9,
-        palette={1: "seagreen", 0: "indianred"}
+        data=dataframe, x=label, hue="Measured", hue_order=[0, 1],
+        discrete=True, multiple="dodge", shrink=0.9, palette={1: "seagreen", 0: "indianred"},
     )
+    ax.set_xlim(-0.5, n_categories - 0.5)
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 
     for container in ax.containers:
         ax.bar_label(cast(BarContainer, container), fmt=lambda x: f"{float(100.0 * x / shots):.2f}%")
 
-    plt.ylim(0, int(1.075 * shots))
+    plt.ylim(0, 1.075 * shots)
     plt.suptitle(title)
     plt.show()

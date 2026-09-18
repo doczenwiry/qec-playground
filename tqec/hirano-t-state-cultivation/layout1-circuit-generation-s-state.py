@@ -26,7 +26,6 @@ logging.basicConfig(level=logging.ERROR)
 
 # Primary parameters
 TARGET_DISTANCE = 9
-INJECTION = SteaneCodePatch.Injection.S
 
 # Internal parameters
 SUPERDENSE_ROUNDS = 3
@@ -40,9 +39,9 @@ if __name__ == "__main__":
     if TARGET_DISTANCE % 2 != 1 and TARGET_DISTANCE < 9:
         raise ValueError("TARGET_DISTANCE must be odd and above 9.")
 
-    circuitry = Circuitry(clifford=INJECTION == SteaneCodePatch.Injection.S)
+    circuitry = Circuitry(clifford=True)
     array = QubitArray(circuitry, dimensions=(TARGET_DISTANCE + 2, TARGET_DISTANCE + 2))
-    steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-7), injection=INJECTION)
+    steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-7), injection=SteaneCodePatch.Injection.S)
     junction = JunctionPatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-5))
     source = SurfaceCodePatch(array, distance=5, anchor=(TARGET_DISTANCE - 4, TARGET_DISTANCE - 4))
     expanding = ExpandingSurfaceCodePatch(array, distance=5, anchor=(1, 1), expansion=TARGET_DISTANCE - 5)
@@ -60,7 +59,7 @@ if __name__ == "__main__":
     for rnd in range(SUPERDENSE_ROUNDS):
         steane.append_superdense_cycle(circuitry, prefix=f"SDC{rnd}")
 
-    # Append the cultivation stage with the Double-Check-S/T
+    # Append the cultivation stage with the Double-Check-S
     steane.append_cultivation(circuitry, prefix="CULT")
 
     # Append the three rounds of the teleportation stage
@@ -132,23 +131,21 @@ if __name__ == "__main__":
     print(f"Detector statistics : ")
     print(f"> Measurement records : {len(array.measurements_index)}")
     print(f"> Number of detectors : {circuitry.num_detectors}")
-    if circuitry.is_clifford:
-        gauge_found = False
-        try:
-            circuitry.as_stim.detector_error_model(allow_gauge_detectors=False)
-        except ValueError:
-            gauge_found = True
-        print(f"> Missing detectors : {len(circuitry.as_stim.missing_detectors())}")
-        for detector in circuitry.as_stim.missing_detectors():
-            records = list(map(lambda neg: array.retrieve_record(neg.value), detector.targets_copy()))
-            print(f">> Detector : {records}")
-        print(f"> Gauge detectors : {"FOUND" if gauge_found else "NONE"}")
-    else:
-        print(f"> Missing detectors : n/a [non-Clifford circuit]")
-        print(f"> Gauge detectors : n/a [non-Clifford circuit]")
+
+    gauge_found = False
+    try:
+        circuitry.as_stim.detector_error_model(allow_gauge_detectors=False)
+    except ValueError:
+        gauge_found = True
+    print(f"> Missing detectors : {len(circuitry.missing_detectors())}")
+    for detector in circuitry.missing_detectors():
+        records = list(map(lambda neg: array.retrieve_record(neg.value), detector.targets_copy()))
+        print(f">> Detector : {records}")
+    print(f"> Gauge detectors : {"FOUND" if gauge_found else "NONE"}")
+
     print(f"Circuit statistics")
     print(f"> #qubits: {circuitry.num_qubits}")
     print(f"> #CNOTs : {circuitry.num_cnots}")
 
     circuitry.to_file(FILENAME)
-    print(f"Written as file : {FILENAME}.{"stim" if circuitry.is_clifford else "clifft"}")
+    print(f"Written as file : {FILENAME}.stim")

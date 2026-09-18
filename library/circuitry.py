@@ -34,11 +34,17 @@ class Circuitry:
         return self.__clifford
 
     @property
-    def as_stim(self):
+    def as_stim(self) -> stim.Circuit:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
-        return self.__circuit
+        return cast(stim.Circuit, self.__circuit)
+
+    def missing_detectors(self) -> list:
+        if not self.__clifford:
+            raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
+
+        return self.as_stim.missing_detectors()
 
     @property
     def num_qubits(self):
