@@ -23,7 +23,6 @@ import seaborn as sns
 import sinter
 import stim
 from matplotlib.container import BarContainer
-from seaborn.categorical import BoxPlotContainer
 from tqec import NoiseModel
 from tqec.utils.noise_model import NoiseRule
 
@@ -130,7 +129,7 @@ SEED=42
 def sample(
     scenarios: Union[Circuitry, dict[str, Circuitry]], correction: bool = True,
     title: str = "Sampling results", label: str = "Scenario",
-    shots=1e6, figsize: tuple[float, float] = (11, 5)
+    shots=1e6, figsize: tuple[float, float] = (11, 5), fontsize: int = 12
 ):
     if isinstance(scenarios, Circuitry):
         scenarios = { 'circuit' : scenarios }
@@ -170,10 +169,11 @@ def sample(
         discrete=True, multiple="dodge", shrink=0.9, palette={1: "seagreen", 0: "indianred"},
     )
     ax.set_xlim(-0.5, n_categories - 0.5)
+    ax.tick_params(axis='x', labelsize=fontsize)
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 
     for container in ax.containers:
-        ax.bar_label(cast(BarContainer, container), fmt=lambda x: f"{float(100.0 * x / shots):.2f}%")
+        ax.bar_label(cast(BarContainer, container), fmt=lambda x: f"{float(100.0 * x / shots):.2f}%", fontsize=fontsize)
 
     plt.ylim(0, 1.075 * shots)
     plt.suptitle(title)

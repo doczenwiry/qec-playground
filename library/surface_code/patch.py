@@ -13,21 +13,16 @@
 #   limitations under the License.
 
 import itertools
-from enum import Enum
 from typing import Optional, Final, Callable
 
 import logging
 
-import stim
-
 from library.circuitry import Circuitry
+from library.common import Pauli
 from library.qubit_array import QubitArray
 
 logger = logging.getLogger(__name__)
 
-class PauliBasis(Enum):
-    X = 0
-    Z = 2
 
 class SurfaceCodePatch:
     MOMENTS: Final[range] = range(6)
@@ -86,17 +81,22 @@ class SurfaceCodePatch:
     def num_x_ancilla(self):
         return len(self.__qubits['X'])
 
-    @property
-    def logical_y(self):
-        ax, ay = self.__anchor
-        logical = {}
-        for i in range(self.__distance):
-            if i == 0:
-                logical[self.__physical_qubits.qubits[(ax,ay)]] = "Y"
-            else:
-                logical[self.__physical_qubits.qubits[(ax,ay+i)]] = "X"
-                logical[self.__physical_qubits.qubits[(ax+i,ay)]] = "Z"
-        return logical
+    def logical(self, basis: Pauli):
+        ax, ay = self.anchor
+        match basis:
+            case Pauli.X:
+                return {self.__physical_qubits.qubits[(ax, ay + i)]: "X" for i in range(self.__distance)}
+            case Pauli.Y:
+                logical = {}
+                for i in range(self.__distance):
+                    if i == 0:
+                        logical[self.__physical_qubits.qubits[(ax, ay)]] = "Y"
+                    else:
+                        logical[self.__physical_qubits.qubits[(ax, ay + i)]] = "X"
+                        logical[self.__physical_qubits.qubits[(ax + i, ay)]] = "Z"
+                return logical
+            case Pauli.Z:
+                return {self.__physical_qubits.qubits[(ax + i, ay)]: "Z" for i in range(self.__distance)}
 
     def __get_qubits(self, qtype: str, inactive: Callable[[tuple[float,float]], bool] = lambda _: False):
         return iter(
@@ -128,7 +128,7 @@ class SurfaceCodePatch:
                 polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}")
         return polygons
 
-    def annotate_detectors(self, circuitry: Circuitry, rounds: int, prefix: str = "SC", prepared: Optional[PauliBasis] = None):
+    def annotate_detectors(self, circuitry: Circuitry, rounds: int, prefix: str = "SC", prepared: Optional[Pauli] = None):
         if prepared is not None:
             stabilizer = prepared.name
             for qa in range(len(self.__qubits[prepared.name])):
@@ -143,7 +143,7 @@ class SurfaceCodePatch:
 
     def append_memory(
             self, circuit: Circuitry, memory: int,
-            prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
+            prepare: Optional[Pauli] = None, measure: Optional[Pauli] = None,
             full_ft: bool = True, prefix: str = ""
     ):
         start = 0
@@ -157,7 +157,7 @@ class SurfaceCodePatch:
             )
 
     def append_round(
-        self, circuit: Circuitry, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
+        self, circuit: Circuitry, prepare: Optional[Pauli] = None, measure: Optional[Pauli] = None,
         inactive: Callable[[tuple[float,float]], bool] = lambda _: False, prefix: str = ""
     ):
         for mmt in SurfaceCodePatch.MOMENTS:
@@ -174,7 +174,7 @@ class SurfaceCodePatch:
         raise ValueError("Invalid label provided [qubit index not found].")
 
     def append_round_slice(
-        self, circuit: Circuitry, moment: int, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
+        self, circuit: Circuitry, moment: int, prepare: Optional[Pauli] = None, measure: Optional[Pauli] = None,
         inactive: Callable[[tuple[float,float]], bool] = lambda _: False, prefix: str = ""
     ):
         match moment:

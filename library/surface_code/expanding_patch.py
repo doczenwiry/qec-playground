@@ -20,6 +20,7 @@ from typing import Final
 import stim
 
 from library.circuitry import Circuitry
+from library.common import Pauli
 from library.qubit_array import QubitArray
 from library.surface_code.patch import SurfaceCodePatch
 
@@ -68,18 +69,29 @@ class ExpandingSurfaceCodePatch:
     def num_qubits(self):
         return sum(len(self.__qubits[qtype]) for qtype in ['X', 'Z', 'D'])
 
-    @property
-    def logical_y(self):
-        cross = self.__distance + self.__expansion - 5
-        logical = {}
+    def logical(self, basis: Pauli):
         ax, ay = self.__anchor
-        for i in range(self.__distance + self.__expansion):
-            if i == cross:
-                logical[self.__physical_qubits.qubits[(ax+i,ay+i)]] = "Y"
-            else:
-                logical[self.__physical_qubits.qubits[(ax+i,ay+cross)]] = "Z"
-                logical[self.__physical_qubits.qubits[(ax+cross,ay+i)]] = "X"
-        return logical
+        cross = self.__distance + self.__expansion - 5
+        match basis:
+            case Pauli.X:
+                return {
+                    self.__physical_qubits.qubits[(ax+cross, ay + i)]: "X"
+                    for i in range(self.__distance + self.__expansion)
+                }
+            case Pauli.Y:
+                logical = {}
+                for i in range(self.__distance + self.__expansion):
+                    if i == cross:
+                        logical[self.__physical_qubits.qubits[(ax+cross, ay+cross)]] = "Y"
+                    else:
+                        logical[self.__physical_qubits.qubits[(ax+cross, ay + i)]] = "X"
+                        logical[self.__physical_qubits.qubits[(ax + i, ay+cross)]] = "Z"
+                return logical
+            case Pauli.Z:
+                return {
+                    self.__physical_qubits.qubits[(ax + i, ay+cross)]: "Z"
+                    for i in range(self.__distance + self.__expansion)
+                }
 
     def active_qubits(self, qtype: str, expanded: bool = False):
         return iter(dq for dq in self.__qubits[qtype] if self.is_qubit_active(dq, expanded))

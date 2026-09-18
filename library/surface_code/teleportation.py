@@ -18,7 +18,8 @@ import stim
 
 from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
-from library.surface_code.patch import SurfaceCodePatch, PauliBasis
+from library.surface_code.patch import SurfaceCodePatch
+from library.common import Pauli
 
 
 class TeleportationSurgery:
@@ -44,7 +45,7 @@ class TeleportationSurgery:
         return self.__target
 
     def append_movement(
-            self, circuit: Circuitry, prepare: Optional[PauliBasis] = None, measure: Optional[PauliBasis] = None,
+            self, circuit: Circuitry, prepare: Optional[Pauli] = None, measure: Optional[Pauli] = None,
             full_ft: bool = True
     ):
         circuit.annotate_polygons(self.__source.get_polygons())
@@ -60,20 +61,20 @@ class TeleportationSurgery:
             for mmt in SurfaceCodePatch.MOMENTS:
                 self.__source.append_round_slice(
                     circuit, mmt,
-                    measure=PauliBasis.Z if (not full_ft or rnd == final_round) else None,
+                    measure=Pauli.Z if (not full_ft or rnd == final_round) else None,
                     inactive=self.__source_inactive,
                     prefix=f"S:M1:R{rnd}"
                 )
                 self.__merger.append_round_slice(
                     circuit, mmt,
-                    prepare=PauliBasis.Z if (not full_ft or rnd == start_round) else None,
-                    measure=PauliBasis.Z if (not full_ft or rnd == final_round) else None,
+                    prepare=Pauli.Z if (not full_ft or rnd == start_round) else None,
+                    measure=Pauli.Z if (not full_ft or rnd == final_round) else None,
                     inactive=self.__merger_inactive,
                     prefix=f"M:M1:R{rnd}"
                 )
                 self.__target.append_round_slice(
                     circuit, mmt,
-                    prepare=PauliBasis.Z if (not full_ft or rnd == start_round) else None,
+                    prepare=Pauli.Z if (not full_ft or rnd == start_round) else None,
                     inactive=self.__target_inactive,
                     prefix=f"T:M1:R{rnd}"
                 )

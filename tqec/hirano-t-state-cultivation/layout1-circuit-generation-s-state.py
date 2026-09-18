@@ -20,7 +20,8 @@ from library.junction_patch import JunctionPatch
 from library.qubit_array import QubitArray
 from library.steane_code.patch import SteaneCodePatch
 from library.surface_code.expanding_patch import ExpandingSurfaceCodePatch
-from library.surface_code.patch import SurfaceCodePatch, PauliBasis
+from library.surface_code.patch import SurfaceCodePatch
+from library.common import Pauli
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -39,8 +40,8 @@ if __name__ == "__main__":
     if TARGET_DISTANCE % 2 != 1 and TARGET_DISTANCE < 9:
         raise ValueError("TARGET_DISTANCE must be odd and above 9.")
 
-    circuitry = Circuitry(clifford=True)
-    array = QubitArray(circuitry, dimensions=(TARGET_DISTANCE + 2, TARGET_DISTANCE + 2))
+    array = QubitArray(dimensions=(TARGET_DISTANCE + 2, TARGET_DISTANCE + 2))
+    circuitry = Circuitry(qubits=array, clifford=True)
     steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-7), injection=SteaneCodePatch.Injection.S)
     junction = JunctionPatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-5))
     source = SurfaceCodePatch(array, distance=5, anchor=(TARGET_DISTANCE - 4, TARGET_DISTANCE - 4))
@@ -73,7 +74,7 @@ if __name__ == "__main__":
             steane.append_teleportation_slice(circuitry, moment=mmt, prefix=f"TPT{rnd}")
             junction.append_syndrome_slice(circuitry, moment=mmt, prefix=f"JCT{rnd}")
             source.append_round_slice(
-                circuitry, moment=mmt, prepare=PauliBasis.X if rnd == 0 else None, prefix=f"SC{rnd}",
+                circuitry, moment=mmt, prepare=Pauli.X if rnd == 0 else None, prefix=f"SC{rnd}",
                 inactive = inactive_source
             )
             circuitry.append_tick()
@@ -99,7 +100,7 @@ if __name__ == "__main__":
         circuitry.append_tick()
 
     circuitry.append_observable(
-        0, "Y_OBSERVABLE_EXPANDED", expanding.logical_y,
+        0, "Y_OBSERVABLE_EXPANDED", expanding.logical(Pauli.Y),
         "JCT0:Z0", "JCT0:Z1", "JCT0:Z2", "TPT0:XB", "TPT1:XB", "TPT2:XB", "DST:X1", "DST:X5", "DST:X6"
     )
     circuitry.append_tick()
@@ -113,7 +114,7 @@ if __name__ == "__main__":
 
     steane.annotate_detectors(circuitry, sdc_rounds=SUPERDENSE_ROUNDS, tpt_rounds=TELEPORT_ROUNDS)
     junction.annotate_detectors(circuitry, rounds=TELEPORT_ROUNDS)
-    source.annotate_detectors(circuitry, rounds=TELEPORT_ROUNDS + 1, prepared=PauliBasis.X)
+    source.annotate_detectors(circuitry, rounds=TELEPORT_ROUNDS + 1, prepared=Pauli.X)
     expanding.annotate_detectors(circuitry, sc_rounds=TELEPORT_ROUNDS + 1, source=source)
     # target.annotate_detectors(circuit, rounds=ROUNDS_FOR_COMPLEMENTARY_GAP, prefix="CG")
 

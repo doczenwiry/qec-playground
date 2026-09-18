@@ -20,6 +20,7 @@ from typing import List
 
 from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
+from library.common import Pauli
 
 logger = logging.getLogger(__name__)
 
@@ -61,18 +62,15 @@ class SteaneCodePatch:
     def support(self) -> List[int]:
         return self.qubits[:7]
 
-    @property
-    def logical_x(self) -> dict[int, str]:
-        return { self.qubits[q] : 'X' for q in [1, 5, 6] }
-
-    # TODO: study the effect of using the weight-5 Y-observable (i.e. Z0*Y1*Z3*X5*X6)
-    @property
-    def logical_y(self) -> dict[int, str]:
-        return { self.qubits[q] : 'Y' for q in range(7) }
-
-    @property
-    def logical_z(self) -> dict[int, str]:
-        return { self.qubits[q] : 'X' for q in [0, 1, 3] }
+    def logical(self, basis: Pauli):
+        match basis:
+            case Pauli.X:
+                return {self.qubits[q]: 'X' for q in [1, 5, 6]}
+            case Pauli.Y:
+                # TODO: study the effect of using the weight-5 Y-observable (i.e. Z0*Y1*Z3*X5*X6)
+                return {self.qubits[q]: 'Y' for q in range(7)}
+            case Pauli.Z:
+                return {self.qubits[q]: 'Z' for q in [0, 1, 3]}
 
     @property
     def stabilizers(self):
