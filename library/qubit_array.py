@@ -15,16 +15,13 @@
 import itertools
 from collections import defaultdict
 
-import logging
 import numpy as np
 import stim
-
-from library.circuitry import Circuitry
 
 
 class QubitArray:
     def __init__(
-        self, circuit: Circuitry, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True
+        self, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True
     ):
         dimX, dimY = dimensions
         self.qubits = dict()
@@ -34,7 +31,6 @@ class QubitArray:
         qubit = 0
         self.data = set()
         for location in itertools.product(range(dimX), range(dimY)):
-            circuit.append("QUBIT_COORDS", [qubit], location)
             self.qubits[location] = qubit
             self.data.add(qubit)
             qubit += 1
@@ -44,7 +40,6 @@ class QubitArray:
                 np.arange(0.5, dimX - 0.5, 1.0, dtype=float),
                 np.arange(0.5, dimY - 0.5, 1.0, dtype=float),
             ):
-                circuit.append("QUBIT_COORDS", [qubit], location)
                 self.qubits[location] = qubit
                 qubit += 1
 
@@ -57,16 +52,6 @@ class QubitArray:
             lambda l: self.qubits[l],
             [ (0.5,0.5) , (self.dimX-1.5, 0.5), (0.5, self.dimY-1.5), (self.dimX-1.5, self.dimY-1.5) ]
         )
-
-    def annotate_detector(self, circuit: Circuitry, *labels: str) -> bool:
-        if all(self.has_record(label) for label in labels):
-            circuit.append("DETECTOR", map(self.retrieve_target_rec, labels))
-            return True
-        logging.warning(f"Requested some unrecorded measurement [request:{labels}]")
-        for label in labels:
-            if not self.has_record(label):
-                logging.warning(f"> {label} not recorded")
-        return False
 
     def measurements(self, qubit: int):
         return filter(lambda mr: mr[0].endswith(f"@Q{qubit}"), self.measurements_index.items())

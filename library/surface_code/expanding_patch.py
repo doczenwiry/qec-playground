@@ -68,6 +68,19 @@ class ExpandingSurfaceCodePatch:
     def num_qubits(self):
         return sum(len(self.__qubits[qtype]) for qtype in ['X', 'Z', 'D'])
 
+    @property
+    def logical_y(self):
+        cross = self.__distance + self.__expansion - 5
+        logical = {}
+        ax, ay = self.__anchor
+        for i in range(self.__distance + self.__expansion):
+            if i == cross:
+                logical[self.__physical_qubits.qubits[(ax+i,ay+i)]] = "Y"
+            else:
+                logical[self.__physical_qubits.qubits[(ax+i,ay+cross)]] = "Z"
+                logical[self.__physical_qubits.qubits[(ax+cross,ay+i)]] = "X"
+        return logical
+
     def active_qubits(self, qtype: str, expanded: bool = False):
         return iter(dq for dq in self.__qubits[qtype] if self.is_qubit_active(dq, expanded))
 
@@ -113,37 +126,25 @@ class ExpandingSurfaceCodePatch:
                 polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}")
         return polygons
 
-    def annotate_detectors(self, circuit: Circuitry, sc_rounds: int, source: SurfaceCodePatch, prefix: str = "EXP"):
+    def annotate_detectors(self, circuitry: Circuitry, sc_rounds: int, source: SurfaceCodePatch, prefix: str = "EXP"):
         last = sc_rounds-1
         for stabilizer in ['X', 'Z']:
             for qi, qa in enumerate(self.__qubits[stabilizer]):
                 if not self.qubit_in_expansion(qa):
-                    self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
+                    circuitry.annotate_detector(f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
                 else: # self.qubit_in_expansion(qa)
                     ax, ay = self.__anchor
                     (px, py), _ = self.__qubits[stabilizer][qa]
                     if stabilizer == 'X' and px - ax > py - ay:
                         if py - ay < self.__expansion - 1:
-                            self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}")
+                            circuitry.annotate_detector(f"{prefix}:{stabilizer}{qi}")
                         elif py - ay == self.__expansion - 0.5:
-                            self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
+                            circuitry.annotate_detector(f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
                     elif stabilizer == 'Z' and px - ax < py - ay:
                         if px - ax < self.__expansion - 1:
-                            self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}")
+                            circuitry.annotate_detector(f"{prefix}:{stabilizer}{qi}")
                         elif px - ax == self.__expansion - 0.5:
-                            self.__physical_qubits.annotate_detector(circuit, f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
-
-    def append_general_observable(
-            self, circuit: Circuitry, logical: dict[tuple[float,float], str], *labels: str
-    ):
-        ax, ay = self.__anchor
-        physical = {
-            self.__physical_qubits[(px+ax, py+ay)] : pauli for (px,py), pauli in logical.items()
-        }
-        circuit.append("MPP", stim.PauliString(physical))
-        self.__physical_qubits.record_measurement(-1, "EXP_AGO")
-        circuit.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, ["EXP_AGO", *labels]), 0)
-        circuit.append_tick()
+                            circuitry.annotate_detector(f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
 
     def append_expansion_slice(
         self, circuit: Circuitry, moment: int, prefix: str = ""

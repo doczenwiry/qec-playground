@@ -86,6 +86,18 @@ class SurfaceCodePatch:
     def num_x_ancilla(self):
         return len(self.__qubits['X'])
 
+    @property
+    def logical_y(self):
+        ax, ay = self.__anchor
+        logical = {}
+        for i in range(self.__distance):
+            if i == 0:
+                logical[self.__physical_qubits.qubits[(ax,ay)]] = "Y"
+            else:
+                logical[self.__physical_qubits.qubits[(ax,ay+i)]] = "X"
+                logical[self.__physical_qubits.qubits[(ax+i,ay)]] = "Z"
+        return logical
+
     def __get_qubits(self, qtype: str, inactive: Callable[[tuple[float,float]], bool] = lambda _: False):
         return iter(
             (al, ai) for al, ai in self.__qubits[qtype].items() if not inactive(al)
@@ -116,30 +128,18 @@ class SurfaceCodePatch:
                 polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}")
         return polygons
 
-    def annotate_detectors(self, circuit: Circuitry, rounds: int, prefix: str = "SC", prepared: Optional[PauliBasis] = None):
+    def annotate_detectors(self, circuitry: Circuitry, rounds: int, prefix: str = "SC", prepared: Optional[PauliBasis] = None):
         if prepared is not None:
             stabilizer = prepared.name
             for qa in range(len(self.__qubits[prepared.name])):
                 label = f"SC0:{stabilizer}{qa}"
-                self.__physical_qubits.annotate_detector(circuit, label)
+                circuitry.annotate_detector(label)
         for stabilizer in ['X', 'Z']:
             for qa in range(len(self.__qubits[stabilizer])):
                 for prev, curr in itertools.pairwise(range(rounds)):
-                        self.__physical_qubits.annotate_detector(
-                            circuit, f"{prefix}{curr}:{stabilizer}{qa}", f"{prefix}{prev}:{stabilizer}{qa}"
+                        circuitry.annotate_detector(
+                            f"{prefix}{curr}:{stabilizer}{qa}", f"{prefix}{prev}:{stabilizer}{qa}"
                         )
-
-    def append_general_observable(
-            self, circuit: Circuitry, logical: dict[tuple[float,float], str], *labels: str
-    ):
-        ax, ay = self.__anchor
-        physical = {
-            self.__qubits['D'][(px+ax, py+ay)][0] : pauli for (px,py), pauli in logical.items()
-        }
-        circuit.append("MPP", stim.PauliString(physical))
-        self.__physical_qubits.record_measurement(-1, "SC_AGO")
-        circuit.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, ["SC_AGO", *labels]), 0)
-        circuit.append_tick()
 
     def append_memory(
             self, circuit: Circuitry, memory: int,

@@ -14,20 +14,26 @@
 
 from collections import defaultdict
 from typing import Union, Iterable, cast
-
+import logging
 import stim
+
+from library.qubit_array import QubitArray
 
 
 class Circuitry:
     """A wrapper to easily move between Stim and Clifft when switching between Clifford and non-Clifford."""
-    def __init__(self, clifford: bool = True):
+    def __init__(self, qubits: QubitArray, clifford: bool = True):
         self.__clifford = clifford
+        self.__physical_qubits = qubits
         self.__circuit: Union[stim.Circuit, list[str]] = stim.Circuit() if clifford else []
         self.__used_qubits: set[int] = set()
         self.__num_cnots = 0
         self.__num_measurements = 0
         self.__num_detectors = 0
         self.__polygons: dict[int, list[str]] = defaultdict(list)
+
+        for location, qubit in self.__physical_qubits.qubits.items():
+            self.append("QUBIT_COORDS", [qubit], location)
 
     @property
     def is_clifford(self):
@@ -86,6 +92,22 @@ class Circuitry:
 
     def annotate_polygons(self, polygons: list[str]):
         self.__polygons[len(self.__circuit)].extend(polygons)
+
+    def annotate_detector(self, *labels: str) -> bool:
+        if all(self.__physical_qubits.has_record(label) for label in labels):
+            self.append("DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels))
+            return True
+        logging.warning(f"Requested some unrecorded measurement [request:{labels}]")
+        for label in labels:
+            if not self.__physical_qubits.has_record(label):
+                logging.warning(f"> {label} not recorded")
+        return False
+
+    def append_observable(self, index: int, label: str, observable: dict[int, str], *extras: str):
+        self.append("MPP", stim.PauliString(observable))
+        self.__physical_qubits.record_measurement(-1, label)
+        self.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, [label, *extras]), index)
+        self.append_tick()
 
     def append_tick(self):
         self.__circuit.append("TICK")

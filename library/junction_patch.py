@@ -53,9 +53,9 @@ class JunctionPatch:
             polygons.append(f"#!pragma POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}")
         return polygons
 
-    def annotate_detectors(self, circuit: Circuitry, rounds: int):
+    def annotate_detectors(self, circuitry: Circuitry, rounds: int):
         for zi, (prev, curr) in itertools.product(range(3), itertools.pairwise(range(rounds))):
-            self.__physical_qubits.annotate_detector(circuit, f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}")
+            circuitry.annotate_detector(f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}")
 
     def append_syndrome_slice(self, circuit: Circuitry, moment: int, prefix: str = ""):
         match moment:

@@ -87,12 +87,8 @@ if __name__ == "__main__":
     circuitry.append_tick()
 
     # Observable if expansion is commented out.
-    # logical_observable = {(0, 0): "Y"}
-    # for i in range(1, 5):
-    #     logical_observable[(i, 0)] = "Z"
-    #     logical_observable[(0, i)] = "X"
-    # source.append_general_observable(
-    #     circuit, logical_observable,
+    # circuitry.append_observable(
+    #     0, "Y_OBSERVABLE_TELEPORTED", source.logical_y,
     #     "JCT0:Z0", "JCT0:Z1", "JCT0:Z2", "TPT0:XB", "TPT1:XB", "TPT2:XB", "DST:X1", "DST:X5", "DST:X6"
     # )
 
@@ -102,15 +98,8 @@ if __name__ == "__main__":
         expanding.append_expansion_slice(circuitry, moment=mmt, prefix=f"EXP")
         circuitry.append_tick()
 
-    cross = TARGET_DISTANCE-5
-    logical_observable = { (cross, cross) : "Y" }
-    for i in range(TARGET_DISTANCE):
-        if i == cross:
-            continue
-        logical_observable[(i,cross)] = "Z"
-        logical_observable[(cross,i)] = "X"
-    expanding.append_general_observable(
-        circuitry, logical_observable,
+    circuitry.append_observable(
+        0, "Y_OBSERVABLE_EXPANDED", expanding.logical_y,
         "JCT0:Z0", "JCT0:Z1", "JCT0:Z2", "TPT0:XB", "TPT1:XB", "TPT2:XB", "DST:X1", "DST:X5", "DST:X6"
     )
     circuitry.append_tick()

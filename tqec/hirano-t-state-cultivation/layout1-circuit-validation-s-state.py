@@ -23,13 +23,14 @@ from utils.circuit_flows import check_state_preparation, check_flow_preservation
 if __name__ == "__main__":
     # Validate the Steane Code preparation (under S-injection)
     print("Modified Steane Code (w/ S-injection) --- Preparation")
-    circuitry = Circuitry()
-    steane = SteaneCodePatch(array = QubitArray(circuitry, dimensions=(5, 3)))
+    qubits = QubitArray(dimensions=(5, 3))
+    circuitry = Circuitry(qubits)
+    steane = SteaneCodePatch(array = qubits)
     steane.append_preparation(circuitry)
 
     for stabilizer, support in itertools.product(['X', 'Z'], steane.stabilizers.values()):
         check_state_preparation(circuitry.as_stim, stabilizer, support)
-    check_state_preparation(circuitry.as_stim, 'Y', support=steane.logical)
+    check_state_preparation(circuitry.as_stim, 'Y', support=steane.support)
 
     print(f"Circuit statistics")
     print(f"> #qubits: {circuitry.num_qubits}")
@@ -39,14 +40,15 @@ if __name__ == "__main__":
 
     # Validate the Steane Code Superdense Syndrome Measurement (under S-injection)
     print("Modified Steane Code (w/ S-injection) --- Superdense Code Cycle [w/ GHZ states]")
-    circuitry = Circuitry()
-    steane = SteaneCodePatch(array = QubitArray(circuitry, dimensions=(5, 3)))
+    qubits = QubitArray(dimensions=(5, 3))
+    circuitry = Circuitry(qubits)
+    steane = SteaneCodePatch(array = qubits)
     steane.append_superdense_cycle(circuitry)
 
     print(f"Stabilizer flows")
     for stabilizer, support in itertools.product(['X', 'Z'], steane.stabilizers.values()):
         check_flow_preservation(circuitry.as_stim, stabilizer, support)
-    check_flow_preservation(circuitry.as_stim, 'Y', support=steane.logical)
+    check_flow_preservation(circuitry.as_stim, 'Y', support=steane.support)
     print(f"Syndrome extractions")
     for syndrome, support in itertools.product(['X', 'Z'], steane.stabilizers.values()):
         check_syndrome_extraction(circuitry.as_stim, syndrome, support)
@@ -59,16 +61,17 @@ if __name__ == "__main__":
 
     # Validate the Steane Code cultivation stage (under S-injection)
     print("Modified Steane Code (w/ S-injection) --- Double-Check-S")
-    circuitry = Circuitry()
-    steane = SteaneCodePatch(array = QubitArray(circuitry, dimensions=(5, 3)))
+    qubits = QubitArray(dimensions=(5, 3))
+    circuitry = Circuitry(qubits)
+    steane = SteaneCodePatch(array = qubits)
     steane.append_cultivation(circuitry)
 
     print(f"Stabilizer flows")
     for stabilizer, support in itertools.product(['X', 'Z'], steane.stabilizers.values()):
         check_flow_preservation(circuitry.as_stim, stabilizer, support)
-    check_flow_preservation(circuitry.as_stim, 'Y', support=steane.logical)
+    check_flow_preservation(circuitry.as_stim, 'Y', support=steane.support)
     print(f"Syndrome extractions")
-    check_syndrome_extraction(circuitry.as_stim, 'Y', steane.logical)
+    check_syndrome_extraction(circuitry.as_stim, 'Y', steane.support)
 
     print(f"Circuit statistics")
     print(f"> #qubits: {circuitry.num_qubits}")
