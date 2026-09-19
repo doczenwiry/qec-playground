@@ -61,7 +61,7 @@ def simulate(
 
     fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)
     labels = {
-        scenario : f"Point {index} - {scenario}"
+        scenario : f"{label} {index} - {scenario}"
         for index, scenario in enumerate(scenarios)
     }
     error_rates = axes[0] if postselection else axes

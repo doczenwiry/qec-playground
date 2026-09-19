@@ -51,13 +51,17 @@ class SteaneCodePatch:
 
     def __init__(self, array: QubitArray, anchor: tuple[int, int] = (0,0), injection: Injection = Injection.S):
         self.__anchor = anchor
-        self.__injection_gate = injection.name
+        self.__injection = injection
         self.__physical_qubits = array
         px, py = anchor
         self.qubits = [ array.qubits[(px+dx, py+dy)] for dx, dy in SteaneCodePatch.QUBITS ]
 
     def __shift_qubit_ids(self, *qubits: int) -> List[int]:
         return list(map(lambda q : self.qubits[q], qubits))
+
+    @property
+    def injection(self):
+        return self.__injection
 
     @property
     def support(self) -> List[int]:
@@ -166,7 +170,7 @@ class SteaneCodePatch:
                 circuit.append("CX", self.__shift_qubit_ids(13, 1, 9, 14, 10, 6, 15, 3, 8, 11))
             case 7:
                 circuit.append("CX", self.__shift_qubit_ids(10, 5, 11, 8, 3, 15, 13, 9))
-                circuit.append(f"{self.__injection_gate}_DAG", self.__shift_qubit_ids(6))
+                circuit.append(f"{self.__injection.name}_DAG", self.__shift_qubit_ids(6))
             case 8:
                 circuit.append("CX", self.__shift_qubit_ids(13, 6, 11, 4))
             case 9:
@@ -238,7 +242,7 @@ class SteaneCodePatch:
     ):
         match moment:
             case 0:
-                circuit.append(f"{self.__injection_gate}_DAG", self.support)
+                circuit.append(f"{self.__injection.name}_DAG", self.support)
                 circuit.append("RX", self.__shift_qubit_ids(10, 11, 13, 14, 15))
             case 1:
                 circuit.append("CX", self.__shift_qubit_ids(10, 5, 11, 4, 13, 1, 14, 2, 15, 3))
@@ -266,7 +270,7 @@ class SteaneCodePatch:
                 circuit.append("MX", measured_ancilla)
                 for index, xa in enumerate(measured_ancilla):
                     self.__physical_qubits.record_measurement(xa, f"{prefix}:X{index+1}")
-                circuit.append(f"{self.__injection_gate}", self.support)
+                circuit.append(f"{self.__injection.name}", self.support)
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
