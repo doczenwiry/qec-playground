@@ -59,20 +59,20 @@ class TeleportationSurgery:
         final_round = self.__distance - 1
         for rnd in range(self.__distance if full_ft else 1):
             for mmt in SurfaceCodePatch.MOMENTS:
-                self.__source.append_round_slice(
+                self.__source.append_round(
                     circuit, mmt,
                     measure=Pauli.Z if (not full_ft or rnd == final_round) else None,
                     inactive=self.__source_inactive,
                     prefix=f"S:M1:R{rnd}"
                 )
-                self.__merger.append_round_slice(
+                self.__merger.append_round(
                     circuit, mmt,
                     prepare=Pauli.Z if (not full_ft or rnd == start_round) else None,
                     measure=Pauli.Z if (not full_ft or rnd == final_round) else None,
                     inactive=self.__merger_inactive,
                     prefix=f"M:M1:R{rnd}"
                 )
-                self.__target.append_round_slice(
+                self.__target.append_round(
                     circuit, mmt,
                     prepare=Pauli.Z if (not full_ft or rnd == start_round) else None,
                     inactive=self.__target_inactive,

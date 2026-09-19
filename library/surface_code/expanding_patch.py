@@ -158,9 +158,7 @@ class ExpandingSurfaceCodePatch:
                         elif px - ax == self.__expansion - 0.5:
                             circuitry.annotate_detector(f"{prefix}:{stabilizer}{qi}", f"SC{last}:{stabilizer}{source.get_qubit_index(stabilizer, qa)}")
 
-    def append_expansion_slice(
-        self, circuit: Circuitry, moment: int, prefix: str = ""
-    ):
+    def append_expansion(self, circuit: Circuitry, moment: int, prefix: str = ""):
         match moment:
             case 0:
                 # Handle the reset of the ancilla

@@ -16,7 +16,7 @@ import logging
 import itertools
 from enum import Enum
 
-from typing import List
+from typing import List, Optional
 
 from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
@@ -146,12 +146,13 @@ class SteaneCodePatch:
         # The X_{0234} detector
         circuitry.annotate_detector(f"DST:X0", f"DST:X2", f"DST:X3", f"DST:X4")
 
-    def append_preparation(self, circuit: Circuitry):
-        for moment in self.PREPARATION_MOMENTS:
-            self.append_preparation_slice(circuit, moment)
-            circuit.append_tick()
+    def append_preparation(self, circuit: Circuitry, moment: Optional[int] = None):
+        if moment is None:
+            for moment in self.PREPARATION_MOMENTS:
+                self.append_preparation(circuit, moment)
+                circuit.append_tick()
+            return
 
-    def append_preparation_slice(self, circuit: Circuitry, moment: int):
         match moment:
             case 0:
                 circuit.append("RX", self.__shift_qubit_ids(0, 2, 6, 11))
@@ -180,14 +181,13 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_superdense_cycle(self, circuit: Circuitry, prefix: str = "SDC"):
-        for moment in self.SUPERDENSE_MOMENTS:
-            self.append_superdense_cycle_slice(circuit, moment, prefix)
-            circuit.append_tick()
+    def append_superdense_cycle(self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "SDC"):
+        if moment is None:
+            for moment in self.SUPERDENSE_MOMENTS:
+                self.append_superdense_cycle(circuit, moment, prefix)
+                circuit.append_tick()
+            return
 
-    def append_superdense_cycle_slice(
-            self, circuit: Circuitry, moment: int, prefix: str = "SDC"
-    ):
         match moment:
             case 0:
                 circuit.append("RX", self.__shift_qubit_ids(10, 13, 15))
@@ -230,16 +230,13 @@ class SteaneCodePatch:
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    def append_cultivation(
-            self, circuit: Circuitry, prefix: str = "CULT"
-    ):
-        for moment in self.CULTIVATION_MOMENTS:
-            self.append_cultivation_slice(circuit, moment, prefix)
-            circuit.append_tick()
+    def append_cultivation(self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "CULT"):
+        if moment is None:
+            for moment in self.CULTIVATION_MOMENTS:
+                self.append_cultivation(circuit, moment, prefix)
+                circuit.append_tick()
+            return
 
-    def append_cultivation_slice(
-            self, circuit: Circuitry, moment: int, prefix: str = "CULT"
-    ):
         match moment:
             case 0:
                 circuit.append(f"{self.__injection.name}_DAG", self.support)
@@ -274,12 +271,13 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_teleportation(self, circuit: Circuitry, prefix: str = "TPT"):
-        for moment in self.TELEPORTATION_MOMENTS:
-            self.append_teleportation_slice(circuit, moment, prefix)
-            circuit.append_tick()
+    def append_teleportation(self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "TPT"):
+        if moment is None:
+            for moment in self.TELEPORTATION_MOMENTS:
+                self.append_teleportation(circuit, moment, prefix)
+                circuit.append_tick()
+            return
 
-    def append_teleportation_slice(self, circuit: Circuitry, moment: int, prefix: str = "TPT"):
         match moment:
             # GHZ-state formation
             case 0:
@@ -326,12 +324,13 @@ class SteaneCodePatch:
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    def append_destruction(self, circuit: Circuitry, prefix: str = "DST"):
-        for moment in self.DESTRUCTION_MOMENTS:
-            self.append_destruction_slice(circuit, moment, prefix)
-            circuit.append_tick()
+    def append_destruction(self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "DST"):
+        if moment is None:
+            for moment in self.DESTRUCTION_MOMENTS:
+                self.append_destruction(circuit, moment, prefix)
+                circuit.append_tick()
+            return
 
-    def append_destruction_slice(self, circuit: Circuitry, moment: int, prefix: str = "DST"):
         match moment:
             case 0:
                 circuit.append("R", self.__shift_qubit_ids(10, 11, 12, 13, 14, 15, 16))

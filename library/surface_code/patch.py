@@ -112,6 +112,15 @@ class SurfaceCodePatch:
     def get_qubit_at_location(self, location: tuple[float, float]) -> int:
         return self.__qubits['D'][location][0] if location in self.__qubits['D']  else -1
 
+    def locate_qubit(self, label: str):
+        index = int(label[1:])
+
+        for lc, (_, i) in self.__qubits[label[0]].items():
+            if i == index:
+                return lc
+
+        raise ValueError("Invalid label provided [qubit index not found].")
+
     def __get_polygon(self, px, py):
         return [
             self.get_qubit_at_location( (px+dx, py+dy) ) for dx, dy in
@@ -157,26 +166,16 @@ class SurfaceCodePatch:
             )
 
     def append_round(
-        self, circuit: Circuitry, prepare: Optional[Pauli] = None, measure: Optional[Pauli] = None,
+        self, circuit: Circuitry, moment: Optional[int] = None,
+        prepare: Optional[Pauli] = None, measure: Optional[Pauli] = None,
         inactive: Callable[[tuple[float,float]], bool] = lambda _: False, prefix: str = ""
     ):
-        for mmt in SurfaceCodePatch.MOMENTS:
-            self.append_round_slice(circuit, mmt, prepare, measure, inactive, prefix)
-            circuit.append_tick()
+        if moment is None:
+            for mmt in SurfaceCodePatch.MOMENTS:
+                self.append_round(circuit, mmt, prepare, measure, inactive, prefix)
+                circuit.append_tick()
+            return
 
-    def locate_qubit(self, label: str):
-        index = int(label[1:])
-
-        for lc, (_, i) in self.__qubits[label[0]].items():
-            if i == index:
-                return lc
-
-        raise ValueError("Invalid label provided [qubit index not found].")
-
-    def append_round_slice(
-        self, circuit: Circuitry, moment: int, prepare: Optional[Pauli] = None, measure: Optional[Pauli] = None,
-        inactive: Callable[[tuple[float,float]], bool] = lambda _: False, prefix: str = ""
-    ):
         match moment:
             case 0:
                 for stabilizer in ['X', 'Z']:

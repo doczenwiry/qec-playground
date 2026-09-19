@@ -71,9 +71,9 @@ if __name__ == "__main__":
 
     for rnd in range(TELEPORT_ROUNDS):
         for mmt in steane.TELEPORTATION_MOMENTS:
-            steane.append_teleportation_slice(circuitry, moment=mmt, prefix=f"TPT{rnd}")
-            junction.append_syndrome_slice(circuitry, moment=mmt, prefix=f"JCT{rnd}")
-            source.append_round_slice(
+            steane.append_teleportation(circuitry, moment=mmt, prefix=f"TPT{rnd}")
+            junction.append_syndrome(circuitry, moment=mmt, prefix=f"JCT{rnd}")
+            source.append_round(
                 circuitry, moment=mmt, prepare=Pauli.X if rnd == 0 else None, prefix=f"SC{rnd}",
                 inactive = inactive_source
             )
@@ -84,8 +84,8 @@ if __name__ == "__main__":
     circuitry.annotate_polygons(source.get_polygons())
 
     for mmt in steane.DESTRUCTION_MOMENTS:
-        steane.append_destruction_slice(circuitry, moment=mmt)
-        source.append_round_slice(circuitry, moment=mmt, prefix=f"SC{TELEPORT_ROUNDS}")
+        steane.append_destruction(circuitry, moment=mmt)
+        source.append_round(circuitry, moment=mmt, prefix=f"SC{TELEPORT_ROUNDS}")
         circuitry.append_tick()
 
     # Observable if expansion is commented out.
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     # Handle the left-upwards expansion :) Almost there !
     circuitry.annotate_polygons(target.get_polygons())
     for mmt in expanding.MOMENTS:
-        expanding.append_expansion_slice(circuitry, moment=mmt, prefix=f"EXP")
+        expanding.append_expansion(circuitry, moment=mmt, prefix=f"EXP")
         circuitry.append_tick()
 
     circuitry.append_observable(
