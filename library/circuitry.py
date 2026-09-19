@@ -103,8 +103,9 @@ class Circuitry:
                 logging.warning(f"> {label} not recorded")
         return False
 
-    def append_observable(self, index: int, label: str, observable: dict[int, str], *extras: str):
-        self.append("MPP", stim.PauliString(observable))
+    def append_observable(self, index: int, label: str, observable: dict[int, str], *extras: str, flip: bool = False):
+        pauli = stim.PauliString(observable)
+        self.append("MPP", -pauli if flip else pauli)
         self.__physical_qubits.record_measurement(-1, label)
         self.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, [label, *extras]), index)
         self.append_tick()
@@ -147,9 +148,14 @@ class Circuitry:
                 case "DETECTOR" | "OBSERVABLE_INCLUDE":
                     targets = " ".join(map(lambda sr: f"rec[{sr.value}]", targets))
                 case "MPP":
+                    # TODO: clean this up
+                    pauli = cast(stim.PauliString, targets[0])
+                    sign = pauli.sign
                     labels = "_XYZ"
-                    terms = [f"{labels[p]}{i}" for i, p in enumerate(targets[0]) if p != 0]
+                    terms = [f"{labels[p]}{i}" for i, p in enumerate(pauli) if p != 0]
                     targets = "*".join(terms) if terms else "I"
+                    if sign == -1:
+                        targets = "!" + targets
                 case _:
                     targets = " ".join(map(str, targets))
 
