@@ -15,7 +15,6 @@
 import itertools
 from typing import Union, Optional, cast
 
-import clifft
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -23,48 +22,29 @@ import seaborn as sns
 import sinter
 import stim
 from matplotlib.container import BarContainer
-from tqec import NoiseModel
-from tqec.utils.noise_model import NoiseRule
 
 from library.circuitry import Circuitry
+from utils.simulation.noise import make_noisy_circuit
 
 __all__ = ['simulate', 'sample']
-
-def make_noisy_circuit(circuit: stim.Circuit, per: float) -> stim.Circuit:
-    return NoiseModel(
-        idle_depolarization=per,
-        any_clifford_1q_rule=NoiseRule(after={"DEPOLARIZE1": per}),
-        any_clifford_2q_rule=NoiseRule(after={"DEPOLARIZE2": per}),
-        gate_rules={
-            "RX": NoiseRule(after={"Z_ERROR": per}),
-            "RY": NoiseRule(after={"X_ERROR": per}),
-            "R": NoiseRule(after={"X_ERROR": per}),
-            "MPP": NoiseRule(after={}),
-        },
-        measure_rules={
-            "X": NoiseRule(after={}, flip_result=per),
-            "Y": NoiseRule(after={}, flip_result=per),
-            "Z": NoiseRule(after={}, flip_result=per),
-        },
-    ).noisy_circuit(circuit)
 
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def simulate(
-    scenarios: Union[Circuitry, dict[str, Circuitry]], title: str ="Simulation results", label: str = "",
+    scenarios: Union[stim.Circuit, dict[str, stim.Circuit]], title: str ="Simulation results", label: str = "",
     postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10,
     num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5),
     filename: Optional[str] = None,
 ):
-    if isinstance(scenarios, Circuitry):
+    if isinstance(scenarios, stim.Circuit):
         scenarios = { 'circuit' : scenarios }
     tasks = [
         sinter.Task(
-            circuit=make_noisy_circuit(circuitry.as_stim, physical_error_rate),
-            postselection_mask=np.packbits(np.ones(circuitry.num_detectors, dtype=bool)) if postselection else None,
-            json_metadata={'case': case, 'per': physical_error_rate},
+            circuit=make_noisy_circuit(circuit, physical_error_rate),
+            postselection_mask=np.packbits(np.ones(circuit.num_detectors, dtype=bool)) if postselection else None,
+            json_metadata={'scenario': scenario, 'per': physical_error_rate},
         )
-        for (case, circuitry), physical_error_rate in itertools.product(
+        for (scenario, circuit), physical_error_rate in itertools.product(
             scenarios.items(), np.logspace(-1, minimal_noise, num=points)
         )
     ]
@@ -89,7 +69,7 @@ def simulate(
         ax=error_rates,
         stats=collected_stats,
         x_func=lambda stats: stats.json_metadata['per'],
-        group_func=lambda stats: labels.get(stats.json_metadata['case']),
+        group_func=lambda stats: labels.get(stats.json_metadata['scenario']),
     )
     error_rates.set_ylim(1e-9, 1.5)
     error_rates.set_xlim(10**minimal_noise, 0.125)
@@ -108,7 +88,7 @@ def simulate(
             ax=discard_rates,
             stats=collected_stats,
             x_func=lambda stat: stat.json_metadata['per'],
-            group_func=lambda stats: labels.get(stats.json_metadata['case']),
+            group_func=lambda stats: labels.get(stats.json_metadata['scenario']),
         )
         discard_rates.set_title(f"Discard rates")
         discard_rates.set_xlabel('Physical Error Rate')
@@ -127,32 +107,23 @@ def simulate(
 SEED=42
 # Thanks, Claude.AI (September 2026)
 def sample(
-    scenarios: Union[Circuitry, dict[str, Circuitry]], correction: bool = True,
+    scenarios: Union[stim.Circuit, dict[str, stim.Circuit]], correction: bool = True,
     title: str = "Sampling results", label: str = "Scenario",
     shots=1e6, figsize: tuple[float, float] = (11, 5), fontsize: int = 12
 ):
-    if isinstance(scenarios, Circuitry):
+    if isinstance(scenarios, stim.Circuit):
         scenarios = { 'circuit' : scenarios }
 
     dataframes: list[pd.DataFrame] = []
 
-    for scenario, circuitry in scenarios.items():
-        if circuitry.is_clifford:
-            # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
-            if correction:
-                _, outcomes = circuitry.as_stim.compile_detector_sampler(seed=SEED).sample(
-                    shots=int(shots), separate_observables=True
-                )
-                outcomes = outcomes.astype(int)[:, 0]
-            else:
-                outcomes = circuitry.as_stim.compile_sampler().sample(
-                    shots=int(shots)
-                ).astype(int)[:, -1]
+    for scenario, circuit in scenarios.items():
+        # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
+        if correction:
+            sampler = circuit.compile_detector_sampler(seed=SEED)
+            _, outcomes = sampler.sample(shots=int(shots), separate_observables=True)
+            outcomes = outcomes.astype(int)[:, 0]
         else:
-            results = clifft.sample(
-                clifft.compile(str(circuitry)), shots=int(shots), seed=SEED
-            )
-            outcomes = results.observables[:, 0] if correction else results.measurements[:, -1]
+            outcomes = circuit.compile_sampler().sample(shots=int(shots)).astype(int)[:, -1]
 
         df = pd.DataFrame()
         df["Measured"] = outcomes.flatten()
