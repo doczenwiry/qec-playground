@@ -187,5 +187,22 @@ class Circuitry:
 
             self.__circuit.append(f"{name}{argument} {targets}")
 
+    def detectors_report(self):
+        print(f"Detector statistics : ")
+        print(f"> Measurement records : {len(self.__physical_qubits.measurements_index)}")
+        print(f"> Number of detectors : {self.num_detectors}")
+
+        gauge_found = False
+        try:
+            self.as_stim.detector_error_model(allow_gauge_detectors=False)
+        except ValueError:
+            gauge_found = True
+        missing_detectors = self.missing_detectors()
+        print(f"> Missing detectors : {len(missing_detectors)}")
+        for detector in missing_detectors:
+            records = list(map(lambda neg: self.__physical_qubits.retrieve_record(neg.value), detector.targets_copy()))
+            print(f">> Detector : {records}")
+        print(f"> Gauge detectors : {"FOUND" if gauge_found else "NONE"}")
+
     def __str__(self):
         return str(self.__circuit) if self.__clifford else str("\n".join(map(str, cast(list, self.__circuit))))
