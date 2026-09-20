@@ -22,7 +22,7 @@ from library.qubit_array import QubitArray
 
 class Circuitry:
     """A wrapper to easily move between Stim and Clifft when switching between Clifford and non-Clifford."""
-    def __init__(self, qubits: QubitArray, clifford: bool = True):
+    def __init__(self, qubits: QubitArray, clifford: bool = True, opacity: float = 0.0):
         self.__clifford = clifford
         self.__physical_qubits = qubits
         self.__circuit: Union[stim.Circuit, list[str]] = stim.Circuit() if clifford else []
@@ -34,6 +34,12 @@ class Circuitry:
 
         for location, qubit in self.__physical_qubits.qubits.items():
             self.append("QUBIT_COORDS", [qubit], location)
+
+        if opacity > 0.0:
+            self.annotate_polygons(
+                [ f"POLYGON(0,1,0,{opacity}) {" ".join(map(str, self.__physical_qubits.corners))}"]
+            )
+            self.append_tick()
 
     @property
     def is_clifford(self):
@@ -51,6 +57,20 @@ class Circuitry:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
         return self.as_stim.missing_detectors()
+
+    def __insert_polygons(self, lines: list[str], spacing: bool = False):
+        inserted = 0
+
+        # Insert all registered polygons where they belong
+        for line_number, polygons in self.__polygons.items():
+            for polygon in polygons:
+                lines.insert(line_number + inserted, polygon)
+                inserted += 1
+            if spacing:
+                lines.insert(line_number + inserted, "TICK")
+                inserted += 1
+
+        return lines
 
     @property
     def num_qubits(self):
@@ -71,21 +91,19 @@ class Circuitry:
     def __len__(self):
         return len(self.__circuit) if self.__clifford else -1
 
+    def to_crumble_url(self, polygons: bool = True, spacing: bool = False):
+        lines = str(self.__circuit).split("\n") if self.__clifford else cast(list, self.__circuit)
+        if polygons:
+            lines = self.__insert_polygons(lines, spacing=spacing)
+
+        return "https://algassert.com/crumble#circuit=" + ";".join(lines).replace(" ", "_")
+
     def to_file(self, filename: str, polygons: bool = True, spacing: bool = False):
         filename += ".stim" if self.__clifford else ".clifft"
         lines = str(self.__circuit).split("\n") if self.__clifford else cast(list, self.__circuit)
 
         if polygons:
-            inserted = 0
-
-            # Insert all registered polygons where they belong
-            for line_number, polygons in self.__polygons.items():
-                for polygon in polygons:
-                    lines.insert(line_number + inserted, polygon)
-                    inserted += 1
-                if spacing:
-                    lines.insert(line_number + inserted, "TICK")
-                    inserted += 1
+            lines = self.__insert_polygons(lines, spacing=spacing)
 
         with open(filename, "w", encoding="utf-8") as file:
             file.write("\n".join(lines) + "\n")

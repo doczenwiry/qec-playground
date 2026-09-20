@@ -89,7 +89,7 @@ class SteaneCodePatch:
         for color, support in stabilizers.items():
             x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
             polygons.append(
-                f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(
+                f"POLYGON({x},{y},{z},{opacity}) {" ".join(
                     map(str, self.__shift_qubit_ids(*support))
                 )}"
             )

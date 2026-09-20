@@ -134,7 +134,7 @@ class SurfaceCodePatch:
             for location, _ in self.__get_qubits(stabilizer, inactive):
                 polygon = self.__get_polygon(*location)
                 x, y, z = int(stabilizer == 'X'), 0, int(stabilizer == 'Z')
-                polygons.append(f"#!pragma POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}")
+                polygons.append(f"POLYGON({x},{y},{z},{opacity}) {" ".join(map(str, polygon))}")
         return polygons
 
     def annotate_detectors(self, circuitry: Circuitry, rounds: int, prefix: str = "SC", prepared: Optional[Pauli] = None):

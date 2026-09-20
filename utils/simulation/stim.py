@@ -20,7 +20,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import sinter
-import stim
 from matplotlib.container import BarContainer
 
 from library.circuitry import Circuitry
@@ -31,20 +30,20 @@ __all__ = ['simulate', 'sample']
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def simulate(
-    scenarios: Union[stim.Circuit, dict[str, stim.Circuit]], title: str ="Simulation results", label: str = "",
+    scenarios: Union[Circuitry, dict[str, Circuitry]], title: str ="Simulation results", label: str = "",
     postselection: bool = False, shots= 1e6, minimal_noise = -6, points: int = 10,
     num_workers: int = 4, max_errors: int = 5000, figsize: tuple[float,float] = (11,5),
     filename: Optional[str] = None,
 ):
-    if isinstance(scenarios, stim.Circuit):
+    if isinstance(scenarios, Circuitry):
         scenarios = { 'circuit' : scenarios }
     tasks = [
         sinter.Task(
-            circuit=make_noisy_circuit(circuit, physical_error_rate),
-            postselection_mask=np.packbits(np.ones(circuit.num_detectors, dtype=bool)) if postselection else None,
+            circuit=make_noisy_circuit(circuitry.as_stim, physical_error_rate),
+            postselection_mask=np.packbits(np.ones(circuitry.num_detectors, dtype=bool)) if postselection else None,
             json_metadata={'scenario': scenario, 'per': physical_error_rate},
         )
-        for (scenario, circuit), physical_error_rate in itertools.product(
+        for (scenario, circuitry), physical_error_rate in itertools.product(
             scenarios.items(), np.logspace(-1, minimal_noise, num=points)
         )
     ]
@@ -107,23 +106,23 @@ def simulate(
 SEED=42
 # Thanks, Claude.AI (September 2026)
 def sample(
-    scenarios: Union[stim.Circuit, dict[str, stim.Circuit]], correction: bool = True,
+    scenarios: Union[Circuitry, dict[str, Circuitry]], correction: bool = True,
     title: str = "Sampling results", label: str = "Scenario",
     shots=1e6, figsize: tuple[float, float] = (11, 5), fontsize: int = 12
 ):
-    if isinstance(scenarios, stim.Circuit):
+    if isinstance(scenarios, Circuitry):
         scenarios = { 'circuit' : scenarios }
 
     dataframes: list[pd.DataFrame] = []
 
-    for scenario, circuit in scenarios.items():
+    for scenario, circuitry in scenarios.items():
         # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
         if correction:
-            sampler = circuit.compile_detector_sampler(seed=SEED)
+            sampler = circuitry.as_stim.compile_detector_sampler(seed=SEED)
             _, outcomes = sampler.sample(shots=int(shots), separate_observables=True)
             outcomes = outcomes.astype(int)[:, 0]
         else:
-            outcomes = circuit.compile_sampler().sample(shots=int(shots)).astype(int)[:, -1]
+            outcomes = circuitry.as_stim.compile_sampler().sample(shots=int(shots)).astype(int)[:, -1]
 
         df = pd.DataFrame()
         df["Measured"] = outcomes.flatten()

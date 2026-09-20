@@ -50,7 +50,7 @@ class QubitArray:
     def corners(self):
         return map(
             lambda l: self.qubits[l],
-            [ (0.5,0.5) , (self.dimX-1.5, 0.5), (0.5, self.dimY-1.5), (self.dimX-1.5, self.dimY-1.5) ]
+            [ (0,0) , (self.dimX-1, 0), (self.dimX-1, self.dimY-1), (0, self.dimY-1) ]
         )
 
     def measurements(self, qubit: int):
