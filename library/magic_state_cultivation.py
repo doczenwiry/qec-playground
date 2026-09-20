@@ -30,6 +30,11 @@ class MagicStateCultivation:
         self, injection: SteaneCodePatch.Injection, target_distance: int,
         anchor: tuple[int, int] = (1,1), draw_neighbors: bool = False
     ):
+        if target_distance % 2 != 1:
+            raise ValueError(f"MagicStateCultivation requires odd target distance. [req. {target_distance}]")
+        if target_distance < 7:
+            raise ValueError(f"MagicStateCultivation requires target distance at least 7. [req. {target_distance}]")
+
         self.qubits = QubitArray(dimensions=(target_distance + 6, target_distance + 6))
         ax, ay = anchor
         self.__anchor = anchor
@@ -37,7 +42,7 @@ class MagicStateCultivation:
 
         # Generate circuit up to and including preparation with S-injection
         self.circuitry = Circuitry(self.qubits, clifford=True)
-        self.steane = SteaneCodePatch(self.qubits, (target_distance - 3, target_distance - 5), injection)
+        self.steane = SteaneCodePatch(self.qubits, (ax + target_distance - 6, ay + target_distance - 8), injection)
         self.source = SurfaceCodePatch(
             self.qubits, distance=5, anchor=(ax + target_distance - 5, ay + target_distance - 5)
         )
