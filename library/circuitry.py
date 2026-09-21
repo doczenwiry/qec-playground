@@ -22,10 +22,13 @@ from library.qubit_array import QubitArray
 
 class Circuitry:
     """A wrapper to easily move between Stim and Clifft when switching between Clifford and non-Clifford."""
+
     def __init__(self, qubits: QubitArray, clifford: bool = True, opacity: float = 0.0):
         self.__clifford = clifford
         self.__physical_qubits = qubits
-        self.__circuit: Union[stim.Circuit, list[str]] = stim.Circuit() if clifford else []
+        self.__circuit: Union[stim.Circuit, list[str]] = (
+            stim.Circuit() if clifford else []
+        )
         self.__used_qubits: set[int] = set()
         self.__num_cnots = 0
         self.__num_measurements = 0
@@ -37,7 +40,9 @@ class Circuitry:
 
         if opacity > 0.0:
             self.annotate_polygons(
-                [ f"POLYGON(0,1,0,{opacity}) {" ".join(map(str, self.__physical_qubits.corners))}"]
+                [
+                    f"POLYGON(0,1,0,{opacity}) {' '.join(map(str, self.__physical_qubits.corners))}"
+                ]
             )
             self.append_tick()
 
@@ -92,15 +97,25 @@ class Circuitry:
         return len(self.__circuit) if self.__clifford else -1
 
     def to_crumble_url(self, polygons: bool = True, spacing: bool = False):
-        lines = str(self.__circuit).split("\n") if self.__clifford else cast(list, self.__circuit)
+        lines = (
+            str(self.__circuit).split("\n")
+            if self.__clifford
+            else cast(list, self.__circuit)
+        )
         if polygons:
             lines = self.__insert_polygons(lines, spacing=spacing)
 
-        return "https://algassert.com/crumble#circuit=" + ";".join(lines).replace(" ", "_")
+        return "https://algassert.com/crumble#circuit=" + ";".join(lines).replace(
+            " ", "_"
+        )
 
     def to_file(self, filename: str, polygons: bool = True, spacing: bool = False):
         filename += ".stim" if self.__clifford else ".clifft"
-        lines = str(self.__circuit).split("\n") if self.__clifford else cast(list, self.__circuit)
+        lines = (
+            str(self.__circuit).split("\n")
+            if self.__clifford
+            else cast(list, self.__circuit)
+        )
 
         if polygons:
             lines = self.__insert_polygons(lines, spacing=spacing)
@@ -113,7 +128,9 @@ class Circuitry:
 
     def annotate_detector(self, *labels: str) -> bool:
         if all(self.__physical_qubits.has_record(label) for label in labels):
-            self.append("DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels))
+            self.append(
+                "DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels)
+            )
             return True
         logging.warning(f"Requested some unrecorded measurement [request:{labels}]")
         for label in labels:
@@ -121,24 +138,39 @@ class Circuitry:
                 logging.warning(f"> {label} not recorded")
         return False
 
-    def append_observable(self, index: int, label: str, observable: dict[int, str], *extras: str, flip: bool = False):
+    def append_observable(
+        self,
+        index: int,
+        label: str,
+        observable: dict[int, str],
+        *extras: str,
+        flip: bool = False,
+    ):
         pauli = stim.PauliString(observable)
         self.append("MPP", -pauli if flip else pauli)
         self.__physical_qubits.record_measurement(-1, label)
-        self.append("OBSERVABLE_INCLUDE", map(self.__physical_qubits.retrieve_target_rec, [label, *extras]), index)
+        self.append(
+            "OBSERVABLE_INCLUDE",
+            map(self.__physical_qubits.retrieve_target_rec, [label, *extras]),
+            index,
+        )
         self.append_tick()
 
     def append_tick(self):
         self.__circuit.append("TICK")
 
-    def __update_internal_counters(self, name: str, targets: list[Union[int, stim.GateTarget, stim.PauliString]]):
+    def __update_internal_counters(
+        self, name: str, targets: list[Union[int, stim.GateTarget, stim.PauliString]]
+    ):
         match name:
             case "CX":
                 self.__num_cnots += sum(1 for _ in targets) // 2
             case "DETECTOR":
                 self.__num_detectors += 1
             case "M" | "MR" | "MX" | "MRX" | "MY" | "MRY" | "MZ" | "MRZ" | "MPP":
-                self.__num_measurements += 1 if name == "MPP" else sum(1 for _ in targets)
+                self.__num_measurements += (
+                    1 if name == "MPP" else sum(1 for _ in targets)
+                )
         if name not in ("QUBIT_COORDS", "DETECTOR", "OBSERVABLE_INCLUDE"):
             for target in targets:
                 if isinstance(target, int):
@@ -150,21 +182,32 @@ class Circuitry:
                 else:
                     raise ValueError(f"Target is unacceptable [{target}].")
 
-    def append(self,
+    def append(
+        self,
         name: str,
-        targets: Union[int, stim.GateTarget, stim.PauliString, Iterable[Union[int, stim.GateTarget, stim.PauliString]]],
+        targets: Union[
+            int,
+            stim.GateTarget,
+            stim.PauliString,
+            Iterable[Union[int, stim.GateTarget, stim.PauliString]],
+        ],
         arg: Union[float, Iterable[float], None] = None,
     ):
-        targets = list(targets) if isinstance(targets, Iterable) else [ targets ]
+        targets = list(targets) if isinstance(targets, Iterable) else [targets]
 
         self.__update_internal_counters(name, targets)
 
-        if self.__clifford:
+        if isinstance(self.__circuit, stim.Circuit):
             self.__circuit.append(name, targets, arg)
         else:
             match name:
                 case "DETECTOR" | "OBSERVABLE_INCLUDE":
-                    targets = " ".join(map(lambda sr: f"rec[{sr.value}]", targets))
+                    targets = " ".join(
+                        map(
+                            lambda sr: f"rec[{cast(stim.GateTarget, sr).value}]",
+                            targets,
+                        )
+                    )
                 case "MPP":
                     # TODO: clean this up
                     pauli = cast(stim.PauliString, targets[0])
@@ -180,16 +223,20 @@ class Circuitry:
             argument = ""
             match name:
                 case "QUBIT_COORDS":
-                    args = arg if isinstance(arg, Iterable) else [ arg ]
-                    argument = tuple(map(float, args))
+                    if arg is None:
+                        raise ValueError("Argument is required.")
+                    args: Iterable[float] = arg if isinstance(arg, Iterable) else [arg]
+                    argument = str(tuple(map(float, args)))
                 case "OBSERVABLE_INCLUDE":
                     argument = f"({arg})"
 
             self.__circuit.append(f"{name}{argument} {targets}")
 
     def detectors_report(self):
-        print(f"Detector statistics : ")
-        print(f"> Measurement records : {len(self.__physical_qubits.measurements_index)}")
+        print("Detector statistics : ")
+        print(
+            f"> Measurement records : {len(self.__physical_qubits.measurements_index)}"
+        )
         print(f"> Number of detectors : {self.num_detectors}")
 
         gauge_found = False
@@ -200,9 +247,18 @@ class Circuitry:
         missing_detectors = self.missing_detectors()
         print(f"> Missing detectors : {len(missing_detectors)}")
         for detector in missing_detectors:
-            records = list(map(lambda neg: self.__physical_qubits.retrieve_record(neg.value), detector.targets_copy()))
+            records = list(
+                map(
+                    lambda neg: self.__physical_qubits.retrieve_record(neg.value),
+                    detector.targets_copy(),
+                )
+            )
             print(f">> Detector : {records}")
-        print(f"> Gauge detectors : {"FOUND" if gauge_found else "NONE"}")
+        print(f"> Gauge detectors : {'FOUND' if gauge_found else 'NONE'}")
 
     def __str__(self):
-        return str(self.__circuit) if self.__clifford else str("\n".join(map(str, cast(list, self.__circuit))))
+        return (
+            str(self.__circuit)
+            if self.__clifford
+            else str("\n".join(map(str, cast(list, self.__circuit))))
+        )

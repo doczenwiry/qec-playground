@@ -19,23 +19,25 @@ from library.surface_code.patch import SurfaceCodePatch
 from library.qubit_array import QubitArray
 
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class JunctionPatch:
     MOMENTS = range(6)
 
-    QUBITS = [ (0.5, 0.5), (2.5, 0.5), (4.5, 0.5) ]
+    QUBITS = [(0.5, 0.5), (2.5, 0.5), (4.5, 0.5)]
     STABILIZERS = [
-        [ (-0.5, -0.5) , (+0.5, +0.5) ],
-        [ (-0.5, -0.5) , (+0.5, -0.5), (+0.5, +0.5), (-0.5, +0.5) ],
-        [ (-0.5, +0.5) , (+0.5, +0.5) ]
+        [(-0.5, -0.5), (+0.5, +0.5)],
+        [(-0.5, -0.5), (+0.5, -0.5), (+0.5, +0.5), (-0.5, +0.5)],
+        [(-0.5, +0.5), (+0.5, +0.5)],
     ]
 
     def __init__(self, array: QubitArray, anchor: tuple[int, int] = (1, 3)):
         self.__physical_qubits = array
         self.__anchor = anchor
         px, py = anchor
-        self.z_ancilla: dict[tuple[float,float], int] = dict()
+        self.z_ancilla: dict[tuple[float, float], int] = dict()
         for dx, dy in JunctionPatch.QUBITS:
             location = (px + dx, py + dy)
             self.z_ancilla[location] = array.qubits[location]
@@ -46,15 +48,20 @@ class JunctionPatch:
 
     def get_polygons(self):
         polygons = []
-        for (px,py), stabilizer in zip(self.z_ancilla.keys(), JunctionPatch.STABILIZERS):
+        for (px, py), stabilizer in zip(
+            self.z_ancilla.keys(), JunctionPatch.STABILIZERS
+        ):
             polygon = map(
-                lambda d: self.__physical_qubits.qubits[(px + d[0], py + d[1])], stabilizer
+                lambda d: self.__physical_qubits.qubits[(px + d[0], py + d[1])],
+                stabilizer,
             )
-            polygons.append(f"POLYGON(0,0,1,0.5) {" ".join(map(str, polygon))}")
+            polygons.append(f"POLYGON(0,0,1,0.5) {' '.join(map(str, polygon))}")
         return polygons
 
     def annotate_detectors(self, circuitry: Circuitry, rounds: int):
-        for zi, (prev, curr) in itertools.product(range(3), itertools.pairwise(range(rounds))):
+        for zi, (prev, curr) in itertools.product(
+            range(3), itertools.pairwise(range(rounds))
+        ):
             circuitry.annotate_detector(f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}")
 
     def append_syndrome(self, circuit: Circuitry, moment: int, prefix: str = ""):
@@ -63,8 +70,8 @@ class JunctionPatch:
                 circuit.append("RZ", self.z_ancilla.values())
             case 1 | 2 | 3 | 4:
                 cx_targets = []
-                for zi, ((px,py), za) in enumerate(self.z_ancilla.items()):
-                    interaction = SurfaceCodePatch.SCHEDULE['Z'][moment-1]
+                for zi, ((px, py), za) in enumerate(self.z_ancilla.items()):
+                    interaction = SurfaceCodePatch.SCHEDULE["Z"][moment - 1]
                     if interaction not in JunctionPatch.STABILIZERS[zi]:
                         continue
                     dx, dy = interaction

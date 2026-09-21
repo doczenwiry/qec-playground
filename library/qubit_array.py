@@ -20,11 +20,9 @@ import stim
 
 
 class QubitArray:
-    def __init__(
-        self, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True
-    ):
+    def __init__(self, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True):
         dimX, dimY = dimensions
-        self.qubits = dict()
+        self.qubits: dict[tuple[float, float], int] = dict()
         self.dimX = dimX
         self.dimY = dimY
 
@@ -49,19 +47,28 @@ class QubitArray:
     @property
     def corners(self):
         return map(
-            lambda l: self.qubits[l],
-            [ (0,0) , (self.dimX-1, 0), (self.dimX-1, self.dimY-1), (0, self.dimY-1) ]
+            lambda pos: self.qubits[pos],
+            [
+                (0, 0),
+                (self.dimX - 1, 0),
+                (self.dimX - 1, self.dimY - 1),
+                (0, self.dimY - 1),
+            ],
         )
 
     def measurements(self, qubit: int):
-        return filter(lambda mr: mr[0].endswith(f"@Q{qubit}"), self.measurements_index.items())
+        return filter(
+            lambda mr: mr[0].endswith(f"@Q{qubit}"), self.measurements_index.items()
+        )
 
     def is_data_qubit(self, qubit: int) -> bool:
         return qubit in self.data
 
     def record_measurement(self, qubit: int, label: str):
         if label in self.measurements_index:
-            raise ValueError("Attempting to overwrite existing measurement record: <label> already used.")
+            raise ValueError(
+                "Attempting to overwrite existing measurement record: <label> already used."
+            )
         self.measurements_index[label] = len(self.measurements_index)
         self.measurements_qubit[qubit].append(label)
 
@@ -79,7 +86,7 @@ class QubitArray:
         return "NONE"
 
     def retrieve_measurement(self, label: str):
-        return - len(self.measurements_index) + self.measurements_index[label]
+        return -len(self.measurements_index) + self.measurements_index[label]
 
     def __contains__(self, location):
         return location in self.qubits

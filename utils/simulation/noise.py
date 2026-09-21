@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import stim
-from tqec import NoiseModel
+from tqec.utils import NoiseModel
 from tqec.utils.noise_model import NoiseRule
 
 

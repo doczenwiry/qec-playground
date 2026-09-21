@@ -15,21 +15,30 @@
 import itertools
 import stim
 
+
 def compute_stabilizer_expectation(circuit, stabilizers):
     simulator = stim.TableauSimulator()
     simulator.do(circuit)
     for stabilizer, observable in itertools.product(["R", "G", "B"], ["X", "Z"]):
-        pauli = stim.PauliString("*".join(map(lambda q : observable + str(q), stabilizers[stabilizer])))
+        pauli = stim.PauliString(
+            "*".join(map(lambda q: observable + str(q), stabilizers[stabilizer]))
+        )
         expectation = simulator.peek_observable_expectation(pauli)
-        print(f"<{observable}_{stabilizer}> : {("+" if expectation == 1 else "") + str(expectation)}")
+        print(
+            f"<{observable}_{stabilizer}> : {('+' if expectation == 1 else '') + str(expectation)}"
+        )
+
 
 def compute_observable_expectation(circuit, observable, support):
     simulator = stim.TableauSimulator()
     simulator.do(circuit)
 
-    pauli = stim.PauliString("*".join(map(lambda q : observable + str(q), support)))
+    pauli = stim.PauliString("*".join(map(lambda q: observable + str(q), support)))
     expectation = simulator.peek_observable_expectation(pauli)
-    print(f"> <{observable}({",".join(map(str, support))})> : {("+" if expectation == 1 else "") + str(expectation)}")
+    print(
+        f"> <{observable}({','.join(map(str, support))})> : {('+' if expectation == 1 else '') + str(expectation)}"
+    )
+
 
 def count_cnots(circuit):
     count = 0

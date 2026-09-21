@@ -23,7 +23,9 @@ from library.common import Pauli
 
 
 class TeleportationSurgery:
-    def __init__(self, qubits: QubitArray, distance: int = 3, anchor: tuple[int,int] = (1,1)):
+    def __init__(
+        self, qubits: QubitArray, distance: int = 3, anchor: tuple[int, int] = (1, 1)
+    ):
         self.__distance = distance
         self.__physical_qubits = qubits
         sx, sy = anchor
@@ -31,10 +33,10 @@ class TeleportationSurgery:
         jx, jy = sx + distance - 1, sy
         self.__source = SurfaceCodePatch(qubits, distance, anchor)
         self.__target = SurfaceCodePatch(qubits, distance, (tx, ty))
-        self.__merger = SurfaceCodePatch(qubits, distance,  (jx, jy))
-        self.__source_inactive = lambda ql : ql[0] == sx + distance - 0.5
-        self.__target_inactive = lambda ql : ql[0] == tx - 0.5
-        self.__merger_inactive = lambda ql : not(jx + 0.5 <= ql[0] < jx + 2)
+        self.__merger = SurfaceCodePatch(qubits, distance, (jx, jy))
+        self.__source_inactive = lambda ql: ql[0] == sx + distance - 0.5
+        self.__target_inactive = lambda ql: ql[0] == tx - 0.5
+        self.__merger_inactive = lambda ql: not (jx + 0.5 <= ql[0] < jx + 2)
 
     @property
     def source(self):
@@ -45,11 +47,16 @@ class TeleportationSurgery:
         return self.__target
 
     def append_movement(
-            self, circuit: Circuitry, prepare: Optional[Pauli] = None, measure: Optional[Pauli] = None,
-            full_ft: bool = True
+        self,
+        circuit: Circuitry,
+        prepare: Optional[Pauli] = None,
+        measure: Optional[Pauli] = None,
+        full_ft: bool = True,
     ):
         circuit.annotate_polygons(self.__source.get_polygons())
-        self.__source.append_memory(circuit, memory=0, prepare=prepare, full_ft=full_ft, prefix="S")
+        self.__source.append_memory(
+            circuit, memory=0, prepare=prepare, full_ft=full_ft, prefix="S"
+        )
 
         circuit.annotate_polygons(self.__source.get_polygons(self.__source_inactive))
         circuit.annotate_polygons(self.__merger.get_polygons(self.__merger_inactive))
@@ -60,28 +67,33 @@ class TeleportationSurgery:
         for rnd in range(self.__distance if full_ft else 1):
             for mmt in SurfaceCodePatch.MOMENTS:
                 self.__source.append_round(
-                    circuit, mmt,
+                    circuit,
+                    mmt,
                     measure=Pauli.Z if (not full_ft or rnd == final_round) else None,
                     inactive=self.__source_inactive,
-                    prefix=f"S:M1:R{rnd}"
+                    prefix=f"S:M1:R{rnd}",
                 )
                 self.__merger.append_round(
-                    circuit, mmt,
+                    circuit,
+                    mmt,
                     prepare=Pauli.Z if (not full_ft or rnd == start_round) else None,
                     measure=Pauli.Z if (not full_ft or rnd == final_round) else None,
                     inactive=self.__merger_inactive,
-                    prefix=f"M:M1:R{rnd}"
+                    prefix=f"M:M1:R{rnd}",
                 )
                 self.__target.append_round(
-                    circuit, mmt,
+                    circuit,
+                    mmt,
                     prepare=Pauli.Z if (not full_ft or rnd == start_round) else None,
                     inactive=self.__target_inactive,
-                    prefix=f"T:M1:R{rnd}"
+                    prefix=f"T:M1:R{rnd}",
                 )
                 circuit.append_tick()
 
         circuit.annotate_polygons(self.__target.get_polygons())
-        self.__target.append_memory(circuit, memory=2, measure=measure, full_ft=full_ft, prefix="T")
+        self.__target.append_memory(
+            circuit, memory=2, measure=measure, full_ft=full_ft, prefix="T"
+        )
 
     def locate_measurement(self, label: str):
         if label.startswith("S"):
@@ -98,6 +110,9 @@ class TeleportationSurgery:
     def annotate_observable(self, circuit: Circuitry, identifier: int, *labels: str):
         circuit.append(
             "OBSERVABLE_INCLUDE",
-            [ stim.target_rec(self.__physical_qubits.retrieve_measurement(label)) for label in labels ],
-            identifier
+            [
+                stim.target_rec(self.__physical_qubits.retrieve_measurement(label))
+                for label in labels
+            ],
+            identifier,
         )

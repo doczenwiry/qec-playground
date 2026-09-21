@@ -34,7 +34,15 @@ TELEPORT_ROUNDS = 3
 ROUNDS_FOR_COMPLEMENTARY_GAP = 1
 EXPANDED_OPACITY = 0.125
 
-FILENAME = str(Path(__file__).resolve().parent) + "/generated/hirano-magic-state-cultivation-layout1"
+FILENAME = (
+    str(Path(__file__).resolve().parent)
+    + "/generated/hirano-magic-state-cultivation-layout1"
+)
+
+
+def inactive_source(location: tuple[float, float]) -> bool:
+    return location[1] == TARGET_DISTANCE - 4.5
+
 
 if __name__ == "__main__":
     if TARGET_DISTANCE % 2 != 1 and TARGET_DISTANCE < 9:
@@ -42,12 +50,19 @@ if __name__ == "__main__":
 
     array = QubitArray(dimensions=(TARGET_DISTANCE + 2, TARGET_DISTANCE + 2))
     circuitry = Circuitry(qubits=array, clifford=True)
-    steane = SteaneCodePatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-7), injection=SteaneCodePatch.Injection.S)
-    junction = JunctionPatch(array, anchor=(TARGET_DISTANCE-5, TARGET_DISTANCE-5))
-    source = SurfaceCodePatch(array, distance=5, anchor=(TARGET_DISTANCE - 4, TARGET_DISTANCE - 4))
-    expanding = ExpandingSurfaceCodePatch(array, distance=5, anchor=(1, 1), expansion=TARGET_DISTANCE - 5)
+    steane = SteaneCodePatch(
+        array,
+        anchor=(TARGET_DISTANCE - 5, TARGET_DISTANCE - 7),
+        injection=SteaneCodePatch.Injection.S,
+    )
+    junction = JunctionPatch(array, anchor=(TARGET_DISTANCE - 5, TARGET_DISTANCE - 5))
+    source = SurfaceCodePatch(
+        array, distance=5, anchor=(TARGET_DISTANCE - 4, TARGET_DISTANCE - 4)
+    )
+    expanding = ExpandingSurfaceCodePatch(
+        array, distance=5, anchor=(1, 1), expansion=TARGET_DISTANCE - 5
+    )
     target = SurfaceCodePatch(array, distance=TARGET_DISTANCE, anchor=(1, 1))
-    inactive_source = lambda location: location[1] == TARGET_DISTANCE - 4.5
 
     # Append the modified Steane Code moments with the S/T-injection
     circuitry.annotate_polygons(target.get_polygons(opacity=EXPANDED_OPACITY))
@@ -74,8 +89,11 @@ if __name__ == "__main__":
             steane.append_teleportation(circuitry, moment=mmt, prefix=f"TPT{rnd}")
             junction.append_syndrome(circuitry, moment=mmt, prefix=f"JCT{rnd}")
             source.append_round(
-                circuitry, moment=mmt, prepare=Pauli.X if rnd == 0 else None, prefix=f"SC{rnd}",
-                inactive = inactive_source
+                circuitry,
+                moment=mmt,
+                prepare=Pauli.X if rnd == 0 else None,
+                prefix=f"SC{rnd}",
+                inactive=inactive_source,
             )
             circuitry.append_tick()
 
@@ -97,12 +115,22 @@ if __name__ == "__main__":
     # Handle the left-upwards expansion :) Almost there !
     circuitry.annotate_polygons(target.get_polygons())
     for mmt in expanding.MOMENTS:
-        expanding.append_expansion(circuitry, moment=mmt, prefix=f"EXP")
+        expanding.append_expansion(circuitry, moment=mmt, prefix="EXP")
         circuitry.append_tick()
 
     circuitry.append_observable(
-        0, "Y_OBSERVABLE_EXPANDED", expanding.logical(Pauli.Y),
-        "JCT0:Z0", "JCT0:Z1", "JCT0:Z2", "TPT0:XB", "TPT1:XB", "TPT2:XB", "DST:X1", "DST:X5", "DST:X6"
+        0,
+        "Y_OBSERVABLE_EXPANDED",
+        expanding.logical(Pauli.Y),
+        "JCT0:Z0",
+        "JCT0:Z1",
+        "JCT0:Z2",
+        "TPT0:XB",
+        "TPT1:XB",
+        "TPT2:XB",
+        "DST:X1",
+        "DST:X5",
+        "DST:X6",
     )
     circuitry.append_tick()
 
@@ -113,13 +141,17 @@ if __name__ == "__main__":
     #     target.append_round(circuit, prefix=f"CG{rnd}")
     circuitry.append_tick()
 
-    steane.annotate_detectors(circuitry, sdc_rounds=SUPERDENSE_ROUNDS, tpt_rounds=TELEPORT_ROUNDS)
+    steane.annotate_detectors(
+        circuitry, sdc_rounds=SUPERDENSE_ROUNDS, tpt_rounds=TELEPORT_ROUNDS
+    )
     junction.annotate_detectors(circuitry, rounds=TELEPORT_ROUNDS)
     source.annotate_detectors(circuitry, rounds=TELEPORT_ROUNDS + 1, prepared=Pauli.X)
-    expanding.annotate_detectors(circuitry, sc_rounds=TELEPORT_ROUNDS + 1, source=source)
+    expanding.annotate_detectors(
+        circuitry, sc_rounds=TELEPORT_ROUNDS + 1, source=source
+    )
     # target.annotate_detectors(circuit, rounds=ROUNDS_FOR_COMPLEMENTARY_GAP, prefix="CG")
 
-    print(f"Detector statistics : ")
+    print("Detector statistics : ")
     print(f"> Measurement records : {len(array.measurements_index)}")
     print(f"> Number of detectors : {circuitry.num_detectors}")
 
@@ -130,11 +162,13 @@ if __name__ == "__main__":
         gauge_found = True
     print(f"> Missing detectors : {len(circuitry.missing_detectors())}")
     for detector in circuitry.missing_detectors():
-        records = list(map(lambda neg: array.retrieve_record(neg.value), detector.targets_copy()))
+        records = list(
+            map(lambda neg: array.retrieve_record(neg.value), detector.targets_copy())
+        )
         print(f">> Detector : {records}")
-    print(f"> Gauge detectors : {"FOUND" if gauge_found else "NONE"}")
+    print(f"> Gauge detectors : {'FOUND' if gauge_found else 'NONE'}")
 
-    print(f"Circuit statistics")
+    print("Circuit statistics")
     print(f"> #qubits: {circuitry.num_qubits}")
     print(f"> #CNOTs : {circuitry.num_cnots}")
 
