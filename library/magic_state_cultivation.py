@@ -52,7 +52,7 @@ class MagicStateCultivation:
         self.__target_distance = target_distance
 
         # Generate circuit up to and including preparation with S-injection
-        self.circuitry = Circuitry(self.qubits, clifford=True)
+        self.circuitry = Circuitry(self.qubits, clifford=injection == SteaneCodePatch.Injection.S)
         self.steane = SteaneCodePatch(
             self.qubits, (ax + target_distance - 6, ay + target_distance - 8), injection
         )
@@ -296,8 +296,3 @@ class MagicStateCultivation:
         self.target.annotate_detectors(
             self.circuitry, sc_rounds=tpt_rounds + 1, source=self.source
         )
-
-    def append_observable(
-        self, index: int, label: str, observable: dict[int, str], *extras: str
-    ):
-        self.circuitry.append_observable(index, label, observable, *extras)

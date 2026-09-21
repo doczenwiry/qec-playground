@@ -15,6 +15,8 @@
 from collections import defaultdict
 from typing import Union, Iterable, cast
 import logging
+
+import clifft
 import stim
 
 from library.qubit_array import QubitArray
@@ -56,6 +58,14 @@ class Circuitry:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
         return cast(stim.Circuit, self.__circuit)
+
+    @property
+    def as_clifft(self) -> clifft.Program:
+        if self.__clifford:
+            raise NotImplementedError("Conversion from stim.Circuit to clifft.Program not supported. Use Circuitry.as_stim.")
+
+        text = "\n".join(filter(lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)))
+        return clifft.compile(text)
 
     def missing_detectors(self) -> list:
         if not self.__clifford:

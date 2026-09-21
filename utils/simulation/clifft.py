@@ -44,7 +44,7 @@ def sample(
 
     for scenario, circuit in scenarios.items():
         results = clifft.sample(
-            clifft.compile(str(circuit)), shots=int(shots), seed=SEED
+            circuit.as_clifft, shots=int(shots), seed=SEED
         )
         outcomes = (
             results.observables[:, 0] if correction else results.measurements[:, -1]
