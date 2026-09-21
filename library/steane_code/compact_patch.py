@@ -56,7 +56,7 @@ class SteaneCodePatch:
             label : qubits[(px + dx, py + dy)] for label, (dx, dy) in SteaneCodePatch.QUBITS.items()
         }
 
-    def __shift_qubit_ids(self, *qubits: str) -> List[int]:
+    def __translate_qubit_ids(self, *qubits: str) -> List[int]:
         return list(map(lambda q : self.__used_qubits[q], qubits))
 
     @property
@@ -80,7 +80,7 @@ class SteaneCodePatch:
     @property
     def stabilizers(self):
         return {
-            color : self.__shift_qubit_ids(*stabs)
+            color : self.__translate_qubit_ids(*stabs)
             for color, stabs in SteaneCodePatch.SUPPORTS['FINAL'].items()
         }
 
@@ -90,7 +90,7 @@ class SteaneCodePatch:
             x, y, z = int(color == 'R'), int(color == 'G'), int(color == 'B')
             polygons.append(
                 f"POLYGON({x},{y},{z},{opacity}) {" ".join(
-                    map(str, self.__shift_qubit_ids(*support))
+                    map(str, self.__translate_qubit_ids(*support))
                 )}"
             )
         return polygons
@@ -155,29 +155,29 @@ class SteaneCodePatch:
 
         match moment:
             case 0:
-                circuit.append("RX", self.__shift_qubit_ids('D0', 'D2', 'D4', 'D6'))
-                circuit.append("RZ", self.__shift_qubit_ids('D1', 'D3', 'D5', 'RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'))
+                circuit.append("RX", self.__translate_qubit_ids('D0', 'D2', 'D4', 'D6'))
+                circuit.append("RZ", self.__translate_qubit_ids('D1', 'D3', 'D5', 'RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'))
             case 1:
-                circuit.append("CX", self.__shift_qubit_ids('D0', 'BZ', 'D2', 'RZ', 'D4', 'GD'))
+                circuit.append("CX", self.__translate_qubit_ids('D0', 'BZ', 'D2', 'RZ', 'D4', 'GD'))
             case 2:
-                circuit.append("CX", self.__shift_qubit_ids('D0', 'RZ', 'D2', 'BZ', 'D4', 'RD', 'GD', 'GZ'))
+                circuit.append("CX", self.__translate_qubit_ids('D0', 'RZ', 'D2', 'BZ', 'D4', 'RD', 'GD', 'GZ'))
             case 3:
-                circuit.append("CX", self.__shift_qubit_ids('D6', 'BZ', 'RD', 'RZ', 'GZ', 'GD'))
+                circuit.append("CX", self.__translate_qubit_ids('D6', 'BZ', 'RD', 'RZ', 'GZ', 'GD'))
             case 4:
-                circuit.append("CX", self.__shift_qubit_ids('D4', 'RD', 'D6', 'GZ', 'RZ', 'D3', 'BZ', 'BD'))
+                circuit.append("CX", self.__translate_qubit_ids('D4', 'RD', 'D6', 'GZ', 'RZ', 'D3', 'BZ', 'BD'))
             case 5:
-                circuit.append("CX", self.__shift_qubit_ids('D2', 'GZ', 'D3', 'RZ', 'D4', 'GD', 'BD', 'D1'))
+                circuit.append("CX", self.__translate_qubit_ids('D2', 'GZ', 'D3', 'RZ', 'D4', 'GD', 'BD', 'D1'))
             case 6:
-                circuit.append("CX", self.__shift_qubit_ids('D4', 'GD', 'D1', 'D6', 'BD', 'BZ'))
+                circuit.append("CX", self.__translate_qubit_ids('D4', 'GD', 'D1', 'D6', 'BD', 'BZ'))
             case 7:
-                circuit.append("CX", self.__shift_qubit_ids('D1', 'BD', 'GZ', 'D6'))
+                circuit.append("CX", self.__translate_qubit_ids('D1', 'BD', 'GZ', 'D6'))
             case 8:
-                circuit.append(self.__injection.name + "_DAG", self.__shift_qubit_ids('D6'))
-                circuit.append("CX", self.__shift_qubit_ids('GZ', 'D5'))
+                circuit.append(self.__injection.name + "_DAG", self.__translate_qubit_ids('D6'))
+                circuit.append("CX", self.__translate_qubit_ids('GZ', 'D5'))
             case 9:
-                circuit.append("CX", self.__shift_qubit_ids('GZ', 'D6'))
+                circuit.append("CX", self.__translate_qubit_ids('GZ', 'D6'))
             case 10:
-                circuit.append("CX", self.__shift_qubit_ids('D1', 'D6', 'D5', 'GZ'))
+                circuit.append("CX", self.__translate_qubit_ids('D1', 'D6', 'D5', 'GZ'))
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
@@ -191,33 +191,33 @@ class SteaneCodePatch:
         match moment:
             # Initialization
             case 0:
-                circuit.append("RX", self.__shift_qubit_ids('RD', 'GD', 'BD'))
-                circuit.append("RZ", self.__shift_qubit_ids('RZ', 'GZ', 'BZ'))
+                circuit.append("RX", self.__translate_qubit_ids('RD', 'GD', 'BD'))
+                circuit.append("RZ", self.__translate_qubit_ids('RZ', 'GZ', 'BZ', 'RX', 'GX', 'BX'))
             # Prepare GHZ-states
             case 1:
-                circuit.append("ZCX", self.__shift_qubit_ids('RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'))
+                circuit.append("CX", self.__translate_qubit_ids('RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'))
             # Perform extractions
             case 2:
-                circuit.append("ZCX", self.__shift_qubit_ids('GZ', 'D2', 'GD', 'D4', 'BZ', 'D0', 'RZ', 'D3'))
+                circuit.append("CX", self.__translate_qubit_ids('GZ', 'D2', 'RD', 'D4', 'BZ', 'D0', 'RZ', 'D3'))
             case 3:
-                circuit.append("ZCX", self.__shift_qubit_ids('GZ', 'D6', 'BZ', 'D2', 'RZ', 'D0'))
+                circuit.append("CX", self.__translate_qubit_ids('RZ', 'D0', 'BZ', 'D2', 'GD', 'D4', 'GZ', 'D6'))
             case 4:
-                circuit.append("ZCX", self.__shift_qubit_ids('GZ', 'D5', 'BD', 'D1', 'BZ', 'D6', 'RZ', 'D2', 'RD', 'D4'))
+                circuit.append("CX", self.__translate_qubit_ids('GZ', 'D5', 'BD', 'D1', 'BZ', 'D6', 'RZ', 'D2', 'D4', 'GD'))
             case 5:
-                circuit.append("XCZ", self.__shift_qubit_ids('GZ', 'D5', 'BD', 'D1', 'BZ', 'D6', 'RZ', 'D2', 'RD', 'D4'))
+                circuit.append("XCZ", self.__translate_qubit_ids('GZ', 'D5', 'BD', 'D1', 'BZ', 'D6', 'RZ', 'D2', 'RD', 'D4'))
             case 6:
-                circuit.append("XCZ", self.__shift_qubit_ids('GZ', 'D6', 'BZ', 'D2', 'RZ', 'D0'))
+                circuit.append("XCZ", self.__translate_qubit_ids('RZ', 'RD', 'GZ', 'GD', 'BZ', 'BD'))
             case 7:
-                circuit.append("XCZ", self.__shift_qubit_ids('GZ', 'D2', 'GD', 'D4', 'BZ', 'D0', 'RZ', 'D3'))
+                circuit.append("XCZ", self.__translate_qubit_ids('GZ', 'D2', 'GX', 'GD', 'BZ', 'D0', 'RZ', 'D3', 'RX', 'RD', 'BX', 'BD'))
             # Separate GHZ-states
             case 8:
-                circuit.append("ZCX", self.__shift_qubit_ids('RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'))
+                circuit.append("CX", self.__translate_qubit_ids('D0', 'RZ', 'D6', 'GZ', 'D2', 'BZ', 'RX', 'RD', 'BX', 'BD', 'GX', 'GD'))
             case 9:
-                measured_x_ancilla = self.__shift_qubit_ids('RD', 'GD', 'BD')
+                measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX', 'BX')
                 circuit.append("MX", measured_x_ancilla)
                 for xa, color in zip(measured_x_ancilla, ['R', 'G', 'B']):
                     self.__available_qubits.record_measurement(xa, f"{prefix}:X{color}")
-                measured_z_ancilla = self.__shift_qubit_ids('RZ', 'GZ', 'BZ')
+                measured_z_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'BZ')
                 circuit.append("MZ", measured_z_ancilla)
                 for za, color in zip(measured_z_ancilla, ['R', 'G', 'B']):
                     self.__available_qubits.record_measurement(za, f"{prefix}:Z{color}")
@@ -234,33 +234,33 @@ class SteaneCodePatch:
         match moment:
             case 0:
                 circuit.append(f"{self.__injection.name}_DAG", self.support)
-                circuit.append("RX", self.__shift_qubit_ids(10, 11, 13, 14, 15))
+                circuit.append("RX", self.__translate_qubit_ids())
             case 1:
-                circuit.append("CX", self.__shift_qubit_ids(10, 5, 11, 4, 13, 1, 14, 2, 15, 3))
+                circuit.append("CX", self.__translate_qubit_ids())
             case 2:
-                circuit.append("CX", self.__shift_qubit_ids(6, 13, 2, 11, 15, 0))
+                circuit.append("CX", self.__translate_qubit_ids())
             case 3:
-                circuit.append("CX", self.__shift_qubit_ids(10, 6, 2, 15))
+                circuit.append("CX", self.__translate_qubit_ids())
             case 4:
-                circuit.append("CX", self.__shift_qubit_ids(10, 2))
+                circuit.append("CX", self.__translate_qubit_ids())
             case 5:
-                circuit.append("MX", self.__shift_qubit_ids(10))
-                self.__available_qubits.record_measurement(*self.__shift_qubit_ids(10), f"{prefix}:X0")
+                circuit.append("MX", self.__translate_qubit_ids())
+                # self.__available_qubits.record_measurement(*self.__translate_qubit_ids(), f"{prefix}:X0")
             case 6:
-                circuit.append("RX", self.__shift_qubit_ids(10))
+                circuit.append("RX", self.__translate_qubit_ids())
             case 7:
-                circuit.append("CX", self.__shift_qubit_ids(10, 2))
+                circuit.append("CX", self.__translate_qubit_ids())
             case 8:
-                circuit.append("CX", self.__shift_qubit_ids(10, 6, 2, 15))
+                circuit.append("CX", self.__translate_qubit_ids())
             case 9:
-                circuit.append("CX", self.__shift_qubit_ids(6, 13, 2, 11, 15, 0))
+                circuit.append("CX", self.__translate_qubit_ids())
             case 10:
-                circuit.append("CX", self.__shift_qubit_ids(10, 5, 11, 4, 13, 1, 14, 2, 15, 3))
+                circuit.append("CX", self.__translate_qubit_ids())
             case 11:
-                measured_ancilla = self.__shift_qubit_ids(10, 11, 13, 14, 15)
+                measured_ancilla = self.__translate_qubit_ids()
                 circuit.append("MX", measured_ancilla)
-                for index, xa in enumerate(measured_ancilla):
-                    self.__available_qubits.record_measurement(xa, f"{prefix}:X{index + 1}")
+                # for index, xa in enumerate(measured_ancilla):
+                #     self.__available_qubits.record_measurement(xa, f"{prefix}:X{index + 1}")
                 circuit.append(f"{self.__injection.name}", self.support)
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
@@ -275,43 +275,43 @@ class SteaneCodePatch:
         match moment:
             # GHZ-state formation
             case 0:
-                circuit.append("RX", self.__shift_qubit_ids(10, 13, 15))
-                circuit.append("RZ", self.__shift_qubit_ids(7, 8, 9, 11, 12, 14))
+                circuit.append("RX", self.__translate_qubit_ids(10, 13, 15))
+                circuit.append("RZ", self.__translate_qubit_ids(7, 8, 9, 11, 12, 14))
             case 1:
-                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
+                circuit.append("CX", self.__translate_qubit_ids(10, 7, 13, 9, 15, 8))
             case 2:
-                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
+                circuit.append("CX", self.__translate_qubit_ids(7, 11, 9, 14, 8, 12))
             case 3:
-                circuit.append("CX", self.__shift_qubit_ids(11, 7, 14, 9, 12, 8))
+                circuit.append("CX", self.__translate_qubit_ids(11, 7, 14, 9, 12, 8))
             # X-syndrome extractions
             case 4:
-                circuit.append("CX", self.__shift_qubit_ids(10, 6, 11, 2, 15, 3))
+                circuit.append("CX", self.__translate_qubit_ids(10, 6, 11, 2, 15, 3))
             case 5:
-                circuit.append("CX", self.__shift_qubit_ids(10, 5, 11, 4, 15, 0))
+                circuit.append("CX", self.__translate_qubit_ids(10, 5, 11, 4, 15, 0))
             case 6:
-                circuit.append("CX", self.__shift_qubit_ids(12, 4, 15, 2))
+                circuit.append("CX", self.__translate_qubit_ids(12, 4, 15, 2))
             # Z-syndrome extractions
             case 7:
-                circuit.append("CX", self.__shift_qubit_ids(1, 13, 2, 15, 4, 12, 6, 14))
+                circuit.append("CX", self.__translate_qubit_ids(1, 13, 2, 15, 4, 12, 6, 14))
             case 8:
-                circuit.append("CX", self.__shift_qubit_ids(0, 15, 2, 14, 4, 11, 5, 10))
+                circuit.append("CX", self.__translate_qubit_ids(0, 15, 2, 14, 4, 11, 5, 10))
             case 9:
-                circuit.append("CX", self.__shift_qubit_ids(0, 14, 2, 11, 3, 15, 6, 10))
+                circuit.append("CX", self.__translate_qubit_ids(0, 14, 2, 11, 3, 15, 6, 10))
             # GHZ-state contraction
             case 10:
-                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
+                circuit.append("CX", self.__translate_qubit_ids(7, 11, 9, 14, 8, 12))
             case 11:
-                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
+                circuit.append("CX", self.__translate_qubit_ids(10, 7, 13, 9, 15, 8))
             case 12:
-                circuit.append("CX", self.__shift_qubit_ids(7, 11, 9, 14, 8, 12))
+                circuit.append("CX", self.__translate_qubit_ids(7, 11, 9, 14, 8, 12))
             case 13:
-                circuit.append("CX", self.__shift_qubit_ids(10, 7, 13, 9, 15, 8))
+                circuit.append("CX", self.__translate_qubit_ids(10, 7, 13, 9, 15, 8))
             case 14:
-                measured_x_ancilla = self.__shift_qubit_ids(10, 13, 15)
+                measured_x_ancilla = self.__translate_qubit_ids(10, 13, 15)
                 circuit.append("MX", measured_x_ancilla)
                 for xa, color in zip(measured_x_ancilla, ["G" , "B", "R"]):
                     self.__available_qubits.record_measurement(xa, f"{prefix}:X{color}")
-                measured_z_ancilla = self.__shift_qubit_ids(11, 12, 14)
+                measured_z_ancilla = self.__translate_qubit_ids(11, 12, 14)
                 circuit.append("MZ", measured_z_ancilla)
                 for za, color in zip(measured_z_ancilla, ["G" , "R", "B"]):
                     self.__available_qubits.record_measurement(za, f"{prefix}:Z{color}")
@@ -327,13 +327,13 @@ class SteaneCodePatch:
 
         match moment:
             case 0:
-                circuit.append("R", self.__shift_qubit_ids(10, 11, 12, 13, 14, 15, 16))
+                circuit.append("R", self.__translate_qubit_ids(10, 11, 12, 13, 14, 15, 16))
             case 1:
-                circuit.append("CX", self.__shift_qubit_ids(5, 16, 4, 12, 6, 10, 2, 11, 0, 14, 3, 15, 1, 13))
+                circuit.append("CX", self.__translate_qubit_ids(5, 16, 4, 12, 6, 10, 2, 11, 0, 14, 3, 15, 1, 13))
             case 3:
-                circuit.append("CX", self.__shift_qubit_ids(16, 5, 12, 4, 10, 6, 11, 2, 14, 0, 15, 3, 13, 1))
+                circuit.append("CX", self.__translate_qubit_ids(16, 5, 12, 4, 10, 6, 11, 2, 14, 0, 15, 3, 13, 1))
             case 5:
-                measured_data_qubits = self.__shift_qubit_ids(14, 13, 11, 15, 12, 16, 10)
+                measured_data_qubits = self.__translate_qubit_ids(14, 13, 11, 15, 12, 16, 10)
                 circuit.append("MX", measured_data_qubits)
                 for index, qd in enumerate(measured_data_qubits):
                     self.__available_qubits.record_measurement(qd, f"{prefix}:X{index}")

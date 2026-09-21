@@ -44,7 +44,7 @@ def count_cnots(circuit):
     count = 0
     used_qubits = set()
     for instruction in circuit.flattened():
-        if instruction.name == "CX":
+        if instruction.name in ("CX", "ZCX", "XCZ"):
             count += len(instruction.targets_copy()) // 2
         if instruction.name not in ("QUBIT_COORDS", "DETECTOR", "OBSERVABLE_INCLUDE"):
             used_qubits.update(instruction.targets_copy())
