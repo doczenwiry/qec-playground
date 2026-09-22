@@ -106,7 +106,9 @@ class Circuitry:
     def __len__(self):
         return len(self.__circuit) if self.__clifford else -1
 
-    def to_crumble_url(self, polygons: bool = True, spacing: bool = False):
+    def to_crumble_url(
+        self, polygons: bool = True, spacing: bool = False, location: str = "https://algassert.com/crumble.html"
+    ):
         lines = (
             str(self.__circuit).split("\n")
             if self.__clifford
@@ -115,9 +117,7 @@ class Circuitry:
         if polygons:
             lines = self.__insert_polygons(lines, spacing=spacing)
 
-        return "https://algassert.com/crumble#circuit=" + ";".join(lines).replace(
-            " ", "_"
-        )
+        return location + "#circuit=" + ";".join(lines).replace(" ", "_")
 
     def to_file(self, filename: str, polygons: bool = True, spacing: bool = False):
         filename += ".stim" if self.__clifford else ".clifft"
@@ -228,7 +228,14 @@ class Circuitry:
                     if sign == -1:
                         targets = "!" + targets
                 case _:
-                    targets = " ".join(map(str, targets))
+                    targets_str = []
+                    for target in targets:
+                        if isinstance(target, int):
+                            targets_str.append(str(target))
+                        elif isinstance(target, stim.GateTarget):
+                            if target.is_measurement_record_target:
+                                targets_str.append(f"rec[{target.value}]")
+                    targets = " ".join(map(str, targets_str))
 
             argument = ""
             match name:
