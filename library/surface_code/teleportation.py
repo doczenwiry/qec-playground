@@ -52,11 +52,10 @@ class TeleportationSurgery:
         circuit: Circuitry,
         prepare: Optional[Pauli] = None,
         measure: Optional[Pauli] = None,
-        full_ft: bool = True,
     ):
         circuit.annotate_polygons(self.__source.get_polygons())
         self.__source.append_memory(
-            circuit, memory=0, prepare=prepare, full_ft=full_ft, prefix="S"
+            circuit, prepare=prepare, prefix="SRC:M0"
         )
 
         circuit.annotate_polygons(self.__source.get_polygons(self.__source_inactive))
@@ -67,35 +66,35 @@ class TeleportationSurgery:
 
         start_round = 0
         final_round = self.__distance - 1
-        for rnd in range(self.__distance if full_ft else 1):
+        for rnd in range(self.__distance):
             for mmt in SurfaceCodePatch.MOMENTS:
                 self.__source.append_round(
                     circuit,
                     mmt,
-                    measure=transition if (not full_ft or rnd == final_round) else None,
+                    measure=transition if rnd == final_round else None,
                     inactive=self.__source_inactive,
-                    prefix=f"S:M1:R{rnd}",
+                    prefix=f"SRC:M1:R{rnd}",
                 )
                 self.__merger.append_round(
                     circuit,
                     mmt,
-                    prepare=transition if (not full_ft or rnd == start_round) else None,
-                    measure=transition if (not full_ft or rnd == final_round) else None,
+                    prepare=transition if rnd == start_round else None,
+                    measure=transition if rnd == final_round else None,
                     inactive=self.__merger_inactive,
-                    prefix=f"M:M1:R{rnd}",
+                    prefix=f"JCT:M1:R{rnd}",
                 )
                 self.__target.append_round(
                     circuit,
                     mmt,
-                    prepare=transition if (not full_ft or rnd == start_round) else None,
+                    prepare=transition if rnd == start_round else None,
                     inactive=self.__target_inactive,
-                    prefix=f"T:M1:R{rnd}",
+                    prefix=f"TGT:M1:R{rnd}",
                 )
                 circuit.append_tick()
 
         circuit.annotate_polygons(self.__target.get_polygons())
         self.__target.append_memory(
-            circuit, memory=2, measure=measure, full_ft=full_ft, prefix="T"
+            circuit, measure=measure, prefix="TGT:M2"
         )
 
     def locate_measurement(self, label: str):

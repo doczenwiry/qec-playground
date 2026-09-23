@@ -164,71 +164,48 @@ class SteaneCodePatch:
             return self.__get_polygons(SteaneCodePatch.SUPPORTS["FINAL"], opacity)
 
     def annotate_detectors(
-        self, circuitry: Circuitry, sdc_rounds: int = 0, tpt_rounds: int = 0
+        self, circuitry: Circuitry, sdc_rounds: int = 0, tpt_rounds: int = 0, prefix: str = "STN"
     ):
         # Annotate all SUPERDENSE detectors
         for color in self.stabilizers.keys():
             if sdc_rounds >= 1:
-                circuitry.annotate_detector(f"SDC0:X{color}")
-                circuitry.annotate_detector(f"SDC0:Z{color}")
+                circuitry.annotate_detector(f"{prefix}:SDC0:X{color}")
+                circuitry.annotate_detector(f"{prefix}:SDC0:Z{color}")
             for prev, curr in itertools.pairwise(range(sdc_rounds)):
                 circuitry.annotate_detector(
-                    f"SDC{curr}:Z{color}", f"SDC{prev}:Z{color}"
+                    f"{prefix}:SDC{curr}:Z{color}", f"{prefix}:SDC{prev}:Z{color}"
                 )
 
         for prev, curr in itertools.pairwise(range(sdc_rounds)):
-            circuitry.annotate_detector(f"SDC{curr}:XR")
+            circuitry.annotate_detector(f"{prefix}:SDC{curr}:XR")
             circuitry.annotate_detector(
-                f"SDC{curr}:XG", f"SDC{prev}:XR", f"SDC{prev}:XG"
+                f"{prefix}:SDC{curr}:XG", f"{prefix}:SDC{prev}:XR", f"{prefix}:SDC{prev}:XG"
             )
-            circuitry.annotate_detector(f"SDC{curr}:XB", f"SDC{prev}:XG")
+            circuitry.annotate_detector(f"{prefix}:SDC{curr}:XB", f"{prefix}:SDC{prev}:XG")
 
         # Annotate the CULTIVATION detectors
         for measurement in range(6):
-            circuitry.annotate_detector(f"CULT:X{measurement}")
+            circuitry.annotate_detector(f"{prefix}:CULT:X{measurement}")
 
         # Annotate the TELEPORTATION stabilized detectors
         last = sdc_rounds - 1
         for color in self.stabilizers.keys():
-            circuitry.annotate_detector(f"TPT0:Z{color}", f"SDC{last}:Z{color}")
+            circuitry.annotate_detector(f"{prefix}:TPT0:Z{color}", f"{prefix}:SDC{last}:Z{color}")
             for prev, curr in itertools.pairwise(range(tpt_rounds)):
                 circuitry.annotate_detector(
-                    f"TPT{curr}:Z{color}", f"TPT{prev}:Z{color}"
+                    f"{prefix}:TPT{curr}:Z{color}", f"{prefix}:TPT{prev}:Z{color}"
                 )
 
-        circuitry.annotate_detector("TPT0:XR")
-        circuitry.annotate_detector("TPT0:XG", f"SDC{last}:XR", f"SDC{last}:XG")
-        circuitry.annotate_detector("TPT0:XB", f"SDC{last}:XG")
+        circuitry.annotate_detector(f"{prefix}:TPT0:XR")
+        circuitry.annotate_detector(f"{prefix}:TPT0:XG", f"{prefix}:SDC{last}:XR", f"{prefix}:SDC{last}:XG")
+        circuitry.annotate_detector(f"{prefix}:TPT0:XB", f"{prefix}:SDC{last}:XG")
 
         for prev, curr in itertools.pairwise(range(tpt_rounds)):
-            circuitry.annotate_detector(f"TPT{curr}:XR")
+            circuitry.annotate_detector(f"{prefix}:TPT{curr}:XR")
             circuitry.annotate_detector(
-                f"TPT{curr}:XG", f"TPT{prev}:XR", f"TPT{prev}:XG"
+                f"{prefix}:TPT{curr}:XG", f"{prefix}:TPT{prev}:XR", f"{prefix}:TPT{prev}:XG"
             )
-            circuitry.annotate_detector(f"TPT{curr}:XB", f"TPT{prev}:XG")
-
-        # Annotate the TELEPORTATION destructive detectors
-        # The X_{0126ab} detector.
-        circuitry.annotate_detector(
-            f"SDC{last}:XG",
-            "TPT0:XG",
-            "TPT0:XB",
-            "TPT1:XG",
-            "TPT1:XB",
-            "TPT2:XG",
-            "TPT2:XB",
-            "DST:X0",
-            "DST:X1",
-            "DST:X2",
-            "DST:X6",
-            "SC3:X0",
-        )
-        # The X_{2456} detector
-        circuitry.annotate_detector(
-            "TPT2:XG", "TPT2:XR", "DST:X2", "DST:X4", "DST:X5", "DST:X6"
-        )
-        # The X_{0234} detector
-        circuitry.annotate_detector("DST:X0", "DST:X2", "DST:X3", "DST:X4")
+            circuitry.annotate_detector(f"{prefix}:TPT{curr}:XB", f"{prefix}:TPT{prev}:XG")
 
     def append_preparation(self, circuit: Circuitry, moment: Optional[int] = None):
         if moment is None:
@@ -310,7 +287,7 @@ class SteaneCodePatch:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
     def append_superdense_cycle(
-        self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "SDC"
+        self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "STN:SDC"
     ):
         if moment is None:
             for moment in self.SUPERDENSE_MOMENTS:
@@ -407,7 +384,7 @@ class SteaneCodePatch:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
     def append_cultivation(
-        self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "CULT"
+        self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "STN:CULT"
     ):
         if moment is None:
             for moment in self.CULTIVATION_MOMENTS:
@@ -471,7 +448,7 @@ class SteaneCodePatch:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
     def append_teleportation(
-        self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "TPT"
+        self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "STN:TPT"
     ):
         if moment is None:
             for moment in self.TELEPORTATION_MOMENTS:
@@ -560,7 +537,7 @@ class SteaneCodePatch:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
     def append_destruction(
-        self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "DST"
+        self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "STN:DST"
     ):
         if moment is None:
             for moment in self.DESTRUCTION_MOMENTS:

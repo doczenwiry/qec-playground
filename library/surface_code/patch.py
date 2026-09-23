@@ -38,7 +38,7 @@ class SurfaceCodePatch:
         self.__coloring = coloring
         self.__distance = distance
         self.__physical_qubits = qubits
-        self.__qubits = dict()
+        self.qubits: dict[str, dict[tuple[float,float], tuple[int, int]]] = dict()
 
         ax, ay = anchor
         data_qubits: dict[tuple[float, float], tuple[int, int]] = {
@@ -47,7 +47,7 @@ class SurfaceCodePatch:
                 itertools.product(range(ax, ax + distance), range(ay, ay + distance))
             )
         }
-        self.__qubits["D"] = data_qubits
+        self.qubits["D"] = data_qubits
 
         ancilla_count = (distance**2 - 1) // 2
         width = 1 + (distance // 2)
@@ -67,8 +67,8 @@ class SurfaceCodePatch:
             )
             ancilla1[location] = (qubits[location], len(ancilla1))
 
-        self.__qubits["X"] = ancilla1 if coloring else ancilla0
-        self.__qubits["Z"] = ancilla0 if coloring else ancilla1
+        self.qubits["X"] = ancilla1 if coloring else ancilla0
+        self.qubits["Z"] = ancilla0 if coloring else ancilla1
 
     @property
     def coloring(self):
@@ -84,15 +84,15 @@ class SurfaceCodePatch:
 
     @property
     def num_qubits(self):
-        return sum(len(self.__qubits[qt]) for qt in ["X", "Z", "D"])
+        return sum(len(self.qubits[qt]) for qt in ["X", "Z", "D"])
 
     @property
     def num_z_ancilla(self):
-        return len(self.__qubits["Z"])
+        return len(self.qubits["Z"])
 
     @property
     def num_x_ancilla(self):
-        return len(self.__qubits["X"])
+        return len(self.qubits["X"])
 
     def logical(self, basis: Pauli):
         ax, ay = self.anchor
@@ -123,22 +123,22 @@ class SurfaceCodePatch:
         inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
     ):
         return iter(
-            (al, ai) for al, ai in self.__qubits[qtype].items() if not inactive(al)
+            (al, ai) for al, ai in self.qubits[qtype].items() if not inactive(al)
         )
 
     def get_qubit_index(self, qtype: str, qubit: int) -> int:
-        for qb, qi in self.__qubits[qtype].values():
+        for qb, qi in self.qubits[qtype].values():
             if qb == qubit:
                 return qi
-        raise ValueError(f"Invalid qubit {qubit} requested.")
+        return -1
 
     def get_qubit_at_location(self, location: tuple[float, float]) -> int:
-        return self.__qubits["D"][location][0] if location in self.__qubits["D"] else -1
+        return self.qubits["D"][location][0] if location in self.qubits["D"] else -1
 
     def locate_qubit(self, label: str):
         index = int(label[1:])
 
-        for lc, (_, i) in self.__qubits[label[0]].items():
+        for lc, (_, i) in self.qubits[label[0]].items():
             if i == index:
                 return lc
 
@@ -175,34 +175,32 @@ class SurfaceCodePatch:
     ):
         if prepared is not None:
             stabilizer = prepared.name
-            for qa in range(len(self.__qubits[prepared.name])):
-                label = f"SC0:{stabilizer}{qa}"
+            for qa in range(len(self.qubits[prepared.name])):
+                label = f"{prefix}:R0:{stabilizer}{qa}"
                 circuitry.annotate_detector(label)
         for stabilizer in ["X", "Z"]:
-            for qa in range(len(self.__qubits[stabilizer])):
+            for qa in range(len(self.qubits[stabilizer])):
                 for prev, curr in itertools.pairwise(range(rounds)):
                     circuitry.annotate_detector(
-                        f"{prefix}{curr}:{stabilizer}{qa}",
-                        f"{prefix}{prev}:{stabilizer}{qa}",
+                        f"{prefix}:R{curr}:{stabilizer}{qa}",
+                        f"{prefix}:R{prev}:{stabilizer}{qa}",
                     )
 
     def append_memory(
         self,
         circuit: Circuitry,
-        memory: int,
         prepare: Optional[Pauli] = None,
         measure: Optional[Pauli] = None,
-        full_ft: bool = True,
         prefix: str = "",
     ):
         start = 0
         final = self.__distance - 1
-        for rnd in range(self.__distance if full_ft else 1):
+        for rnd in range(self.__distance):
             self.append_round(
                 circuit,
                 prepare=prepare if (rnd == start) else None,
                 measure=measure if (rnd == final) else None,
-                prefix=f"{prefix}:M{memory}:R{rnd}",
+                prefix=f"{prefix}:R{rnd}",
             )
 
     def append_round(

@@ -198,7 +198,7 @@ class MagicStateCultivation:
             )
 
         # Append the superdense syndrome measurement code cycle (one round)
-        self.steane.append_superdense_cycle(self.circuitry, prefix=f"SDC{rnd}")
+        self.steane.append_superdense_cycle(self.circuitry, prefix=f"STN:SDC{rnd}")
 
     def append_cultivation(self):
         self.circuitry.annotate_polygons(
@@ -213,7 +213,7 @@ class MagicStateCultivation:
             )
 
         # Append the cultivation stage with the Double-Check-S/T
-        self.steane.append_cultivation(self.circuitry, prefix="CULT")
+        self.steane.append_cultivation(self.circuitry, prefix="STN:CULT")
 
     def append_teleportation(self, rounds: int = 3):
         if rounds not in range(4):
@@ -238,7 +238,7 @@ class MagicStateCultivation:
         for rnd in range(rounds):
             for mmt in self.steane.TELEPORTATION_MOMENTS:
                 self.steane.append_teleportation(
-                    self.circuitry, moment=mmt, prefix=f"TPT{rnd}"
+                    self.circuitry, moment=mmt, prefix=f"STN:TPT{rnd}"
                 )
                 self.__junction.append_syndrome(
                     self.circuitry, moment=mmt, prefix=f"JCT{rnd}"
@@ -247,7 +247,7 @@ class MagicStateCultivation:
                     self.circuitry,
                     moment=mmt,
                     prepare=Pauli.X if rnd == 0 else None,
-                    prefix=f"SC{rnd}",
+                    prefix=f"SRC:R{rnd}",
                     inactive=self.__inactive_source,
                 )
                 self.circuitry.append_tick()
@@ -270,7 +270,7 @@ class MagicStateCultivation:
 
         for mmt in self.steane.DESTRUCTION_MOMENTS:
             self.steane.append_destruction(self.circuitry, moment=mmt)
-            self.source.append_round(self.circuitry, moment=mmt, prefix=f"SC{rounds}")
+            self.source.append_round(self.circuitry, moment=mmt, prefix=f"SRC:REC")
             self.circuitry.append_tick()
 
     def append_expansion(self):
@@ -282,17 +282,66 @@ class MagicStateCultivation:
 
         # Append the round of the expansion stage
         for mmt in self.target.MOMENTS:
-            self.target.append_expansion(self.circuitry, moment=mmt, prefix="EXP")
+            self.target.append_expansion(self.circuitry, moment=mmt, prefix="TGT:R0")
             self.circuitry.append_tick()
 
     def annotate_detectors(self, sdc_rounds: int, tpt_rounds: int):
         self.steane.annotate_detectors(
             self.circuitry, sdc_rounds=sdc_rounds, tpt_rounds=tpt_rounds
         )
+
+        # Annotate the TELEPORTATION destructive detectors
+        # The X_{0126ab} detector.
+        last = sdc_rounds - 1
+        self.circuitry.annotate_detector(
+            f"STN:SDC{last}:XG",
+            "STN:TPT0:XG",
+            "STN:TPT0:XB",
+            "STN:TPT1:XG",
+            "STN:TPT1:XB",
+            "STN:TPT2:XG",
+            "STN:TPT2:XB",
+            "STN:DST:X0",
+            "STN:DST:X1",
+            "STN:DST:X2",
+            "STN:DST:X6",
+            "SRC:REC:X0",
+        )
+        # The X_{2456} detector
+        self.circuitry.annotate_detector(
+            "STN:TPT2:XG", "STN:TPT2:XR", "STN:DST:X2", "STN:DST:X4", "STN:DST:X5", "STN:DST:X6"
+        )
+        # The X_{0234} detector
+        self.circuitry.annotate_detector("STN:DST:X0", "STN:DST:X2", "STN:DST:X3", "STN:DST:X4")
+
         self.__junction.annotate_detectors(self.circuitry, rounds=tpt_rounds)
         self.source.annotate_detectors(
-            self.circuitry, rounds=tpt_rounds + 1, prepared=Pauli.X
+            self.circuitry, rounds=tpt_rounds + 1, prepared=Pauli.X, prefix="SRC"
         )
-        self.target.annotate_detectors(
-            self.circuitry, sc_rounds=tpt_rounds + 1, source=self.source
-        )
+
+        for ql, (qx, qi) in self.source.qubits['X'].items():
+            if qi < 2: continue
+            self.circuitry.annotate_detector(f"SRC:REC:X{qi}", f"SRC:R{last}:X{qi}")
+
+        for ql, (qz, qi) in self.source.qubits['Z'].items():
+            self.circuitry.annotate_detector(f"SRC:REC:Z{qi}", f"SRC:R{last}:Z{qi}")
+
+        tx, ty = self.target.anchor
+
+        for qz, (ql, qti) in self.target.qubits['Z'].items():
+            qsi = self.source.get_qubit_index('Z', qz)
+            if qsi == -1:
+                px, py = ql
+                if px - tx < py - ty:
+                    self.circuitry.annotate_detector(f"TGT:R0:Z{qti}")
+            else:
+                self.circuitry.annotate_detector(f"TGT:R0:Z{qti}", f"SRC:REC:Z{qsi}")
+
+        for qx, (ql, qti) in self.target.qubits['X'].items():
+            qsi = self.source.get_qubit_index('X', qx)
+            if qsi == -1:
+                px, py = ql
+                if px - tx > py - ty:
+                    self.circuitry.annotate_detector(f"TGT:R0:X{qti}")
+            else:
+                self.circuitry.annotate_detector(f"TGT:R0:X{qti}", f"SRC:REC:X{qsi}")
