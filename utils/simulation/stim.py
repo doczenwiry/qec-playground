@@ -48,7 +48,7 @@ def simulate(
     tasks = [
         sinter.Task(
             circuit=make_noisy_circuit(circuitry.as_stim, physical_error_rate),
-            postselection_mask=np.packbits(np.ones(circuitry.num_detectors, dtype=bool))
+            postselection_mask=np.packbits(np.array(circuitry.postselection_mask, dtype=bool))
             if postselection
             else None,
             json_metadata={"scenario": scenario, "per": physical_error_rate},

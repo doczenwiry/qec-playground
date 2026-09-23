@@ -306,13 +306,17 @@ class MagicStateCultivation:
             "STN:DST:X2",
             "STN:DST:X6",
             "SRC:REC:X0",
+            postselected=True
         )
         # The X_{2456} detector
         self.circuitry.annotate_detector(
-            "STN:TPT2:XG", "STN:TPT2:XR", "STN:DST:X2", "STN:DST:X4", "STN:DST:X5", "STN:DST:X6"
+            "STN:TPT2:XG", "STN:TPT2:XR", "STN:DST:X2", "STN:DST:X4", "STN:DST:X5", "STN:DST:X6",
+            postselected=True
         )
         # The X_{0234} detector
-        self.circuitry.annotate_detector("STN:DST:X0", "STN:DST:X2", "STN:DST:X3", "STN:DST:X4")
+        self.circuitry.annotate_detector(
+            "STN:DST:X0", "STN:DST:X2", "STN:DST:X3", "STN:DST:X4", postselected=True
+        )
 
         self.__junction.annotate_detectors(self.circuitry, rounds=tpt_rounds)
         self.source.annotate_detectors(

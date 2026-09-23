@@ -35,6 +35,7 @@ class Circuitry:
         self.__num_cnots = 0
         self.__num_measurements = 0
         self.__num_detectors = 0
+        self.__postselection_mask: list[bool] = []
         self.__polygons: dict[int, list[str]] = defaultdict(list)
 
         for location, qubit in self.__physical_qubits.qubits.items():
@@ -66,6 +67,10 @@ class Circuitry:
 
         text = "\n".join(filter(lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)))
         return clifft.compile(text)
+
+    @property
+    def postselection_mask(self):
+        return self.__postselection_mask
 
     def missing_detectors(self, unknown_input: bool = False) -> list:
         if not self.__clifford:
@@ -136,11 +141,12 @@ class Circuitry:
     def annotate_polygons(self, polygons: list[str]):
         self.__polygons[len(self.__circuit)].extend(polygons)
 
-    def annotate_detector(self, *labels: str) -> bool:
+    def annotate_detector(self, *labels: str, postselected: bool = False) -> bool:
         if all(self.__physical_qubits.has_record(label) for label in labels):
             self.append(
                 "DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels)
             )
+            self.__postselection_mask.append(postselected)
             return True
         logging.warning(f"Requested some unrecorded measurement [request:{labels}]")
         for label in labels:
@@ -254,7 +260,7 @@ class Circuitry:
         print(
             f"> Measurement records : {len(self.__physical_qubits.measurements_index)}"
         )
-        print(f"> Number of detectors : {self.num_detectors}")
+        print(f"> Number of detectors : {self.num_detectors} [postselected:{sum(int(ps) for ps in self.__postselection_mask)}]")
 
         gauge_found = False
         try:

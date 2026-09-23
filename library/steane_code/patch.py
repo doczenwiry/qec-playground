@@ -169,43 +169,55 @@ class SteaneCodePatch:
         # Annotate all SUPERDENSE detectors
         for color in self.stabilizers.keys():
             if sdc_rounds >= 1:
-                circuitry.annotate_detector(f"{prefix}:SDC0:X{color}")
-                circuitry.annotate_detector(f"{prefix}:SDC0:Z{color}")
+                circuitry.annotate_detector(f"{prefix}:SDC0:X{color}", postselected=True)
+                circuitry.annotate_detector(f"{prefix}:SDC0:Z{color}", postselected=True)
             for prev, curr in itertools.pairwise(range(sdc_rounds)):
                 circuitry.annotate_detector(
-                    f"{prefix}:SDC{curr}:Z{color}", f"{prefix}:SDC{prev}:Z{color}"
+                    f"{prefix}:SDC{curr}:Z{color}", f"{prefix}:SDC{prev}:Z{color}",
+                    postselected=True
                 )
 
         for prev, curr in itertools.pairwise(range(sdc_rounds)):
-            circuitry.annotate_detector(f"{prefix}:SDC{curr}:XR")
+            circuitry.annotate_detector(f"{prefix}:SDC{curr}:XR", postselected=True)
             circuitry.annotate_detector(
-                f"{prefix}:SDC{curr}:XG", f"{prefix}:SDC{prev}:XR", f"{prefix}:SDC{prev}:XG"
+                f"{prefix}:SDC{curr}:XG", f"{prefix}:SDC{prev}:XR", f"{prefix}:SDC{prev}:XG",
+                postselected=True
             )
-            circuitry.annotate_detector(f"{prefix}:SDC{curr}:XB", f"{prefix}:SDC{prev}:XG")
+            circuitry.annotate_detector(f"{prefix}:SDC{curr}:XB", f"{prefix}:SDC{prev}:XG",
+                postselected=True
+            )
 
         # Annotate the CULTIVATION detectors
         for measurement in range(6):
-            circuitry.annotate_detector(f"{prefix}:CULT:X{measurement}")
+            circuitry.annotate_detector(f"{prefix}:CULT:X{measurement}", postselected=True)
 
         # Annotate the TELEPORTATION stabilized detectors
         last = sdc_rounds - 1
         for color in self.stabilizers.keys():
-            circuitry.annotate_detector(f"{prefix}:TPT0:Z{color}", f"{prefix}:SDC{last}:Z{color}")
+            circuitry.annotate_detector(
+                f"{prefix}:TPT0:Z{color}", f"{prefix}:SDC{last}:Z{color}", postselected=True
+            )
             for prev, curr in itertools.pairwise(range(tpt_rounds)):
                 circuitry.annotate_detector(
-                    f"{prefix}:TPT{curr}:Z{color}", f"{prefix}:TPT{prev}:Z{color}"
+                    f"{prefix}:TPT{curr}:Z{color}", f"{prefix}:TPT{prev}:Z{color}", postselected=True
                 )
 
-        circuitry.annotate_detector(f"{prefix}:TPT0:XR")
-        circuitry.annotate_detector(f"{prefix}:TPT0:XG", f"{prefix}:SDC{last}:XR", f"{prefix}:SDC{last}:XG")
-        circuitry.annotate_detector(f"{prefix}:TPT0:XB", f"{prefix}:SDC{last}:XG")
+        circuitry.annotate_detector(f"{prefix}:TPT0:XR", postselected=True)
+        circuitry.annotate_detector(
+            f"{prefix}:TPT0:XG", f"{prefix}:SDC{last}:XR", f"{prefix}:SDC{last}:XG", postselected=True
+        )
+        circuitry.annotate_detector(f"{prefix}:TPT0:XB", f"{prefix}:SDC{last}:XG", postselected=True)
 
         for prev, curr in itertools.pairwise(range(tpt_rounds)):
-            circuitry.annotate_detector(f"{prefix}:TPT{curr}:XR")
+            circuitry.annotate_detector(f"{prefix}:TPT{curr}:XR", postselected=True)
             circuitry.annotate_detector(
-                f"{prefix}:TPT{curr}:XG", f"{prefix}:TPT{prev}:XR", f"{prefix}:TPT{prev}:XG"
+                f"{prefix}:TPT{curr}:XG", f"{prefix}:TPT{prev}:XR", f"{prefix}:TPT{prev}:XG",
+                postselected=True
             )
-            circuitry.annotate_detector(f"{prefix}:TPT{curr}:XB", f"{prefix}:TPT{prev}:XG")
+            circuitry.annotate_detector(
+                f"{prefix}:TPT{curr}:XB", f"{prefix}:TPT{prev}:XG",
+                postselected=True
+            )
 
     def append_preparation(self, circuit: Circuitry, moment: Optional[int] = None):
         if moment is None:
