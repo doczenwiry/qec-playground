@@ -67,11 +67,11 @@ class Circuitry:
         text = "\n".join(filter(lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)))
         return clifft.compile(text)
 
-    def missing_detectors(self) -> list:
+    def missing_detectors(self, unknown_input: bool = False) -> list:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
-        return self.as_stim.missing_detectors()
+        return self.as_stim.missing_detectors(unknown_input=unknown_input)
 
     def __insert_polygons(self, lines: list[str], spacing: bool = False):
         inserted = 0
@@ -249,7 +249,7 @@ class Circuitry:
 
             self.__circuit.append(f"{name}{argument} {targets}")
 
-    def detectors_report(self):
+    def detectors_report(self, unknown_input: bool = False):
         print("Detector statistics : ")
         print(
             f"> Measurement records : {len(self.__physical_qubits.measurements_index)}"
@@ -261,7 +261,7 @@ class Circuitry:
             self.as_stim.detector_error_model(allow_gauge_detectors=False)
         except ValueError:
             gauge_found = True
-        missing_detectors = self.missing_detectors()
+        missing_detectors = self.missing_detectors(unknown_input=unknown_input)
         print(f"> Missing detectors : {len(missing_detectors)}")
         for detector in missing_detectors:
             records = list(
