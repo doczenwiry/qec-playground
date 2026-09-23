@@ -41,7 +41,7 @@ if __name__ == "__main__":
     if TARGET_DISTANCE % 2 != 1 and TARGET_DISTANCE < 7:
         raise ValueError("TARGET_DISTANCE must be odd and above 7.")
 
-    minimum_anchoring = 1 + int(TARGET_DISTANCE == 7) + int(DRAW_NEIGHBORS)
+    minimum_anchoring = int(DRAW_NEIGHBORS) + 2
     msc = MagicStateCultivation(
         injection=SteaneCodePatch.Injection.S,
         target_distance=TARGET_DISTANCE,
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     msc.circuitry.append_observable(
         0, "Y_OBSERVABLE_EXPANDED", msc.target.logical(Pauli.Y),
-        *["JCT0:Z0", "JCT0:Z1", "JCT0:Z2", "TPT0:XB", "TPT1:XB", "TPT2:XB", "DST:X1", "DST:X5", "DST:X6"]
+        *["JCT0:Z0", "JCT0:Z1", "JCT0:Z2", "STN:TPT0:XB", "STN:TPT1:XB", "STN:TPT2:XB", "STN:DST:X1", "STN:DST:X5", "STN:DST:X6"]
     )
 
     circuitry = msc.circuitry
