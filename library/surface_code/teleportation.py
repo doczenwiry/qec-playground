@@ -14,6 +14,7 @@
 
 from typing import Optional
 
+import itertools
 import stim
 
 from library.circuitry import Circuitry
@@ -24,58 +25,55 @@ from library.common import Pauli
 
 class TeleportationSurgery:
     def __init__(
-        self,
-        qubits: QubitArray,
-        distance: int = 3,
-        anchor: tuple[int, int] = (1, 1),
-        coloring: bool = True,
+        self, qubits: QubitArray, source: SurfaceCodePatch, target: SurfaceCodePatch,
     ):
-        self.__coloring = coloring
-        self.__distance = distance
+        if source.distance != target.distance:
+            raise ValueError("source and target must have the same code distance.")
+
+        if source.coloring != target.coloring:
+            raise ValueError("source and target must have the same coloring [i.e. red/blue pattern].")
+
+        sx, sy = source.anchor
+        tx, ty = target.anchor
+
+        if tx != sx + source.distance + 1 or ty != sy:
+            raise ValueError("Source and target must have compatible anchors.")
+
+        self.__coloring = source.coloring
+        self.__distance = source.distance
         self.__physical_qubits = qubits
-        sx, sy = anchor
-        tx, ty = sx + distance + 1, sy
-        jx, jy = sx + distance - 1, sy
-        self.__source = SurfaceCodePatch(qubits, distance, anchor, coloring)
-        self.__target = SurfaceCodePatch(qubits, distance, (tx, ty), coloring)
-        self.__merger = SurfaceCodePatch(qubits, distance, (jx, jy), coloring)
-        self.__source_inactive = lambda ql: ql[0] == sx + distance - 0.5
+
+        # tx, ty = sx + distance + 1, sy
+        jx, jy = sx + self.__distance - 1, sy
+        self.source = source
+        self.__source_inactive = lambda ql: ql[0] == sx + self.__distance - 0.5
+        self.target = target
         self.__target_inactive = lambda ql: ql[0] == tx - 0.5
+
+        self.__merger = SurfaceCodePatch(qubits, self.__distance, (jx, jy), self.__coloring)
         self.__merger_inactive = lambda ql: not (jx + 0.5 <= ql[0] < jx + 2)
 
-    @property
-    def source(self):
-        return self.__source
+    def annotate_polygons(self, circuitry: Circuitry, during: bool):
+        if during:
+            circuitry.annotate_polygons(self.source.get_polygons(self.__source_inactive))
+            circuitry.annotate_polygons(self.__merger.get_polygons(self.__merger_inactive))
+            circuitry.annotate_polygons(self.target.get_polygons(self.__target_inactive))
+        else:
+            circuitry.annotate_polygons(self.target.get_polygons())
 
-    @property
-    def target(self):
-        return self.__target
-
-    def append_movement(
-        self,
-        circuit: Circuitry,
-        prepare: Optional[Pauli] = None,
-        measure: Optional[Pauli] = None,
-    ):
-        circuit.annotate_polygons(self.__source.get_polygons())
-        self.__source.append_memory(circuit, prepare=prepare, prefix="SRC:M0")
-
-        circuit.annotate_polygons(self.__source.get_polygons(self.__source_inactive))
-        circuit.annotate_polygons(self.__merger.get_polygons(self.__merger_inactive))
-        circuit.annotate_polygons(self.__target.get_polygons(self.__target_inactive))
-
+    def append_movement(self, circuit: Circuitry, prefix: str = "TPT"):
         transition = Pauli.Z if self.__coloring else Pauli.X
 
         start_round = 0
         final_round = self.__distance - 1
         for rnd in range(self.__distance):
             for mmt in SurfaceCodePatch.MOMENTS:
-                self.__source.append_round(
+                self.source.append_round(
                     circuit,
                     mmt,
                     measure=transition if rnd == final_round else None,
                     inactive=self.__source_inactive,
-                    prefix=f"SRC:M1:R{rnd}",
+                    prefix=f"{prefix}:SRC:R{rnd}",
                 )
                 self.__merger.append_round(
                     circuit,
@@ -83,31 +81,39 @@ class TeleportationSurgery:
                     prepare=transition if rnd == start_round else None,
                     measure=transition if rnd == final_round else None,
                     inactive=self.__merger_inactive,
-                    prefix=f"JCT:M1:R{rnd}",
+                    prefix=f"{prefix}:JCT:R{rnd}",
                 )
-                self.__target.append_round(
+                self.target.append_round(
                     circuit,
                     mmt,
                     prepare=transition if rnd == start_round else None,
                     inactive=self.__target_inactive,
-                    prefix=f"TGT:M1:R{rnd}",
+                    prefix=f"{prefix}:TGT:R{rnd}",
                 )
                 circuit.append_tick()
 
-        circuit.annotate_polygons(self.__target.get_polygons())
-        self.__target.append_memory(circuit, measure=measure, prefix="TGT:M2")
+    def annotate_detectors(
+        self,
+        circuitry: Circuitry,
+        prefix: str = "TPT"
+    ):
+        self.source.annotate_detectors(
+            circuitry, prefix=f"{prefix}:SRC", measured=Pauli.Z,inactive=self.__source_inactive
+        )
+        self.target.annotate_detectors(
+            circuitry, prefix=f"{prefix}:TGT", prepared=Pauli.Z,inactive=self.__target_inactive
+        )
 
-    def locate_measurement(self, label: str):
-        if label.startswith("S"):
-            patch = self.__source
-        elif label.startswith("M"):
-            patch = self.__merger
-        elif label.startswith("T"):
-            patch = self.__target
-        else:
-            raise ValueError("Invalid label provided.")
+        # TODO: complete annotation of detectors for merger
+        # self.__merger.annotate_detectors(
+        #     circuitry, prefix=f"{prefix}:JCT", prepared=Pauli.Z, measured=Pauli.Z, inactive=self.__merger_inactive,
+        # )
 
-        return patch.locate_qubit(label.split(":")[-1])
+        # circuitry.annotate_detector(
+        #     f"{prefix}:JCT:R{last}:Z0",
+        #     f"{prefix}:SRC:R{last}:D6", f"{prefix}:SRC:R{last}:D7",
+        #     f"{prefix}:JCT:R{last}:D3", f"{prefix}:JCT:R{last}:D4"
+        # )
 
     def annotate_observable(self, circuit: Circuitry, identifier: int, *labels: str):
         circuit.append(

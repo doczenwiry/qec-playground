@@ -221,21 +221,31 @@ class SurfaceCodePatch:
     def annotate_detectors(
         self,
         circuitry: Circuitry,
-        rounds: int,
         prefix: str = "SC",
+        rounds: Optional[int] = None,
         prepared: Optional[Pauli] = None,
+        measured: Optional[Pauli] = None,
+        inactive: Callable[[tuple[float, float]], bool] = lambda _ : False,
     ):
-        if prepared is not None:
-            stabilizer = prepared.name
-            for qa in range(len(self.qubits[prepared.name])):
-                label = f"{prefix}:R0:{stabilizer}{qa}"
-                circuitry.annotate_detector(label)
+        last = (rounds or self.distance) - 1
         for stabilizer in ["X", "Z"]:
-            for qa in range(len(self.qubits[stabilizer])):
-                for prev, curr in itertools.pairwise(range(rounds)):
+            for ql, (qa, qi) in self.qubits[stabilizer].items():
+                if inactive(ql):
+                    continue
+
+                if prepared is not None and prepared.name == stabilizer:
+                    circuitry.annotate_detector(f"{prefix}:R0:{stabilizer}{qi}")
+                for prev, curr in itertools.pairwise(range(rounds or self.distance)):
                     circuitry.annotate_detector(
-                        f"{prefix}:R{curr}:{stabilizer}{qa}",
-                        f"{prefix}:R{prev}:{stabilizer}{qa}",
+                        f"{prefix}:R{curr}:{stabilizer}{qi}",
+                        f"{prefix}:R{prev}:{stabilizer}{qi}",
+                    )
+                if measured is not None and measured.name == stabilizer:
+                    circuitry.annotate_detector(
+                        f"{prefix}:R{last}:{stabilizer}{qi}",
+                        *[ f"{prefix}:R{last}:D{self.get_qubit_index("D", qd)}"
+                           for qd in self.__get_polygon(*ql)
+                        ]
                     )
 
     def append_memory(

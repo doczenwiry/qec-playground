@@ -163,6 +163,14 @@ class Circuitry:
                 logging.warning(f"> {label} not recorded")
         return False
 
+    def attach_observable(self, index: int, *extras: str):
+        self.append(
+            "OBSERVABLE_INCLUDE",
+            map(self.__physical_qubits.retrieve_target_rec, [*extras]),
+            index,
+        )
+        self.append_tick()
+
     def append_observable(
         self,
         index: int,
@@ -264,7 +272,7 @@ class Circuitry:
 
             self.__circuit.append(f"{name}{argument} {targets}")
 
-    def detectors_report(self, unknown_input: bool = False):
+    def detectors_report(self, open_boundaries: bool = False):
         print("Detector statistics : ")
         print(
             f"> Measurement records : {len(self.__physical_qubits.measurements_index)}"
@@ -278,7 +286,7 @@ class Circuitry:
             self.as_stim.detector_error_model(allow_gauge_detectors=False)
         except ValueError:
             gauge_found = True
-        missing_detectors = self.missing_detectors(unknown_input=unknown_input)
+        missing_detectors = self.missing_detectors(unknown_input=open_boundaries)
         print(f"> Missing detectors : {len(missing_detectors)}")
         for detector in missing_detectors:
             records = list(

@@ -79,11 +79,11 @@ class QubitArray:
         return stim.target_rec(self.retrieve_measurement(label))
 
     def retrieve_record(self, negative: int) -> str:
-        index = len(self.measurements_index) + negative + 1
+        index = len(self.measurements_index) + negative
         for rcd, idx in self.measurements_index.items():
             if index == idx:
                 return rcd
-        return "NONE"
+        raise ValueError("Record not found for requested stim.target_rec value.")
 
     def retrieve_measurement(self, label: str):
         return -len(self.measurements_index) + self.measurements_index[label]
