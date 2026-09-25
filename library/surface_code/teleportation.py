@@ -24,7 +24,11 @@ from library.common import Pauli
 
 class TeleportationSurgery:
     def __init__(
-        self, qubits: QubitArray, distance: int = 3, anchor: tuple[int, int] = (1, 1), coloring: bool = True
+        self,
+        qubits: QubitArray,
+        distance: int = 3,
+        anchor: tuple[int, int] = (1, 1),
+        coloring: bool = True,
     ):
         self.__coloring = coloring
         self.__distance = distance
@@ -54,9 +58,7 @@ class TeleportationSurgery:
         measure: Optional[Pauli] = None,
     ):
         circuit.annotate_polygons(self.__source.get_polygons())
-        self.__source.append_memory(
-            circuit, prepare=prepare, prefix="SRC:M0"
-        )
+        self.__source.append_memory(circuit, prepare=prepare, prefix="SRC:M0")
 
         circuit.annotate_polygons(self.__source.get_polygons(self.__source_inactive))
         circuit.annotate_polygons(self.__merger.get_polygons(self.__merger_inactive))
@@ -93,9 +95,7 @@ class TeleportationSurgery:
                 circuit.append_tick()
 
         circuit.annotate_polygons(self.__target.get_polygons())
-        self.__target.append_memory(
-            circuit, measure=measure, prefix="TGT:M2"
-        )
+        self.__target.append_memory(circuit, measure=measure, prefix="TGT:M2")
 
     def locate_measurement(self, label: str):
         if label.startswith("S"):

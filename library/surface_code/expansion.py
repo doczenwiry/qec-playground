@@ -15,21 +15,22 @@
 from typing import Optional
 
 import itertools
-import stim
 
 from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
 from library.surface_code.patch import SurfaceCodePatch
-from library.common import Pauli
 
 
 class ExpansionSurgery:
     """Implements a left-upwards expansion."""
+
     def __init__(
         self, qubits: QubitArray, source: SurfaceCodePatch, target: SurfaceCodePatch
     ):
         if source.coloring != target.coloring:
-            raise ValueError("Source and target must have the same coloring [i.e. red/blue pattern].")
+            raise ValueError(
+                "Source and target must have the same coloring [i.e. red/blue pattern]."
+            )
         self.__coloring = source.coloring
 
         self.__expansion = target.distance - source.distance
@@ -37,7 +38,9 @@ class ExpansionSurgery:
         tx, ty = target.anchor
 
         if tx + self.__expansion != sx or ty + self.__expansion != sy:
-            raise ValueError(f"Source and target must have compatible anchors & distances.")
+            raise ValueError(
+                "Source and target must have compatible anchors & distances."
+            )
 
         self.__qubits = qubits
         self.__distance = target.distance
@@ -49,7 +52,7 @@ class ExpansionSurgery:
 
     def __qubit_in_expansion(self, px: float, py: float) -> bool:
         tx, ty = self.__target.anchor
-        return not(px >= tx + self.__expansion and py >= ty + self.__expansion)
+        return not (px >= tx + self.__expansion and py >= ty + self.__expansion)
 
     def append_expansion(self, circuit: Circuitry):
         circuit.annotate_polygons(self.__target.get_polygons(opacity=0.125))
@@ -59,7 +62,7 @@ class ExpansionSurgery:
         rx_data_qubits = []
         rz_data_qubits = []
         tx, ty = self.__target.anchor
-        for (px,py), (qd, _) in self.__target.qubits['D'].items():
+        for (px, py), (qd, _) in self.__target.qubits["D"].items():
             if not self.__qubit_in_expansion(px, py):
                 continue
             if px - tx >= py - ty:  # Above the diagonal must be RX'd
@@ -76,13 +79,18 @@ class ExpansionSurgery:
 
         circuit.annotate_polygons(self.__target.get_polygons(opacity=0.25))
 
-    def annotate_detectors(self, circuitry: Circuitry, prefix: str = "TGT:EXP", preceding: Optional[str] = None):
+    def annotate_detectors(
+        self,
+        circuitry: Circuitry,
+        prefix: str = "TGT:EXP",
+        preceding: Optional[str] = None,
+    ):
         tx, ty = self.__target.anchor
         last = self.__distance - 1
-        for stabilizer in ['X', 'Z']:
+        for stabilizer in ["X", "Z"]:
             for (px, py), (qa, qi) in self.__target.qubits[stabilizer].items():
                 if self.__qubit_in_expansion(px, py):
-                    if stabilizer == 'X' and px - tx > py - ty:
+                    if stabilizer == "X" and px - tx > py - ty:
                         if py - ty < self.__expansion - 1:
                             circuitry.annotate_detector(f"{prefix}:R0:{stabilizer}{qi}")
                         # elif py - ty == self.__expansion - 0.5:

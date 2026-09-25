@@ -32,13 +32,20 @@ class SurfaceCodePatch:
     }
 
     def __init__(
-        self, qubits: QubitArray, distance: int = 3, anchor: tuple[int, int] = (1, 1), coloring: bool = True
+        self,
+        qubits: QubitArray,
+        distance: int = 3,
+        anchor: tuple[int, int] = (1, 1),
+        coloring: bool = True,
     ):
+        if not SurfaceCodePatch.fits(qubits, distance, anchor):
+            raise ValueError("Proposed SurfaceCodePatch doesn't fit in the QubitArray.")
+
         self.__anchor = anchor
         self.__coloring = coloring
         self.__distance = distance
         self.__physical_qubits = qubits
-        self.qubits: dict[str, dict[tuple[float,float], tuple[int, int]]] = dict()
+        self.qubits: dict[str, dict[tuple[float, float], tuple[int, int]]] = dict()
 
         ax, ay = anchor
         data_qubits: dict[tuple[float, float], tuple[int, int]] = {
@@ -70,6 +77,27 @@ class SurfaceCodePatch:
         self.qubits["X"] = ancilla1 if coloring else ancilla0
         self.qubits["Z"] = ancilla0 if coloring else ancilla1
 
+    @staticmethod
+    def fits(qubits: QubitArray, distance: int, anchor: tuple[int, int] = (1, 1)):
+        ax, ay = anchor
+        return (
+            1 <= ax
+            and 1 <= ay
+            and ax + distance < qubits.dimX
+            and ay + distance < qubits.dimY
+        )
+
+    @staticmethod
+    def make_array(distance: int, counts: tuple[int, int] = (1,1)) -> QubitArray:
+        if distance % 2 != 1:
+            raise ValueError("Code distance must be odd.")
+
+        count_h, count_v = counts
+
+        return QubitArray(
+            dimensions=(count_h * (distance + 1), count_v * (distance + 1))
+        )
+
     @property
     def coloring(self):
         return self.__coloring
@@ -94,28 +122,52 @@ class SurfaceCodePatch:
     def num_x_ancilla(self):
         return len(self.qubits["X"])
 
-    def logical(self, basis: Pauli):
+    def logical(self, basis: Pauli, offset: Optional[int] = None):
+        if offset:
+            if not (0 <= offset < self.distance):
+                raise ValueError(f"Invalid index (0 <= {offset} < distance).")
+        else:
+            offset = 0
+
         ax, ay = self.anchor
         match basis:
             case Pauli.X:
                 if self.__coloring:
-                    return { self.__physical_qubits.qubits[(ax, ay+i)]: "X" for i in range(self.__distance) }
+                    return {
+                        self.__physical_qubits.qubits[(ax+offset, ay + i)]: "X"
+                        for i in range(self.__distance)
+                    }
                 else:
-                    return { self.__physical_qubits.qubits[(ax+i, ay)]: "X" for i in range(self.__distance) }
+                    return {
+                        self.__physical_qubits.qubits[(ax + i, ay+offset)]: "X"
+                        for i in range(self.__distance)
+                    }
             case Pauli.Y:
                 logical = {}
-                for i in range(self.__distance):
-                    if i == 0:
-                        logical[self.__physical_qubits.qubits[(ax, ay)]] = "Y"
+                for index in range(self.__distance):
+                    if index == offset:
+                        logical[
+                            self.__physical_qubits.qubits[(ax + offset, ay + offset)]
+                        ] = "Y"
                     else:
-                        logical[self.__physical_qubits.qubits[(ax, ay+i)]] = "X" if self.__coloring else "Z"
-                        logical[self.__physical_qubits.qubits[(ax+i, ay)]] = "Z" if self.__coloring else "X"
+                        logical[
+                            self.__physical_qubits.qubits[(ax + offset, ay + index)]
+                        ] = "X" if self.__coloring else "Z"
+                        logical[
+                            self.__physical_qubits.qubits[(ax + index, ay + offset)]
+                        ] = "Z" if self.__coloring else "X"
                 return logical
             case Pauli.Z:
                 if self.__coloring:
-                    return { self.__physical_qubits.qubits[(ax+i, ay)]: "Z" for i in range(self.__distance) }
+                    return {
+                        self.__physical_qubits.qubits[(ax + i, ay+offset)]: "Z"
+                        for i in range(self.__distance)
+                    }
                 else:
-                    return { self.__physical_qubits.qubits[(ax, ay+i)]: "Z" for i in range(self.__distance) }
+                    return {
+                        self.__physical_qubits.qubits[(ax+offset, ay + i)]: "Z"
+                        for i in range(self.__distance)
+                    }
 
     def __get_qubits(
         self,
@@ -226,7 +278,8 @@ class SurfaceCodePatch:
                         [qa for _, (qa, _) in self.__get_qubits(stabilizer, inactive)],
                     )
                 if prepare:
-                    if prepare == Pauli.Y: raise NotImplementedError("Y-basis preparation not supported.")
+                    if prepare == Pauli.Y:
+                        raise NotImplementedError("Y-basis preparation not supported.")
                     circuit.append(
                         f"R{prepare.name}",
                         [qd for _, (qd, _) in self.__get_qubits("D", inactive)],

@@ -62,7 +62,9 @@ class JunctionPatch:
         for zi, (prev, curr) in itertools.product(
             range(3), itertools.pairwise(range(rounds))
         ):
-            circuitry.annotate_detector(f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}", postselected=True)
+            circuitry.annotate_detector(
+                f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}", postselected=True
+            )
 
     def append_syndrome(self, circuit: Circuitry, moment: int, prefix: str = ""):
         match moment:

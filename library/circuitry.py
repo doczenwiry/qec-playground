@@ -63,9 +63,15 @@ class Circuitry:
     @property
     def as_clifft(self) -> clifft.Program:
         if self.__clifford:
-            raise NotImplementedError("Conversion from stim.Circuit to clifft.Program not supported. Use Circuitry.as_stim.")
+            raise NotImplementedError(
+                "Conversion from stim.Circuit to clifft.Program not supported. Use Circuitry.as_stim."
+            )
 
-        text = "\n".join(filter(lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)))
+        text = "\n".join(
+            filter(
+                lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)
+            )
+        )
         return clifft.compile(text)
 
     @property
@@ -112,7 +118,10 @@ class Circuitry:
         return len(self.__circuit) if self.__clifford else -1
 
     def to_crumble_url(
-        self, polygons: bool = True, spacing: bool = False, location: str = "https://algassert.com/crumble.html"
+        self,
+        polygons: bool = True,
+        spacing: bool = False,
+        location: str = "https://algassert.com/crumble.html",
     ):
         lines = (
             str(self.__circuit).split("\n")
@@ -260,7 +269,9 @@ class Circuitry:
         print(
             f"> Measurement records : {len(self.__physical_qubits.measurements_index)}"
         )
-        print(f"> Number of detectors : {self.num_detectors} [postselected:{sum(int(ps) for ps in self.__postselection_mask)}]")
+        print(
+            f"> Number of detectors : {self.num_detectors} [postselected:{sum(int(ps) for ps in self.__postselection_mask)}]"
+        )
 
         gauge_found = False
         try:

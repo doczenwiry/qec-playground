@@ -15,9 +15,12 @@
 import logging
 from pathlib import Path
 
+from library.circuitry import Circuitry
 from library.magic_state_cultivation import MagicStateCultivation
+from library.qubit_array import QubitArray
 from library.steane_code.patch import SteaneCodePatch
 from library.common import Pauli
+from library.surface_code.patch import SurfaceCodePatch
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -42,28 +45,45 @@ if __name__ == "__main__":
         raise ValueError("TARGET_DISTANCE must be odd and above 7.")
 
     minimum_anchoring = int(DRAW_NEIGHBORS) + 2
+
+    qubits = QubitArray(dimensions=(TARGET_DISTANCE + 6, TARGET_DISTANCE + 6))
+    circuitry = Circuitry(qubits, clifford=True)
+
+    target = SurfaceCodePatch(
+        qubits, distance=TARGET_DISTANCE, anchor=(minimum_anchoring, minimum_anchoring)
+    )
+
     msc = MagicStateCultivation(
-        injection=SteaneCodePatch.Injection.S,
-        target_distance=TARGET_DISTANCE,
-        anchor=(minimum_anchoring, minimum_anchoring),
-        draw_neighbors=DRAW_NEIGHBORS
+        qubits, target=target, injection=SteaneCodePatch.Injection.S
     )
 
-    msc.append_preparation()
+    msc.append_preparation(circuitry)
     for rnd in range(SUPERDENSE_ROUNDS):
-        msc.append_superdense_cycle(rnd)
-    msc.append_cultivation()
-    msc.append_teleportation(TELEPORT_ROUNDS)
-    msc.append_expansion()
+        msc.append_superdense_cycle(circuitry, rnd)
+    msc.append_cultivation(circuitry)
+    msc.append_teleportation(circuitry, TELEPORT_ROUNDS)
+    msc.append_expansion(circuitry)
 
-    msc.annotate_detectors(sdc_rounds=SUPERDENSE_ROUNDS, tpt_rounds=TELEPORT_ROUNDS)
-
-    msc.circuitry.append_observable(
-        0, "Y_OBSERVABLE_EXPANDED", msc.target.logical(Pauli.Y),
-        *["JCT0:Z0", "JCT0:Z1", "JCT0:Z2", "STN:TPT0:XB", "STN:TPT1:XB", "STN:TPT2:XB", "STN:DST:X1", "STN:DST:X5", "STN:DST:X6"]
+    msc.annotate_detectors(
+        circuitry, sdc_rounds=SUPERDENSE_ROUNDS, tpt_rounds=TELEPORT_ROUNDS
     )
 
-    circuitry = msc.circuitry
+    circuitry.append_observable(
+        0,
+        "Y_OBSERVABLE_EXPANDED",
+        msc.target.logical(Pauli.Y, offset=TARGET_DISTANCE - 5),
+        *[
+            "JCT0:Z0",
+            "JCT0:Z1",
+            "JCT0:Z2",
+            "STN:TPT0:XB",
+            "STN:TPT1:XB",
+            "STN:TPT2:XB",
+            "STN:DST:X1",
+            "STN:DST:X5",
+            "STN:DST:X6",
+        ],
+    )
 
     circuitry.detectors_report()
 

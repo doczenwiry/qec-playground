@@ -43,9 +43,7 @@ def sample(
     dataframes: list[pd.DataFrame] = []
 
     for scenario, circuit in scenarios.items():
-        results = clifft.sample(
-            circuit.as_clifft, shots=int(shots), seed=SEED
-        )
+        results = clifft.sample(circuit.as_clifft, shots=int(shots), seed=SEED)
         outcomes = (
             results.observables[:, 0] if correction else results.measurements[:, -1]
         )

@@ -23,20 +23,20 @@ class QubitArray:
     def __init__(self, dimensions: tuple[int, int] = (3, 3), ancilla: bool = True):
         dimX, dimY = dimensions
         self.qubits: dict[tuple[float, float], int] = dict()
-        self.dimX = dimX
-        self.dimY = dimY
+        self.dimX = dimX + 1
+        self.dimY = dimY + 1
 
         qubit = 0
         self.data = set()
-        for location in itertools.product(range(dimX), range(dimY)):
+        for location in itertools.product(range(self.dimX), range(self.dimY)):
             self.qubits[location] = qubit
             self.data.add(qubit)
             qubit += 1
 
         if ancilla:
             for location in itertools.product(
-                np.arange(0.5, dimX - 0.5, 1.0, dtype=float),
-                np.arange(0.5, dimY - 0.5, 1.0, dtype=float),
+                np.arange(0.5, self.dimX - 0.5, 1.0, dtype=float),
+                np.arange(0.5, self.dimY - 0.5, 1.0, dtype=float),
             ):
                 self.qubits[location] = qubit
                 qubit += 1
