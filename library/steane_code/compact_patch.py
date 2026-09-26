@@ -71,12 +71,12 @@ class SteaneCodePatch:
     def logical(self, basis: Pauli):
         match basis:
             case Pauli.X:
-                return {self.__used_qubits[q]: 'X' for q in [1, 5, 6]}
+                return {self.__used_qubits[f"D{q}"]: 'X' for q in [1, 5, 6]}
             case Pauli.Y:
                 # TODO: study the effect of using the weight-5 Y-observable (i.e. Z0*Y1*Z3*X5*X6)
-                return {self.__used_qubits[q]: 'Y' for q in range(7)}
+                return {self.__used_qubits[f"D{q}"]: 'Y' for q in range(7)}
             case Pauli.Z:
-                return {self.__used_qubits[q]: 'Z' for q in [0, 1, 3]}
+                return {self.__used_qubits[f"D{q}"]: 'Z' for q in [0, 1, 3]}
 
     @property
     def stabilizers(self):
@@ -102,45 +102,45 @@ class SteaneCodePatch:
         else:
             return self.__get_polygons(SteaneCodePatch.SUPPORTS['FINAL'], opacity)
 
-    def annotate_detectors(self, circuitry: Circuitry, sdc_rounds: int = 0, tpt_rounds: int = 0):
+    def annotate_detectors(self, circuitry: Circuitry, sdc_rounds: int = 0, tpt_rounds: int = 0, prefix: str = "STN"):
         # Annotate all SUPERDENSE detectors
         for color in self.stabilizers.keys():
             if sdc_rounds >= 1:
-                circuitry.annotate_detector(f"SDC0:X{color}")
-                circuitry.annotate_detector(f"SDC0:Z{color}")
+                circuitry.annotate_detector(f"{prefix}:SDC:R0:X{color}")
+                circuitry.annotate_detector(f"{prefix}:SDC:R0:Z{color}")
             for prev, curr in itertools.pairwise(range(sdc_rounds)):
-                circuitry.annotate_detector(f"SDC{curr}:Z{color}", f"SDC{prev}:Z{color}")
+                circuitry.annotate_detector(f"{prefix}:SDC:R{curr}:Z{color}", f"{prefix}:SDC:R{prev}:Z{color}")
 
         for prev, curr in itertools.pairwise(range(sdc_rounds)):
-            circuitry.annotate_detector(f"SDC{curr}:XR")
-            circuitry.annotate_detector(f"SDC{curr}:XG", f"SDC{prev}:XR", f"SDC{prev}:XG")
-            circuitry.annotate_detector(f"SDC{curr}:XB", f"SDC{prev}:XG")
+            circuitry.annotate_detector(f"{prefix}:SDC:R{curr}:XR")
+            circuitry.annotate_detector(f"{prefix}:SDC:R{curr}:XG", f"{prefix}:SDC:R{prev}:XR", f"{prefix}:SDC:R{prev}:XG")
+            circuitry.annotate_detector(f"{prefix}:SDC:R{curr}:XB", f"{prefix}:SDC:R{prev}:XG")
 
         # Annotate the CULTIVATION detectors
         for measurement in ['CC', 'RZ', 'GZ', 'BX', 'BZ', 'EX']:
-            circuitry.annotate_detector(f"CULT:{measurement}")
+            circuitry.annotate_detector(f"{prefix}:CULT:{measurement}")
 
         # Annotate the TELEPORTATION stabilized detectors
         last = sdc_rounds-1
         for color in self.stabilizers.keys():
-            circuitry.annotate_detector(f"TPT:R0:Z{color}", f"SDC{last}:Z{color}")
+            circuitry.annotate_detector(f"{prefix}:TPT:R0:Z{color}", f"{prefix}:SDC{last}:Z{color}")
             for prev, curr in itertools.pairwise(range(tpt_rounds)):
-                circuitry.annotate_detector(f"TPT:R{curr}:Z{color}", f"TPT:R{prev}:Z{color}")
+                circuitry.annotate_detector(f"{prefix}:TPT:R{curr}:Z{color}", f"{prefix}:TPT:R{prev}:Z{color}")
 
-        circuitry.annotate_detector(f"TPT:R0:XR", f"SDC{last}:XG")
-        circuitry.annotate_detector(f"TPT:R0:XG", f"SDC{last}:XR")
-        circuitry.annotate_detector(f"TPT:R0:XB")
+        circuitry.annotate_detector(f"{prefix}:TPT:R0:XR", f"{prefix}:SDC:R{last}:XG")
+        circuitry.annotate_detector(f"{prefix}:TPT:R0:XG", f"{prefix}:SDC:R{last}:XR")
+        circuitry.annotate_detector(f"{prefix}:TPT:R0:XB")
 
         for prev, curr in itertools.pairwise(range(tpt_rounds)):
-            circuitry.annotate_detector(f"TPT:R{curr}:XR", f"TPT:R{prev}:XG")
-            circuitry.annotate_detector(f"TPT:R{curr}:XG", f"TPT:R{prev}:XR")
-            circuitry.annotate_detector(f"TPT:R{curr}:XB")
+            circuitry.annotate_detector(f"{prefix}:TPT:R{curr}:XR", f"{prefix}:TPT:R{prev}:XG")
+            circuitry.annotate_detector(f"{prefix}:TPT:R{curr}:XG", f"{prefix}:TPT:R{prev}:XR")
+            circuitry.annotate_detector(f"{prefix}:TPT:R{curr}:XB")
 
         # Annotate the TELEPORTATION destructive detectors
         # The X_{2456} detector
-        circuitry.annotate_detector(f"TPT:R2:XG", f"TPT:R2:XR", f"DST:X2", f"DST:X4", f"DST:X5", f"DST:X6")
+        circuitry.annotate_detector(f"{prefix}:TPT:R2:XG", f"{prefix}:TPT:R2:XR", f"{prefix}:DST:X2", f"{prefix}:DST:X4", f"{prefix}:DST:X5", f"{prefix}:DST:X6")
         # The X_{0234} detector
-        circuitry.annotate_detector(f"DST:X0", f"DST:X2", f"DST:X3", f"DST:X4")
+        circuitry.annotate_detector(f"{prefix}:DST:X0", f"{prefix}:DST:X2", f"{prefix}:DST:X3", f"{prefix}:DST:X4")
 
     def append_preparation(self, circuit: Circuitry, moment: Optional[int] = None):
         if moment is None:
@@ -261,10 +261,10 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
-    def append_teleportation(self, circuit: Circuitry, round: int, moment: Optional[int] = None, prefix: str = "TPT"):
+    def append_teleportation(self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "TPT"):
         if moment is None:
             for moment in self.TELEPORTATION_MOMENTS:
-                self.append_teleportation(circuit, round, moment, prefix)
+                self.append_teleportation(circuit, moment, prefix)
                 circuit.append_tick()
             return
 
@@ -296,11 +296,11 @@ class SteaneCodePatch:
                 measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX', 'BX')
                 circuit.append("MX", measured_x_ancilla)
                 for xa, color in zip(measured_x_ancilla, ['R', 'G', 'B']):
-                    self.__available_qubits.record_measurement(xa, f"{prefix}:R{round}:X{color}")
+                    self.__available_qubits.record_measurement(xa, f"{prefix}:X{color}")
                 measured_z_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'BZ')
                 circuit.append("MZ", measured_z_ancilla)
                 for za, color in zip(measured_z_ancilla, ['R', 'G', 'B']):
-                    self.__available_qubits.record_measurement(za, f"{prefix}:R{round}:Z{color}")
+                    self.__available_qubits.record_measurement(za, f"{prefix}:Z{color}")
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
