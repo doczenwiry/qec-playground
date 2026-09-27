@@ -196,7 +196,7 @@ class SurfaceCodePatch:
 
         raise ValueError("Invalid label provided [qubit index not found].")
 
-    def __get_polygon(self, px, py):
+    def get_polygon(self, px, py):
         return [
             self.get_qubit_at_location((px + dx, py + dy))
             for dx, dy in [(-0.5, -0.5), (+0.5, -0.5), (+0.5, +0.5), (-0.5, +0.5)]
@@ -211,7 +211,7 @@ class SurfaceCodePatch:
         polygons = []
         for stabilizer in ["X", "Z"]:
             for location, _ in self.__get_qubits(stabilizer, inactive):
-                polygon = self.__get_polygon(*location)
+                polygon = self.get_polygon(*location)
                 x, y, z = int(stabilizer == "X"), 0, int(stabilizer == "Z")
                 polygons.append(
                     f"POLYGON({x},{y},{z},{opacity}) {' '.join(map(str, polygon))}"
@@ -244,7 +244,7 @@ class SurfaceCodePatch:
                     circuitry.annotate_detector(
                         f"{prefix}:R{last}:{stabilizer}{qi}",
                         *[ f"{prefix}:R{last}:D{self.get_qubit_index("D", qd)}"
-                           for qd in self.__get_polygon(*ql)
+                           for qd in self.get_polygon(*ql)
                         ]
                     )
 
