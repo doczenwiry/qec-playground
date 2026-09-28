@@ -146,6 +146,15 @@ class SteaneCodePatch:
             for color, support in SteaneCodePatch.SUPPORTS["FINAL"].items()
         }
 
+    @property
+    def pauli_stabilizers(self):
+        return [
+            { qubit : stabilizer for qubit in self.__translate_qubits(*support) }
+            for stabilizer, support in itertools.product(
+                ["X", "Z"], SteaneCodePatch.SUPPORTS["FINAL"].values()
+            )
+        ]
+
     def __get_polygons(self, stabilizers: dict[str, list[str]], opacity: float = 0.5):
         polygons = []
         for color, support in stabilizers.items():
