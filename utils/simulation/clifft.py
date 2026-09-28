@@ -30,6 +30,7 @@ SEED = 42
 # Thanks, Claude.AI (September 2026)
 def sample(
     scenarios: Union[Circuitry, dict[str, Circuitry]],
+    postselection: bool = False,
     correction: bool = True,
     title: str = "Sampling results",
     label: str = "Scenario",
@@ -43,10 +44,11 @@ def sample(
     dataframes: list[pd.DataFrame] = []
 
     for scenario, circuit in scenarios.items():
-        results = clifft.sample(circuit.as_clifft, shots=int(shots), seed=SEED)
-        outcomes = (
-            results.observables[:, 0] if correction else results.measurements[:, -1]
-        )
+        if postselection:
+            results = clifft.sample_survivors(circuit.as_clifft, keep_records=True, shots=int(shots), seed=SEED)
+        else:
+            results = clifft.sample(circuit.as_clifft, shots=int(shots), seed=SEED)
+        outcomes = results.observables[:, 0] if correction else results.measurements[:, -1]
 
         df = pd.DataFrame()
         df["Measured"] = outcomes.flatten()

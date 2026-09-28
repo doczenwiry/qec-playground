@@ -72,7 +72,7 @@ class Circuitry:
                 lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)
             )
         )
-        return clifft.compile(text)
+        return clifft.compile(text, postselection_mask=self.__postselection_mask, normalize_syndromes=True)
 
     @property
     def postselection_mask(self):
@@ -267,7 +267,7 @@ class Circuitry:
                         raise ValueError("Argument is required.")
                     args: Iterable[float] = arg if isinstance(arg, Iterable) else [arg]
                     argument = str(tuple(map(float, args)))
-                case "OBSERVABLE_INCLUDE":
+                case "OBSERVABLE_INCLUDE" | "R_Y":
                     argument = f"({arg})"
 
             self.__circuit.append(f"{name}{argument} {targets}")
