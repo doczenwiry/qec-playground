@@ -197,7 +197,7 @@ class MagicStateCultivation:
         circuitry.annotate_polygons(
             self.target.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
         )
-        circuitry.annotate_polygons(self.steane.get_polygons())
+        circuitry.annotate_polygons(self.steane.get_polygons(compact=False))
         if self.__draw_neighbors:
             circuitry.annotate_polygons(
                 self.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
