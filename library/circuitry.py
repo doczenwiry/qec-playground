@@ -61,6 +61,17 @@ class Circuitry:
         return cast(stim.Circuit, self.__circuit)
 
     @property
+    def as_text(self) -> str:
+        if self.__clifford:
+            return str(self.__circuit)
+        else:
+            return "\n".join(
+                filter(
+                    lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)
+                )
+            )
+
+    @property
     def as_clifft(self) -> clifft.Program:
         if self.__clifford:
             raise NotImplementedError(

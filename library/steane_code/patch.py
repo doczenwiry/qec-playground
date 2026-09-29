@@ -330,6 +330,7 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
+    # TODO: improve the circuit to reduce its depth.
     def append_superdense_cycle(
         self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "STN:SDC"
     ):
@@ -491,6 +492,7 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
+    # TODO: synchronise the MX/MZ between the Steane Code and Surface Code
     def append_teleportation(
         self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "STN:TPT"
     ):
