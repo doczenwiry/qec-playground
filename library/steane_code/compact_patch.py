@@ -39,7 +39,7 @@ class SteaneCodePatch:
 
     SUPPORTS = {
         'START' : {'R': ['D0', 'D2', 'D4', 'RZ'], 'G': ['D2', 'D6', 'GD', 'D4'], 'B': ['D0', 'BZ', 'D6', 'D2']},
-        'COMPACT' : {'R': ['D0', 'D2', 'D4', 'D3'], 'G': ['D2', 'D6', 'D5', 'D4'], 'B': ['D0', 'D1', 'D6', 'D2']},
+        'COMPACT': {'R': ['D0', 'D2', 'D4', 'D3'], 'G': ['D2', 'D6', 'D5', 'D4'], 'B': ['D0', 'D1', 'D6', 'D2']},
         'DIFFUSE': {'R': ['D0', 'D2', 'EX4', 'D3'], 'G': ['D2', 'D6', 'D5', 'EX4'], 'B': ['D0', 'EX1', 'D6', 'D2']},
     }
 
@@ -115,25 +115,25 @@ class SteaneCodePatch:
         for color in self.stabilizers.keys():
             if sdc_rounds >= 1:
                 circuitry.annotate_detector(
-                    f"{prefix}:SDC:R0:X{color}", postselected=True
+                    f"{prefix}:SDC0:X{color}", postselected=True
                 )
                 circuitry.annotate_detector(
-                    f"{prefix}:SDC:R0:Z{color}", postselected=True
+                    f"{prefix}:SDC0:Z{color}", postselected=True
                 )
             for prev, curr in itertools.pairwise(range(sdc_rounds)):
                 circuitry.annotate_detector(
-                    f"{prefix}:SDC:R{curr}:Z{color}", f"{prefix}:SDC:R{prev}:Z{color}", postselected=True
+                    f"{prefix}:SDC{curr}:Z{color}", f"{prefix}:SDC{prev}:Z{color}", postselected=True
                 )
 
         for prev, curr in itertools.pairwise(range(sdc_rounds)):
             circuitry.annotate_detector(
-                f"{prefix}:SDC:R{curr}:XR", postselected=True
+                f"{prefix}:SDC{curr}:XR", postselected=True
             )
             circuitry.annotate_detector(
-                f"{prefix}:SDC:R{curr}:XG", f"{prefix}:SDC:R{prev}:XR", f"{prefix}:SDC:R{prev}:XG", postselected=True
+                f"{prefix}:SDC{curr}:XG", f"{prefix}:SDC{prev}:XR", f"{prefix}:SDC{prev}:XG", postselected=True
             )
             circuitry.annotate_detector(
-                f"{prefix}:SDC:R{curr}:XB", f"{prefix}:SDC:R{prev}:XG", postselected=True
+                f"{prefix}:SDC{curr}:XB", f"{prefix}:SDC{prev}:XG", postselected=True
             )
 
         # Annotate the CULTIVATION detectors
@@ -144,38 +144,35 @@ class SteaneCodePatch:
         last = sdc_rounds-1
         for color in self.stabilizers.keys():
             circuitry.annotate_detector(
-                f"{prefix}:TPT:R0:Z{color}", f"{prefix}:SDC{last}:Z{color}", postselected=True
+                f"{prefix}:TPT0:Z{color}", f"{prefix}:SDC{last}:Z{color}", postselected=True
             )
             for prev, curr in itertools.pairwise(range(tpt_rounds)):
                 circuitry.annotate_detector(
-                    f"{prefix}:TPT:R{curr}:Z{color}", f"{prefix}:TPT:R{prev}:Z{color}", postselected=True
+                    f"{prefix}:TPT{curr}:Z{color}", f"{prefix}:TPT{prev}:Z{color}", postselected=True
                 )
 
         circuitry.annotate_detector(
-            f"{prefix}:TPT:R0:XR", f"{prefix}:SDC:R{last}:XG", postselected=True
+            f"{prefix}:TPT0:XR", f"{prefix}:SDC{last}:XG", postselected=True
         )
         circuitry.annotate_detector(
-            f"{prefix}:TPT:R0:XG", f"{prefix}:SDC:R{last}:XR", postselected=True
-        )
-        circuitry.annotate_detector(
-            f"{prefix}:TPT:R0:XB", postselected=True
+            f"{prefix}:TPT0:XG", f"{prefix}:SDC{last}:XR", postselected=True
         )
 
         for prev, curr in itertools.pairwise(range(tpt_rounds)):
             circuitry.annotate_detector(
-                f"{prefix}:TPT:R{curr}:XR", f"{prefix}:TPT:R{prev}:XG", postselected=True
+                f"{prefix}:TPT{curr}:XR", f"{prefix}:TPT{prev}:XG", postselected=True
             )
             circuitry.annotate_detector(
-                f"{prefix}:TPT:R{curr}:XG", f"{prefix}:TPT:R{prev}:XR", postselected=True
+                f"{prefix}:TPT{curr}:XG", f"{prefix}:TPT{prev}:XR", postselected=True
             )
             circuitry.annotate_detector(
-                f"{prefix}:TPT:R{curr}:XB", postselected=True
+                f"{prefix}:TPT{curr}:XB", postselected=True
             )
 
         # Annotate the TELEPORTATION destructive detectors
         # The X_{2456} detector
         circuitry.annotate_detector(
-            f"{prefix}:TPT:R2:XG", f"{prefix}:TPT:R2:XR", f"{prefix}:DST:X2", f"{prefix}:DST:X4", f"{prefix}:DST:X5", f"{prefix}:DST:X6",
+            f"{prefix}:TPT2:XG", f"{prefix}:TPT2:XR", f"{prefix}:DST:X2", f"{prefix}:DST:X4", f"{prefix}:DST:X5", f"{prefix}:DST:X6",
             postselected = True
         )
         # The X_{0234} detector
@@ -247,12 +244,12 @@ class SteaneCodePatch:
                 circuit.append("XCZ", self.__translate_qubit_ids('RZ', 'RD', 'GZ', 'GD', 'BZ', 'BD'))
             case 7:
                 circuit.append("XCZ", self.__translate_qubit_ids(
-                    'GZ', 'D2', 'GX', 'GD', 'BZ', 'D0', 'RZ', 'D3', 'RX', 'RD', 'BX', 'BD', 'EX4', 'D1', 'EX1', 'D4'
+                    'GZ', 'D2', 'GX', 'GD', 'BZ', 'D0', 'RZ', 'D3', 'RX', 'RD', 'BX', 'BD', 'EX1', 'D1', 'EX4', 'D4'
                 ))
             # Separate GHZ-states
             case 8:
                 circuit.append("CX", self.__translate_qubit_ids(
-                    'D0', 'RZ', 'D6', 'GZ', 'D2', 'BZ', 'RX', 'RD', 'BX', 'BD', 'GX', 'GD', 'EX4', 'D1', 'EX1', 'D4'
+                    'D0', 'RZ', 'D6', 'GZ', 'D2', 'BZ', 'RX', 'RD', 'BX', 'BD', 'GX', 'GD', 'EX1', 'D1', 'EX4', 'D4'
                 ))
             case 9:
                 measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX', 'BX')
@@ -279,11 +276,11 @@ class SteaneCodePatch:
                 circuit.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4'))
             case 1:
                 circuit.append("CX", self.__translate_qubit_ids(
-                    'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'EX0', 'D5'
+                    'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'GZ', 'D5', 'EX0', 'D6'
                 ))
             case 2:
                 circuit.append("CX", self.__translate_qubit_ids(
-                    'GZ', 'D5', 'D6', 'D1', 'D2', 'D4', 'RZ', 'D0'
+                    'D6', 'D1', 'D2', 'D4', 'RZ', 'D0'
                 ))
             case 3:
                 circuit.append("CX", self.__translate_qubit_ids(
@@ -308,11 +305,11 @@ class SteaneCodePatch:
                 ))
             case 9:
                 circuit.append("CX", self.__translate_qubit_ids(
-                    'GZ', 'D5', 'D6', 'D1', 'D2', 'D4', 'RZ', 'D0'
+                    'D6', 'D1', 'D2', 'D4', 'RZ', 'D0'
                 ))
             case 10:
                 circuit.append("CX", self.__translate_qubit_ids(
-                    'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'EX0', 'D5'
+                    'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'GZ', 'D5', 'EX0', 'D6'
                 ))
             case 11:
                 measured_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4')
@@ -322,6 +319,79 @@ class SteaneCodePatch:
                 circuit.append(f"{self.__injection.name}", self.support(compact=False))
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
+
+    def append_teleportation_round(self, circuitry: Circuitry, round: int, moment: Optional[int] = None, prefix: str = "TPT"):
+        if moment is None:
+            for moment in self.TELEPORTATION_MOMENTS:
+                self.append_teleportation_round(circuitry, round, moment, prefix)
+                circuitry.append_tick()
+        else:
+            match moment:
+                case 0:
+                    circuitry.append("RX", self.__translate_qubit_ids('RD', 'GD'))
+                    circuitry.append("RZ", self.__translate_qubit_ids('D4', 'RZ', 'GZ', 'RX', 'GX', 'BZ'))
+                    if round == 0:
+                        circuitry.append("RZ", self.__translate_qubit_ids('D1', 'BD'))
+                # Prepare GHZ-states
+                case 1:
+                    circuitry.append("CX", self.__translate_qubit_ids('RD', 'RZ', 'GD', 'GZ'))
+                    if round == 0:
+                        # Castling D1 towards its final resting place.
+                        circuitry.append("CX", self.__translate_qubit_ids('EX1', 'D1'))
+                    # Castling D4 in place for syndrome extraction
+                    circuitry.append("CX", self.__translate_qubit_ids('EX4', 'D4'))
+                    circuitry.append_tick()
+                    circuitry.append("CX", self.__translate_qubit_ids('D4', 'EX4'))
+                # Perform extractions
+                case 2:
+                    circuitry.append("ZCX", self.__translate_qubit_ids(
+                        'GZ', 'D2', 'RD', 'D4', 'RZ', 'D3'
+                    ))
+                    # Castling D1 towards its final resting place
+                    if round == 0:
+                        circuitry.append("CX", self.__translate_qubit_ids('D1', 'EX1'))
+                case 3:
+                    circuitry.append("ZCX", self.__translate_qubit_ids(
+                        'RZ', 'D0', 'GD', 'D4', 'GZ', 'D6'
+                    ))
+                    # Castling D1 towards its final resting place
+                    if round == 0:
+                        circuitry.append("CX", self.__translate_qubit_ids('D1', 'BD'))
+                case 4:
+                    circuitry.append("ZCX", self.__translate_qubit_ids(
+                        'GZ', 'D5', 'RZ', 'D2', 'D4','GD'
+                    ))
+                    # Castling D1 towards its final resting place
+                    if round == 0:
+                        circuitry.append("CX", self.__translate_qubit_ids('BD', 'D1'))
+                case 5:
+                    circuitry.append("XCZ", self.__translate_qubit_ids(
+                        'GZ', 'D5', 'BZ', 'D6', 'RZ', 'D2', 'RD', 'D4'
+                    ))
+                case 6:
+                    circuitry.append("XCZ", self.__translate_qubit_ids(
+                        'RZ', 'RD', 'GZ', 'GD', 'BZ', 'BD'
+                    ))
+                case 7:
+                    circuitry.append("XCZ", self.__translate_qubit_ids(
+                        'GZ', 'D2', 'GX', 'GD', 'BZ', 'D0', 'RZ', 'D3', 'RX', 'RD', 'EX4', 'D4'
+                    ))
+                # Separate GHZ-states
+                case 8:
+                    circuitry.append("CX", self.__translate_qubit_ids(
+                        'D0', 'RZ', 'D6', 'GZ', 'D2', 'BZ', 'RX', 'RD', 'GX', 'GD', 'EX4', 'D4'
+                    ))
+                case 9:
+                    measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX')
+                    circuitry.append("MX", measured_x_ancilla)
+                    for xa, color in zip(measured_x_ancilla, ['R', 'G']):
+                        self.__available_qubits.record_measurement(xa, f"{prefix}:X{color}")
+                    measured_z_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'BZ')
+                    circuitry.append("MZ", measured_z_ancilla)
+                    for za, color in zip(measured_z_ancilla, ['R', 'G', 'B']):
+                        self.__available_qubits.record_measurement(za, f"{prefix}:Z{color}")
+                case _:
+                    logger.warning(f"Nothing to do at requested moment [{moment}]")
 
     def append_teleportation(self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "TPT"):
         if moment is None:

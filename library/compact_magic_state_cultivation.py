@@ -14,7 +14,7 @@
 
 from library.circuitry import Circuitry
 from library.common import Pauli
-from library.junction_patch import JunctionPatch
+from library.compact_junction_patch import JunctionPatch
 from library.qubit_array import QubitArray
 from library.steane_code.compact_patch import SteaneCodePatch
 from library.surface_code.expansion import ExpansionSurgery
@@ -180,7 +180,7 @@ class MagicStateCultivation:
 
         self.steane.append_preparation(circuitry)
 
-    def append_superdense_cycle(self, circuitry: Circuitry, rnd: int, prefix: str = "SDC"):
+    def append_superdense_cycle(self, circuitry: Circuitry, prefix: str = "SDC"):
         circuitry.annotate_polygons(
             self.target.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
         )
@@ -191,7 +191,7 @@ class MagicStateCultivation:
             )
 
         # Append the superdense syndrome measurement code cycle (one round)
-        self.steane.append_superdense_cycle(circuitry, prefix=f"{prefix}:R{rnd}")
+        self.steane.append_superdense_cycle(circuitry, prefix=f"{prefix}")
 
     def append_cultivation(self, circuitry: Circuitry):
         circuitry.annotate_polygons(
@@ -214,7 +214,7 @@ class MagicStateCultivation:
         circuitry.annotate_polygons(
             self.target.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
         )
-        circuitry.annotate_polygons(self.steane.get_polygons())
+        circuitry.annotate_polygons(self.steane.get_polygons(compact=False))
         circuitry.annotate_polygons(self.__junction.get_polygons())
         circuitry.annotate_polygons(self.source.get_polygons(self.__inactive_source))
         if self.__draw_neighbors:
@@ -225,15 +225,20 @@ class MagicStateCultivation:
         # TODO: synchronise the MEASUREMENTS in Steane & SurfaceCode
         for rnd in range(rounds):
             for mmt in self.steane.TELEPORTATION_MOMENTS:
-                self.steane.append_teleportation(
-                    circuitry, moment=mmt, prefix=f"STN:TPT{rnd}"
+                self.steane.append_teleportation_round(
+                    circuitry, round=rnd, moment=mmt, prefix=f"STN:TPT{rnd}"
                 )
-                self.__junction.append_syndrome(
-                    circuitry, moment=mmt, prefix=f"JCT{rnd}"
-                )
+                translated_mmt = mmt
+                if mmt in range(1,5):
+                    continue
+                elif mmt in range(5, 9):
+                    translated_mmt = mmt - 4
+                elif mmt == 9:
+                    translated_mmt = 5
+                # self.__junction.append_syndrome(circuitry, moment=translated_mmt, prefix=f"JCT{rnd}")
                 self.source.append_round(
                     circuitry,
-                    moment=mmt,
+                    moment=translated_mmt,
                     prepare=Pauli.X if rnd == 0 else None,
                     prefix=f"SRC:R{rnd}",
                     inactive=self.__inactive_source,
@@ -254,10 +259,10 @@ class MagicStateCultivation:
                 self.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
             )
 
-        for mmt in self.steane.DESTRUCTION_MOMENTS:
-            self.steane.append_destruction(circuitry, moment=mmt, prefix="STN:DST")
-            self.source.append_round(circuitry, moment=mmt, prefix="SRC:REC")
-            circuitry.append_tick()
+        # for mmt in self.steane.DESTRUCTION_MOMENTS:
+        #     self.steane.append_destruction(circuitry, moment=mmt, prefix="STN:DST")
+        #     self.source.append_round(circuitry, moment=mmt, prefix="SRC:REC")
+        #     circuitry.append_tick()
 
     def append_expansion(self, circuitry: Circuitry):
         circuitry.annotate_polygons(self.target.get_polygons())
@@ -309,7 +314,7 @@ class MagicStateCultivation:
             "STN:DST:X0", "STN:DST:X2", "STN:DST:X3", "STN:DST:X4", postselected=True
         )
 
-        self.__junction.annotate_detectors(circuitry, rounds=tpt_rounds)
+        # self.__junction.annotate_detectors(circuitry, rounds=tpt_rounds)
         self.source.annotate_detectors(
             circuitry, rounds=tpt_rounds + 1, prepared=Pauli.X, prefix="SRC"
         )
