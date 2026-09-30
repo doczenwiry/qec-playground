@@ -29,7 +29,6 @@ TARGET_DISTANCE = 7
 DRAW_NEIGHBORS = True
 
 # Internal parameters
-SUPERDENSE_ROUNDS = 3
 TELEPORT_ROUNDS = 3
 ROUNDS_FOR_COMPLEMENTARY_GAP = 1
 EXPANDED_OPACITY = 0.125
@@ -58,14 +57,13 @@ if __name__ == "__main__":
     )
 
     msc.append_preparation(circuitry)
-    for rnd in range(SUPERDENSE_ROUNDS):
-        msc.append_superdense_cycle(circuitry, rnd)
+    msc.append_superdense_cycle(circuitry, 0)
     msc.append_cultivation(circuitry)
     msc.append_teleportation(circuitry, TELEPORT_ROUNDS)
     msc.append_expansion(circuitry)
 
     msc.annotate_detectors(
-        circuitry, sdc_rounds=SUPERDENSE_ROUNDS, tpt_rounds=TELEPORT_ROUNDS
+        circuitry, sdc_rounds=1, tpt_rounds=TELEPORT_ROUNDS
     )
 
     circuitry.append_observable(

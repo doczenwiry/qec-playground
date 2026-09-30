@@ -208,7 +208,7 @@ class SteaneCodePatch:
             )
 
         # Annotate the CULTIVATION detectors
-        for measurement in range(6):
+        for measurement in range(7):
             circuitry.annotate_detector(
                 f"{prefix}:CULT:X{measurement}", postselected=True
             )
@@ -441,13 +441,13 @@ class SteaneCodePatch:
             case 0:
                 circuit.append(f"{self.__injection.name}_DAG", self.support)
                 circuit.append(
-                    "RX", self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX")
+                    "RX", self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX", "EX")
                 )
             case 1:
                 circuit.append(
                     "CX",
                     self.__translate_qubits(
-                        "RX", "D3", "GX", "D5", "GZ", "D4", "BX", "D1", "BZ", "D2"
+                        "RX", "D3", "GX", "D5", "GZ", "D4", "BX", "D1", "BZ", "D2", "EX", "D6"
                     ),
                 )
             case 2:
@@ -477,12 +477,12 @@ class SteaneCodePatch:
                 circuit.append(
                     "CX",
                     self.__translate_qubits(
-                        "RX", "D3", "GX", "D5", "GZ", "D4", "BX", "D1", "BZ", "D2"
+                        "RX", "D3", "GX", "D5", "GZ", "D4", "BX", "D1", "BZ", "D2", "EX", "D6"
                     ),
                 )
             case 11:
                 # measured_ancilla = self.__shift_qubit_ids(10, 11, 13, 14, 15)
-                measured_ancilla = self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX")
+                measured_ancilla = self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX", "EX")
                 circuit.append("MX", measured_ancilla)
                 for index, xa in enumerate(measured_ancilla):
                     self.__physical_qubits.record_measurement(
