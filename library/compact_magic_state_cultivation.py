@@ -229,20 +229,19 @@ class MagicStateCultivation:
                     circuitry, round=rnd, moment=mmt, prefix=f"STN:TPT{rnd}"
                 )
                 translated_mmt = mmt
-                if mmt in range(1,5):
-                    continue
-                elif mmt in range(5, 9):
-                    translated_mmt = mmt - 4
-                elif mmt == 9:
-                    translated_mmt = 5
-                # self.__junction.append_syndrome(circuitry, moment=translated_mmt, prefix=f"JCT{rnd}")
-                self.source.append_round(
-                    circuitry,
-                    moment=translated_mmt,
-                    prepare=Pauli.X if rnd == 0 else None,
-                    prefix=f"SRC:R{rnd}",
-                    inactive=self.__inactive_source,
-                )
+                if not (1 <= mmt <= 3):
+                    if 4 <= mmt <= 7:
+                        translated_mmt = mmt - 3
+                    elif mmt == 10:
+                        translated_mmt = 5
+                    self.__junction.append_syndrome(circuitry, moment=translated_mmt, prefix=f"JCT{rnd}")
+                    self.source.append_round(
+                        circuitry,
+                        moment=translated_mmt,
+                        prepare=Pauli.X if rnd == 0 else None,
+                        prefix=f"SRC:R{rnd}",
+                        inactive=self.__inactive_source,
+                    )
                 circuitry.append_tick()
 
         circuitry.annotate_polygons(
@@ -259,10 +258,10 @@ class MagicStateCultivation:
                 self.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
             )
 
-        # for mmt in self.steane.DESTRUCTION_MOMENTS:
-        #     self.steane.append_destruction(circuitry, moment=mmt, prefix="STN:DST")
-        #     self.source.append_round(circuitry, moment=mmt, prefix="SRC:REC")
-        #     circuitry.append_tick()
+        for mmt in self.steane.DESTRUCTION_MOMENTS:
+            self.steane.append_destruction(circuitry, moment=mmt, prefix="STN:DST")
+            self.source.append_round(circuitry, moment=mmt, prefix="SRC:REC")
+            circuitry.append_tick()
 
     def append_expansion(self, circuitry: Circuitry):
         circuitry.annotate_polygons(self.target.get_polygons())
@@ -285,36 +284,24 @@ class MagicStateCultivation:
         # The X_{0126ab} detector.
         last = sdc_rounds - 1
         circuitry.annotate_detector(
-            f"STN:SDC{last}:XG",
-            "STN:TPT0:XG",
-            "STN:TPT0:XB",
-            "STN:TPT1:XG",
-            "STN:TPT1:XB",
-            "STN:TPT2:XG",
-            "STN:TPT2:XB",
-            "STN:DST:X0",
-            "STN:DST:X1",
-            "STN:DST:X2",
-            "STN:DST:X6",
+            *(f"STN:DST:{mx}" for mx in ['X0', 'X1', 'X2', 'X6']),
             "SRC:REC:X0",
             postselected=True,
         )
+
         # The X_{2456} detector
         circuitry.annotate_detector(
-            "STN:TPT2:XG",
-            "STN:TPT2:XR",
-            "STN:DST:X2",
-            "STN:DST:X4",
-            "STN:DST:X5",
-            "STN:DST:X6",
+            *(f"STN:DST:{mx}" for mx in [ 'X2', 'X4', 'X5', 'X6' ]),
             postselected=True,
         )
+
         # The X_{0234} detector
         circuitry.annotate_detector(
-            "STN:DST:X0", "STN:DST:X2", "STN:DST:X3", "STN:DST:X4", postselected=True
+            *(f"STN:DST:{mx}" for mx in ['X0', 'X2', 'X3', 'X4']),
+            postselected=True
         )
 
-        # self.__junction.annotate_detectors(circuitry, rounds=tpt_rounds)
+        self.__junction.annotate_detectors(circuitry, rounds=tpt_rounds)
         self.source.annotate_detectors(
             circuitry, rounds=tpt_rounds + 1, prepared=Pauli.X, prefix="SRC"
         )
