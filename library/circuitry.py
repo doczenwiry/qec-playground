@@ -224,7 +224,7 @@ class Circuitry:
     ):
         pauli = stim.PauliString(observable)
         self.append("MPP", -pauli if flip else pauli)
-        self.__physical_qubits.record_measurement(-1, label)
+        self.__physical_qubits.record_measurement(label)
         self.append(
             "OBSERVABLE_INCLUDE",
             map(self.__physical_qubits.retrieve_target_rec, [label, *extras]),

@@ -312,15 +312,13 @@ class SurfaceCodePatch:
                 for stabilizer in ["X", "Z"]:
                     measured = []
                     for ql, (qa, qi) in self.__get_qubits(stabilizer, inactive):
-                        self.__physical_qubits.record_measurement(
-                            qa, f"{prefix}:{stabilizer}{qi}"
-                        )
+                        self.__physical_qubits.record_measurement(f"{prefix}:{stabilizer}{qi}", qa)
                         measured.append(qa)
                     circuit.append(f"M{stabilizer}", measured)
                 if measure:
                     measured_data = []
                     for dl, (dq, di) in self.__get_qubits("D", inactive):
-                        self.__physical_qubits.record_measurement(dq, f"{prefix}:D{di}")
+                        self.__physical_qubits.record_measurement(f"{prefix}:D{di}", dq)
                         measured_data.append(dq)
                     circuit.append(f"M{measure.name}", measured_data)
             case _:
