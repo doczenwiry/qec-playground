@@ -86,11 +86,6 @@ class SteaneCodePatch:
         },
     }
 
-    # STABILIZERS = {
-    #     'START' : {'R': [0, 2, 11, 15], 'G': [2, 6, 7, 11], 'B': [0, 14, 6, 2]},
-    #     'FINAL' : {'R': [0, 2,  4,  3], 'G': [2, 4, 5,  6], 'B': [0,  1, 6, 2]},
-    # }
-
     PREPARATION_MOMENTS = range(11)
     SUPERDENSE_MOMENTS = range(15)
     CULTIVATION_MOMENTS = range(12)
@@ -147,13 +142,13 @@ class SteaneCodePatch:
         }
 
     @property
-    def pauli_stabilizers(self):
-        return [
-            { qubit : stabilizer for qubit in self.__translate_qubits(*support) }
-            for stabilizer, support in itertools.product(
-                ["X", "Z"], SteaneCodePatch.SUPPORTS["FINAL"].values()
+    def pauli_stabilizers(self) -> dict[str, dict[int, str]]:
+        return {
+            stabilizer + color : { qubit : stabilizer for qubit in self.__translate_qubits(*support) }
+            for stabilizer, (color, support) in itertools.product(
+                ["X", "Z"], SteaneCodePatch.SUPPORTS["FINAL"].items()
             )
-        ]
+        }
 
     def __get_polygons(self, stabilizers: dict[str, list[str]], opacity: float = 0.5):
         polygons = []

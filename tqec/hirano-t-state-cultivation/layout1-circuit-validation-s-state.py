@@ -35,8 +35,8 @@ if __name__ == "__main__":
     for stabilizer, support in itertools.product(
         ["X", "Z"], steane.stabilizers.values()
     ):
-        check_state_preparation(circuitry.as_stim, stabilizer, support)
-    check_state_preparation(circuitry.as_stim, "Y", support=steane.support)
+        check_state_preparation(circuitry.as_stim(), stabilizer, support)
+    check_state_preparation(circuitry.as_stim(), "Y", support=steane.support)
 
     print("Circuit statistics")
     print(f"> #qubits: {circuitry.num_qubits}")
@@ -57,11 +57,11 @@ if __name__ == "__main__":
     for stabilizer, support in itertools.product(
         ["X", "Z"], steane.stabilizers.values()
     ):
-        check_flow_preservation(circuitry.as_stim, stabilizer, support)
-    check_flow_preservation(circuitry.as_stim, "Y", support=steane.support)
+        check_flow_preservation(circuitry.as_stim(), stabilizer, support)
+    check_flow_preservation(circuitry.as_stim(), "Y", support=steane.support)
     print("Syndrome extractions")
     for syndrome, support in itertools.product(["X", "Z"], steane.stabilizers.values()):
-        check_syndrome_extraction(circuitry.as_stim, syndrome, support)
+        check_syndrome_extraction(circuitry.as_stim(), syndrome, support)
 
     print("Circuit statistics")
     print(f"> #qubits: {circuitry.num_qubits}")
@@ -80,10 +80,10 @@ if __name__ == "__main__":
     for stabilizer, support in itertools.product(
         ["X", "Z"], steane.stabilizers.values()
     ):
-        check_flow_preservation(circuitry.as_stim, stabilizer, support)
-    check_flow_preservation(circuitry.as_stim, "Y", support=steane.support)
+        check_flow_preservation(circuitry.as_stim(), stabilizer, support)
+    check_flow_preservation(circuitry.as_stim(), "Y", support=steane.support)
     print("Syndrome extractions")
-    check_syndrome_extraction(circuitry.as_stim, "Y", steane.support)
+    check_syndrome_extraction(circuitry.as_stim(), "Y", steane.support)
 
     print("Circuit statistics")
     print(f"> #qubits: {circuitry.num_qubits}")

@@ -13,13 +13,14 @@
 #   limitations under the License.
 
 from collections import defaultdict
-from typing import Union, Iterable, cast
+from typing import Union, Iterable, cast, Optional
 import logging
 
 import clifft
 import stim
 
 from library.qubit_array import QubitArray
+from utils.simulation.noise import make_noisy
 
 
 class Circuitry:
@@ -54,11 +55,43 @@ class Circuitry:
         return self.__clifford
 
     @property
-    def as_stim(self) -> stim.Circuit:
+    def used_qubits(self):
+        return self.__used_qubits
+
+    def as_stim(
+        self, per: Optional[float] = None,
+        noiseless_preparation_ticks: Optional[int] = None,
+        noiseless_measurement_ticks: Optional[int] = None
+    ) -> stim.Circuit:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
-        return cast(stim.Circuit, self.__circuit)
+        circuit = cast(stim.Circuit, self.__circuit)
+        if per:
+            preparation = stim.Circuit()
+            internal_op = stim.Circuit()
+            measurement = stim.Circuit()
+
+            start = noiseless_preparation_ticks or 0
+            final = circuit.num_ticks - (noiseless_measurement_ticks or 0)
+
+            tick = 0
+            ignored_qubits = set()
+            for instruction in circuit:
+                if instruction.name == "QUBIT_COORDS" and instruction.targets_copy()[0].value not in self.__used_qubits:
+                    ignored_qubits.add(instruction.targets_copy()[0].value)
+                    continue
+                if tick < start:
+                    preparation.append(instruction)
+                elif start <= tick < final:
+                    internal_op.append(instruction)
+                else:
+                    measurement.append(instruction)
+                tick += int(instruction.name == "TICK")
+
+            circuit = preparation + make_noisy(internal_op, per, ignored_qubits) + measurement
+
+        return circuit
 
     @property
     def as_text(self) -> str:
@@ -93,7 +126,7 @@ class Circuitry:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
-        return self.as_stim.missing_detectors(unknown_input=unknown_input)
+        return self.as_stim().missing_detectors(unknown_input=unknown_input)
 
     def __insert_polygons(self, lines: list[str], spacing: bool = False):
         inserted = 0
@@ -135,7 +168,7 @@ class Circuitry:
         location: str = "https://algassert.com/crumble.html",
     ):
         lines = (
-            str(self.__circuit).split("\n")
+            str(self.as_stim()).split("\n")
             if self.__clifford
             else cast(list, self.__circuit)
         )
@@ -180,7 +213,6 @@ class Circuitry:
             map(self.__physical_qubits.retrieve_target_rec, [*extras]),
             index,
         )
-        self.append_tick()
 
     def append_observable(
         self,
@@ -294,7 +326,7 @@ class Circuitry:
 
         gauge_found = False
         try:
-            self.as_stim.detector_error_model(allow_gauge_detectors=False)
+            self.as_stim().detector_error_model(allow_gauge_detectors=False)
         except ValueError:
             gauge_found = True
         missing_detectors = self.missing_detectors(unknown_input=open_boundaries)

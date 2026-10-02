@@ -13,11 +13,12 @@
 #   limitations under the License.
 
 import stim
+from typing import Optional
 from tqec.utils import NoiseModel
 from tqec.utils.noise_model import NoiseRule
 
 
-def make_noisy_circuit(circuit: stim.Circuit, per: float = 0.01) -> stim.Circuit:
+def make_noisy(circuit: stim.Circuit, per: float = 0.01, ignored_qubits: Optional[set[int]] = None) -> stim.Circuit:
     return NoiseModel(
         idle_depolarization=per,
         any_clifford_1q_rule=NoiseRule(after={"DEPOLARIZE1": per}),
@@ -33,4 +34,4 @@ def make_noisy_circuit(circuit: stim.Circuit, per: float = 0.01) -> stim.Circuit
             "Y": NoiseRule(after={}, flip_result=per),
             "Z": NoiseRule(after={}, flip_result=per),
         },
-    ).noisy_circuit(circuit)
+    ).noisy_circuit(circuit, immune_qubits=ignored_qubits)
