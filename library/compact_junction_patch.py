@@ -84,6 +84,6 @@ class JunctionPatch:
             case 5:
                 circuit.append("MZ", self.z_ancilla.values())
                 for qi, qz in enumerate(self.z_ancilla.values()):
-                    self.__physical_qubits.record_measurement(qz, f"{prefix}:Z{qi}")
+                    self.__physical_qubits.record_measurement(f"{prefix}:Z{qi}", qz)
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")

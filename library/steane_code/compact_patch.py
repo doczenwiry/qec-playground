@@ -41,13 +41,8 @@ class SteaneCodePatch:
         'START' : {'R': ['D0', 'D2', 'D4', 'RZ'], 'G': ['D2', 'D6', 'GD', 'D4'], 'B': ['D0', 'BZ', 'D6', 'D2']},
         'COMPACT': {'R': ['D0', 'D2', 'D4', 'D3'], 'G': ['D2', 'D6', 'D5', 'D4'], 'B': ['D0', 'D1', 'D6', 'D2']},
         'DIFFUSE': {'R': ['D0', 'D2', 'EX4', 'D3'], 'G': ['D2', 'D6', 'D5', 'EX4'], 'B': ['D0', 'EX1', 'D6', 'D2']},
+        'FINAL': {'R': ['D0', 'D2', 'EX4', 'D3'], 'G': ['D2', 'D6', 'D5', 'EX4'], 'B': ['D0', 'BD', 'D6', 'D2']},
     }
-
-    PREPARATION_MOMENTS = range(11)
-    SUPERDENSE_MOMENTS = range(10)
-    CULTIVATION_MOMENTS = range(12)
-    TELEPORTATION_MOMENTS = range(11)
-    DESTRUCTION_MOMENTS = range(6)
 
     def __init__(self, qubits: QubitArray, anchor: tuple[int, int] = (0, 1), injection: Injection = Injection.S):
         self.__anchor = anchor
@@ -71,7 +66,7 @@ class SteaneCodePatch:
         else:
             return [ self.__used_qubits[q] for q in ['D0', 'EX1', 'D2', 'D3', 'EX4', 'D5', 'D6'] ]
 
-    def logical(self, basis: Pauli, compact: bool = True):
+    def logical(self, basis: Pauli, compact: bool = True, final: bool = False):
         match basis:
             case Pauli.X:
                 return {self.__used_qubits[f"D{q}"]: 'X' for q in [1, 5, 6]}
@@ -79,6 +74,8 @@ class SteaneCodePatch:
                 # TODO: study the effect of using the weight-5 Y-observable (i.e. Z0*Y1*Z3*X5*X6)
                 if compact:
                     return {self.__used_qubits[f"D{q}"]: 'Y' for q in range(7)}
+                elif final:
+                    return {self.__used_qubits[q]: 'Y' for q in ['D0', 'BD', 'D2', 'D3', 'EX4', 'D5', 'D6']}
                 else:
                     return {self.__used_qubits[q]: 'Y' for q in ['D0', 'EX1', 'D2', 'D3', 'EX4', 'D5', 'D6']}
             case Pauli.Z:
@@ -89,6 +86,16 @@ class SteaneCodePatch:
         return {
             color : self.__translate_qubit_ids(*stabs)
             for color, stabs in SteaneCodePatch.SUPPORTS['COMPACT'].items()
+        }
+
+    def pauli_stabilizers(self, style: str = 'COMPACT') -> dict[str, dict[int, str]]:
+        if style not in SteaneCodePatch.SUPPORTS:
+            raise ValueError(f"Unknown stabilizer style : {style}")
+        return {
+            stabilizer + color : { qubit : stabilizer for qubit in self.__translate_qubit_ids(*support) }
+            for stabilizer, (color, support) in itertools.product(
+                ["X", "Z"], SteaneCodePatch.SUPPORTS[style].items()
+            )
         }
 
     def __get_polygons(self, stabilizers: dict[str, list[str]], opacity: float = 0.5):
@@ -102,9 +109,11 @@ class SteaneCodePatch:
             )
         return polygons
 
-    def get_polygons(self, initial: bool = False, compact: bool = True, opacity: float = 0.5):
+    def get_polygons(self, initial: bool = False, compact: bool = True, final: bool = False, opacity: float = 0.5):
         if initial:
             return self.__get_polygons(SteaneCodePatch.SUPPORTS['START'], opacity)
+        elif final:
+            return self.__get_polygons(SteaneCodePatch.SUPPORTS['FINAL'], opacity)
         elif compact:
             return self.__get_polygons(SteaneCodePatch.SUPPORTS['COMPACT'], opacity)
         else:
@@ -166,6 +175,7 @@ class SteaneCodePatch:
                 f"{prefix}:TPT{curr}:XG", f"{prefix}:TPT{prev}:XR", postselected=True
             )
 
+    PREPARATION_MOMENTS = range(11)
     def append_preparation(self, circuit: Circuitry, moment: Optional[int] = None):
         if moment is None:
             for moment in self.PREPARATION_MOMENTS:
@@ -201,6 +211,7 @@ class SteaneCodePatch:
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
+    SUPERDENSE_MOMENTS = range(10)
     def append_superdense_cycle(self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "SDC"):
         if moment is None:
             for moment in self.SUPERDENSE_MOMENTS:
@@ -212,42 +223,51 @@ class SteaneCodePatch:
             # Initialization
             case 0:
                 circuit.append("RX", self.__translate_qubit_ids('RD', 'GD', 'BD'))
-                circuit.append("RZ", self.__translate_qubit_ids('RZ', 'GZ', 'BZ', 'RX', 'GX', 'BX', 'EX1', 'EX4'))
-            # Prepare GHZ-states
+                circuit.append("RZ", self.__translate_qubit_ids('RZ', 'GZ', 'BZ', 'RX', 'GX', 'BX'))
+            # Prepare Bell pairs
             case 1:
                 circuit.append("CX", self.__translate_qubit_ids('RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'))
             # Perform extractions
             case 2:
-                circuit.append("CX", self.__translate_qubit_ids('GZ', 'D2', 'RD', 'D4', 'BZ', 'D0', 'RZ', 'D3'))
+                circuit.append("ZCX", self.__translate_qubit_ids(
+                    'BZ', 'D0', 'GZ', 'D2', 'RZ', 'D3'
+                ))
             case 3:
-                circuit.append("CX", self.__translate_qubit_ids('RZ', 'D0', 'BZ', 'D2', 'GD', 'D4', 'GZ', 'D6'))
+                circuit.append("ZCX", self.__translate_qubit_ids(
+                    'RZ', 'D0', 'BZ', 'D2', 'RD', 'D4', 'GZ', 'D6'
+                ))
             case 4:
-                circuit.append("CX", self.__translate_qubit_ids('GZ', 'D5', 'BD', 'D1', 'BZ', 'D6', 'RZ', 'D2', 'D4', 'GD'))
+                circuit.append("ZCX", self.__translate_qubit_ids(
+                    'BD', 'D1', 'RZ', 'D2', 'GD', 'D4', 'GZ', 'D5', 'BZ', 'D6'
+                ))
             case 5:
-                circuit.append("XCZ", self.__translate_qubit_ids('GZ', 'D5', 'BD', 'D1', 'BZ', 'D6', 'RZ', 'D2', 'RD', 'D4'))
-            case 6:
-                circuit.append("XCZ", self.__translate_qubit_ids('RZ', 'RD', 'GZ', 'GD', 'BZ', 'BD'))
-            case 7:
                 circuit.append("XCZ", self.__translate_qubit_ids(
-                    'GZ', 'D2', 'GX', 'GD', 'BZ', 'D0', 'RZ', 'D3', 'RX', 'RD', 'BX', 'BD', 'EX1', 'D1', 'EX4', 'D4'
+                    'BD', 'D1', 'RZ', 'D2', 'GD', 'D4', 'GZ', 'D5', 'BZ', 'D6'
                 ))
-            # Separate GHZ-states
+            case 6:
+                circuit.append("XCZ", self.__translate_qubit_ids(
+                    'BZ', 'D0', 'GZ', 'D2', 'RZ', 'D3', 'RD', 'D4'
+                ))
+            case 7:
+                circuit.append("ZCX", self.__translate_qubit_ids(
+                    'D0', 'RZ', 'D2', 'BZ', 'D6', 'GZ'
+                ))
+            # Contract Bell pairs
             case 8:
-                circuit.append("CX", self.__translate_qubit_ids(
-                    'D0', 'RZ', 'D6', 'GZ', 'D2', 'BZ', 'RX', 'RD', 'BX', 'BD', 'GX', 'GD', 'EX1', 'D1', 'EX4', 'D4'
-                ))
+                circuit.append("CX", self.__translate_qubit_ids('RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'))
             case 9:
-                measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX', 'BX')
+                measured_x_ancilla = self.__translate_qubit_ids('RD', 'GD', 'BD')
                 circuit.append("MX", measured_x_ancilla)
                 for xa, color in zip(measured_x_ancilla, ['R', 'G', 'B']):
-                    self.__available_qubits.record_measurement(xa, f"{prefix}:X{color}")
+                    self.__available_qubits.record_measurement(f"{prefix}:X{color}", xa)
                 measured_z_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'BZ')
                 circuit.append("MZ", measured_z_ancilla)
                 for za, color in zip(measured_z_ancilla, ['R', 'G', 'B']):
-                    self.__available_qubits.record_measurement(za, f"{prefix}:Z{color}")
+                    self.__available_qubits.record_measurement(f"{prefix}:Z{color}", za)
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
+    CULTIVATION_MOMENTS = range(12)
     def append_cultivation(self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "STN:CULT"):
         if moment is None:
             for moment in self.CULTIVATION_MOMENTS:
@@ -277,7 +297,7 @@ class SteaneCodePatch:
                 ))
             case 5:
                 circuit.append("MX", self.__translate_qubit_ids('GZ'))
-                self.__available_qubits.record_measurement(*self.__translate_qubit_ids('GZ'), f"{prefix}:CC")
+                self.__available_qubits.record_measurement(f"{prefix}:CC", *self.__translate_qubit_ids('GZ'))
             case 6:
                 circuit.append("RX", self.__translate_qubit_ids('GZ'))
             case 7:
@@ -300,10 +320,22 @@ class SteaneCodePatch:
                 measured_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4')
                 circuit.append("MX", measured_ancilla)
                 for label, xa in zip(['RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4'], measured_ancilla):
-                    self.__available_qubits.record_measurement(xa, f"{prefix}:{label}")
+                    self.__available_qubits.record_measurement(f"{prefix}:{label}", xa)
                 circuit.append(f"{self.__injection.name}", self.support(compact=False))
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
+
+    TELEPORTATION_MOMENTS = range(11)
+    def append_teleportation_round(self, circuitry: Circuitry, round: int, moment: Optional[int] = None, prefix: str = "STN:TPT"):
+        match round:
+            case 0:
+                self.__append_teleportation_round0(circuitry, moment, prefix)
+            case 1:
+                self.__append_teleportation_round1(circuitry, moment, prefix)
+            case 2:
+                self.__append_teleportation_round1(circuitry, moment, prefix)
+            case _:
+                logger.warning(f"Nothing to do at requested round [{round}]")
 
     def __append_teleportation_round0(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:TPT"):
         if moment is None:
@@ -361,11 +393,11 @@ class SteaneCodePatch:
                     measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX')
                     circuitry.append("MX", measured_x_ancilla)
                     for xa, color in zip(measured_x_ancilla, ['R', 'G', 'B']):
-                        self.__available_qubits.record_measurement(xa, f"{prefix}:X{color}")
+                        self.__available_qubits.record_measurement(f"{prefix}:X{color}", xa)
                     measured_z_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'BZ')
                     circuitry.append("MZ", measured_z_ancilla)
                     for za, color in zip(measured_z_ancilla, ['R', 'G', 'B']):
-                        self.__available_qubits.record_measurement(za, f"{prefix}:Z{color}")
+                        self.__available_qubits.record_measurement(f"{prefix}:Z{color}", za)
                 case _:
                     logger.warning(f"Nothing to do at requested moment [{moment}]")
 
@@ -425,25 +457,15 @@ class SteaneCodePatch:
                     measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX')
                     circuitry.append("MX", measured_x_ancilla)
                     for xa, color in zip(measured_x_ancilla, ['R', 'G', 'B']):
-                        self.__available_qubits.record_measurement(xa, f"{prefix}:X{color}")
+                        self.__available_qubits.record_measurement(f"{prefix}:X{color}", xa)
                     measured_z_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'BZ')
                     circuitry.append("MZ", measured_z_ancilla)
                     for za, color in zip(measured_z_ancilla, ['R', 'G', 'B']):
-                        self.__available_qubits.record_measurement(za, f"{prefix}:Z{color}")
+                        self.__available_qubits.record_measurement(f"{prefix}:Z{color}", za)
                 case _:
                     logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    def append_teleportation_round(self, circuitry: Circuitry, round: int, moment: Optional[int] = None, prefix: str = "STN:TPT"):
-        match round:
-            case 0:
-                self.__append_teleportation_round0(circuitry, moment, prefix)
-            case 1:
-                self.__append_teleportation_round1(circuitry, moment, prefix)
-            case 2:
-                self.__append_teleportation_round1(circuitry, moment, prefix)
-            case _:
-                logger.warning(f"Nothing to do at requested round [{round}]")
-
+    DESTRUCTION_MOMENTS = range(6)
     def append_destruction(self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "DST"):
         if moment is None:
             for moment in self.DESTRUCTION_MOMENTS:
@@ -462,4 +484,4 @@ class SteaneCodePatch:
                 measured_data_qubits = self.__translate_qubit_ids('BZ', 'D1', 'GZ', 'RZ', 'D4', 'GX', 'EX0')
                 circuit.append("MX", measured_data_qubits)
                 for index, qd in enumerate(measured_data_qubits):
-                    self.__available_qubits.record_measurement(qd, f"{prefix}:X{index}")
+                    self.__available_qubits.record_measurement(f"{prefix}:X{index}", qd)
