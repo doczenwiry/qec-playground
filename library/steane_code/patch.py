@@ -86,11 +86,6 @@ class SteaneCodePatch:
         },
     }
 
-    # STABILIZERS = {
-    #     'START' : {'R': [0, 2, 11, 15], 'G': [2, 6, 7, 11], 'B': [0, 14, 6, 2]},
-    #     'FINAL' : {'R': [0, 2,  4,  3], 'G': [2, 4, 5,  6], 'B': [0,  1, 6, 2]},
-    # }
-
     PREPARATION_MOMENTS = range(11)
     SUPERDENSE_MOMENTS = range(15)
     CULTIVATION_MOMENTS = range(12)
@@ -147,13 +142,13 @@ class SteaneCodePatch:
         }
 
     @property
-    def pauli_stabilizers(self):
-        return [
-            { qubit : stabilizer for qubit in self.__translate_qubits(*support) }
-            for stabilizer, support in itertools.product(
-                ["X", "Z"], SteaneCodePatch.SUPPORTS["FINAL"].values()
+    def pauli_stabilizers(self) -> dict[str, dict[int, str]]:
+        return {
+            stabilizer + color : { qubit : stabilizer for qubit in self.__translate_qubits(*support) }
+            for stabilizer, (color, support) in itertools.product(
+                ["X", "Z"], SteaneCodePatch.SUPPORTS["FINAL"].items()
             )
-        ]
+        }
 
     def __get_polygons(self, stabilizers: dict[str, list[str]], opacity: float = 0.5):
         polygons = []
@@ -420,11 +415,11 @@ class SteaneCodePatch:
                 measured_x_ancilla = self.__translate_qubits("RX", "GX", "BX")
                 circuit.append("MX", measured_x_ancilla)
                 for xa, color in zip(measured_x_ancilla, ["R", "G", "B"]):
-                    self.__physical_qubits.record_measurement(xa, f"{prefix}:X{color}")
+                    self.__physical_qubits.record_measurement(f"{prefix}:X{color}", xa)
                 measured_z_ancilla = self.__translate_qubits("RZ", "GZ", "BZ")
                 circuit.append("MZ", measured_z_ancilla)
                 for za, color in zip(measured_z_ancilla, ["R", "G", "B"]):
-                    self.__physical_qubits.record_measurement(za, f"{prefix}:Z{color}")
+                    self.__physical_qubits.record_measurement(f"{prefix}:Z{color}", za)
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
@@ -461,7 +456,7 @@ class SteaneCodePatch:
             case 5:
                 circuit.append("MX", self.__translate_qubits("GX"))
                 self.__physical_qubits.record_measurement(
-                    self.__translate_qubits("GX")[0], f"{prefix}:X0"
+                    f"{prefix}:X0", self.__translate_qubits("GX")[0]
                 )
             case 6:
                 circuit.append("RX", self.__translate_qubits("GX"))
@@ -485,9 +480,7 @@ class SteaneCodePatch:
                 measured_ancilla = self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX", "EX")
                 circuit.append("MX", measured_ancilla)
                 for index, xa in enumerate(measured_ancilla):
-                    self.__physical_qubits.record_measurement(
-                        xa, f"{prefix}:X{index + 1}"
-                    )
+                    self.__physical_qubits.record_measurement(f"{prefix}:X{index + 1}", xa)
                 circuit.append(f"{self.__injection.name}", self.support)
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
@@ -574,11 +567,11 @@ class SteaneCodePatch:
                 measured_x_ancilla = self.__translate_qubits("RX", "GX", "BX")
                 circuit.append("MX", measured_x_ancilla)
                 for xa, color in zip(measured_x_ancilla, ["R", "G", "B"]):
-                    self.__physical_qubits.record_measurement(xa, f"{prefix}:X{color}")
+                    self.__physical_qubits.record_measurement(f"{prefix}:X{color}", xa)
                 measured_z_ancilla = self.__translate_qubits("RZ", "GZ", "BZ")
                 circuit.append("MZ", measured_z_ancilla)
                 for za, color in zip(measured_z_ancilla, ["R", "G", "B"]):
-                    self.__physical_qubits.record_measurement(za, f"{prefix}:Z{color}")
+                    self.__physical_qubits.record_measurement(f"{prefix}:Z{color}", za)
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
@@ -644,4 +637,4 @@ class SteaneCodePatch:
                 )
                 circuit.append("MX", measured_data_qubits)
                 for index, qd in enumerate(measured_data_qubits):
-                    self.__physical_qubits.record_measurement(qd, f"{prefix}:X{index}")
+                    self.__physical_qubits.record_measurement(f"{prefix}:X{index}", qd)

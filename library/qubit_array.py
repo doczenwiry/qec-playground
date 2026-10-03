@@ -14,6 +14,7 @@
 
 import itertools
 from collections import defaultdict
+from typing import Optional
 
 import numpy as np
 import stim
@@ -64,13 +65,14 @@ class QubitArray:
     def is_data_qubit(self, qubit: int) -> bool:
         return qubit in self.data
 
-    def record_measurement(self, qubit: int, label: str):
+    def record_measurement(self, label: str, qubit: Optional[int] = None):
         if label in self.measurements_index:
             raise ValueError(
                 "Attempting to overwrite existing measurement record: <label> already used."
             )
         self.measurements_index[label] = len(self.measurements_index)
-        self.measurements_qubit[qubit].append(label)
+        if qubit:
+            self.measurements_qubit[qubit].append(label)
 
     def has_record(self, label: str) -> bool:
         return label in self.measurements_index

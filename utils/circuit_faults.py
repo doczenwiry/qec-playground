@@ -37,23 +37,19 @@ def __make_noisy_circuit(circuit: stim.Circuit, per: float = 0.01) -> stim.Circu
         },
     ).noisy_circuit(circuit)
 
-def analyse_heuristic(circuit: stim.Circuit, verbose: bool = False, noisify: bool = True):
-    noisy = __make_noisy_circuit(circuit, per=0.01) if noisify else circuit
-
-    found = noisy.search_for_undetectable_logical_errors(
+def analyse_heuristic(circuit: stim.Circuit, verbose: bool = False):
+    found = circuit.search_for_undetectable_logical_errors(
         dont_explore_detection_event_sets_with_size_above=4,
         dont_explore_edges_with_degree_above=4,
         dont_explore_edges_increasing_symptom_degree=False)
 
     print(f"Minimum weight undetectable logical error : {len(found)}")
     if verbose:
-        for e in noisy.explain_detector_error_model_errors():
+        for e in circuit.explain_detector_error_model_errors():
             print(e)
 
-def analyse_sat_solving(circuit: stim.Circuit, noisify: bool = True):
-    noisy = __make_noisy_circuit(circuit, per=0.01) if noisify else circuit
-
-    wcnf = WCNF(from_string=noisy.shortest_error_sat_problem())
+def analyse_sat_solving(circuit: stim.Circuit):
+    wcnf = WCNF(from_string=circuit.shortest_error_sat_problem())
     with RC2(wcnf) as solver:
         solver.compute()
         print(f"Minimum weight undetectable logical error : {solver.cost}")

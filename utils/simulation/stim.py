@@ -23,7 +23,7 @@ import sinter
 from matplotlib.container import BarContainer
 
 from library.circuitry import Circuitry
-from utils.simulation.noise import make_noisy_circuit
+from utils.simulation.noise import make_noisy
 
 __all__ = ["simulate", "sample"]
 
@@ -47,7 +47,7 @@ def simulate(
         scenarios = {"circuit": scenarios}
     tasks = [
         sinter.Task(
-            circuit=make_noisy_circuit(circuitry.as_stim, physical_error_rate),
+            circuit=circuitry.as_stim(per=physical_error_rate),
             postselection_mask=np.packbits(
                 np.array(circuitry.postselection_mask, dtype=bool)
             )
@@ -137,12 +137,12 @@ def sample(
     for scenario, circuitry in scenarios.items():
         # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
         if correction:
-            sampler = circuitry.as_stim.compile_detector_sampler(seed=SEED)
+            sampler = circuitry.as_stim().compile_detector_sampler(seed=SEED)
             _, outcomes = sampler.sample(shots=int(shots), separate_observables=True)
             outcomes = outcomes.astype(int)[:, 0]
         else:
             outcomes = (
-                circuitry.as_stim.compile_sampler()
+                circuitry.as_stim().compile_sampler()
                 .sample(shots=int(shots))
                 .astype(int)[:, -1]
             )
