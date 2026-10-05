@@ -224,7 +224,9 @@ class SteaneCodePatch:
             # Initialization
             case 0:
                 circuitry.append("RX", self.__translate_qubit_ids('RD', 'GD', 'BD'))
-                circuitry.append("RZ", self.__translate_qubit_ids('RZ', 'GZ', 'BZ', 'RX', 'GX', 'BX'))
+                circuitry.append("RZ", self.__translate_qubit_ids(
+                    'RZ', 'GZ', 'BZ', 'RX', 'GX', 'BX', 'EX1', 'EX4'
+                ))
             # Prepare Bell pairs
             case 1:
                 circuitry.append("CX", self.__translate_qubit_ids('RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'))
@@ -254,9 +256,13 @@ class SteaneCodePatch:
                 circuitry.append("CX", self.__translate_qubit_ids('RD', 'RX', 'GD', 'GX', 'BD', 'BX'))
             # Contract Bell pairs and move the X component onto the X-ancillas
             case 8:
-                circuitry.append("CX", self.__translate_qubit_ids('RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'))
+                circuitry.append("CX", self.__translate_qubit_ids(
+                    'D1', 'EX1', 'D4', 'EX4', 'RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'
+                ))
             case 9:
-                circuitry.append("CX", self.__translate_qubit_ids('RX', 'RD', 'GX', 'GD', 'BX', 'BD'))
+                circuitry.append("CX", self.__translate_qubit_ids(
+                    'EX1', 'D1', 'EX4', 'D4', 'RX', 'RD', 'GX', 'GD', 'BX', 'BD'
+                ))
             case 10:
                 measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX', 'BX')
                 circuitry.append("MX", measured_x_ancilla)
@@ -331,135 +337,68 @@ class SteaneCodePatch:
     def append_teleportation_round(self, circuitry: Circuitry, round: int, moment: Optional[int] = None, prefix: str = "STN:TPT"):
         match round:
             case 0:
-                self.__append_teleportation_round0(circuitry, moment, prefix)
+                self.__append_teleportation_round(circuitry, moment, prefix)
             case 1:
-                self.__append_teleportation_round1(circuitry, moment, prefix)
+                self.__append_teleportation_round(circuitry, moment, prefix)
             case 2:
-                self.__append_teleportation_round1(circuitry, moment, prefix)
+                self.__append_teleportation_round(circuitry, moment, prefix)
             case _:
                 logger.warning(f"Nothing to do at requested round [{round}]")
 
-    def __append_teleportation_round0(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:TPT"):
+    def __append_teleportation_round(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:TPT"):
         if moment is None:
             for moment in self.TELEPORTATION_MOMENTS:
-                self.__append_teleportation_round0(circuitry, moment, prefix)
+                self.__append_teleportation_round(circuitry, moment, prefix)
                 circuitry.append_tick()
         else:
             match moment:
                 # Initialization
                 case 0:
-                    circuitry.append("RX", self.__translate_qubit_ids('RD', 'GD'))
+                    circuitry.append("RX", self.__translate_qubit_ids('RD', 'GD', 'BZ'))
                     circuitry.append("RZ", self.__translate_qubit_ids(
-                        'RZ', 'GZ', 'BZ', 'BD', 'RX', 'GX', 'D1', 'D4'
+                        'RZ', 'GZ', 'BD', 'RX', 'GX', 'BX', 'D1', 'D4'
                     ))
-                # Prepare Bell pairs and move qubits 1 and 4 onto their positions
+                # Prepare Bell pairs
                 case 1:
                     circuitry.append("CX", self.__translate_qubit_ids(
-                        'EX1', 'D1', 'RD', 'RZ', 'GD', 'GZ', 'EX4', 'D4'
-                    ))
-                case 2:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'D1', 'EX1', 'GZ', 'D2', 'RZ', 'D3', 'D4', 'EX4'
+                        'EX1', 'D1', 'EX4', 'D4', 'RD', 'RZ', 'GD', 'GZ', 'BZ', 'BD'
                     ))
                 # Perform extractions
+                case 2:
+                    circuitry.append("ZCX", self.__translate_qubit_ids(
+                        'GZ', 'D2', 'RZ', 'D3'
+                    ))
+                    circuitry.append("CX", self.__translate_qubit_ids('D4', 'EX4'))
                 case 3:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'RZ', 'D0', 'D1', 'BD', 'RD', 'D4', 'GZ', 'D6'
+                    circuitry.append("ZCX", self.__translate_qubit_ids(
+                        'RZ', 'D0', 'RD', 'D4', 'GZ', 'D6'
                     ))
                 case 4:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'BD', 'D1', 'RZ', 'D2', 'GD', 'D4', 'GZ', 'D5'
+                    circuitry.append("ZCX", self.__translate_qubit_ids(
+                        'RZ', 'D2', 'GD', 'D4', 'GZ', 'D5'
                     ))
                 case 5:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'D2', 'RZ', 'D4', 'GD', 'D5', 'GZ', 'D6', 'BZ'
+                    circuitry.append("XCZ", self.__translate_qubit_ids(
+                        'BD', 'D1', 'RZ', 'D2', 'GD', 'D4', 'GZ', 'D5', 'BZ', 'D6'
                     ))
                 case 6:
                     circuitry.append("XCZ", self.__translate_qubit_ids(
                         'BZ', 'D0', 'GZ', 'D2', 'RZ', 'D3', 'RD', 'D4'
                     ))
                 case 7:
-                    circuitry.append("XCZ", self.__translate_qubit_ids(
-                        'RZ', 'D0', 'BZ', 'D2', 'EX4', 'D4', 'GZ', 'D6'
-                    ))
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'RD', 'RX', 'GD', 'GX'
-                    ))
-                # Contract Bell pairs and move X-component onto X-ancillas
+                    circuitry.append("ZCX", self.__translate_qubit_ids('D0', 'RZ', 'D2', 'BZ', 'D6', 'GZ'))
+                    circuitry.append("CX", self.__translate_qubit_ids('RD', 'RX', 'GD', 'GX', 'BD', 'BX'))
+                # Contract Bell pairs and move the X component onto the X-ancillas
                 case 8:
                     circuitry.append("CX", self.__translate_qubit_ids(
-                        'EX4', 'D4', 'RD', 'RZ', 'BD', 'BZ', 'GD', 'GZ'
+                        'D4', 'EX4', 'RD', 'RZ', 'GD', 'GZ', 'BD', 'BZ'
                     ))
                 case 9:
                     circuitry.append("CX", self.__translate_qubit_ids(
-                        'RX', 'RD', 'GX', 'GD'
+                        'EX1', 'D1', 'EX4', 'D4', 'RX', 'RD', 'GX', 'GD', 'BX', 'BD'
                     ))
                 case 10:
-                    measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX')
-                    circuitry.append("MX", measured_x_ancilla)
-                    for xa, color in zip(measured_x_ancilla, ['R', 'G', 'B']):
-                        self.__available_qubits.record_measurement(f"{prefix}:X{color}", xa)
-                    measured_z_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'BZ')
-                    circuitry.append("MZ", measured_z_ancilla)
-                    for za, color in zip(measured_z_ancilla, ['R', 'G', 'B']):
-                        self.__available_qubits.record_measurement(f"{prefix}:Z{color}", za)
-                case _:
-                    logger.warning(f"Nothing to do at requested moment [{moment}]")
-
-    def __append_teleportation_round1(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:TPT"):
-        if moment is None:
-            for moment in self.TELEPORTATION_MOMENTS:
-                self.__append_teleportation_round1(circuitry, moment, prefix)
-                circuitry.append_tick()
-        else:
-            match moment:
-                # Initialization
-                case 0:
-                    circuitry.append("RX", self.__translate_qubit_ids('RD', 'GD'))
-                    circuitry.append("RZ", self.__translate_qubit_ids(
-                        'RZ', 'GZ', 'BZ', 'RX', 'GX', 'D4'
-                    ))
-                # Prepare GHZ-states
-                case 1:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'RD', 'RZ', 'GD', 'GZ', 'EX4', 'D4'
-                    ))
-                case 2:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'D4', 'EX4', 'RZ', 'D3'
-                    ))
-                # Perform extractions
-                case 3:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'GZ', 'D2', 'RD', 'D4', 'RZ', 'D0'
-                    ))
-                case 4:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'GD', 'D4', 'GZ', 'D6'
-                    ))
-                case 5:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'GZ', 'D5', 'RZ', 'D2', 'D4', 'GD', 'D6', 'BZ'
-                    ))
-                case 6:
-                    circuitry.append("XCZ", self.__translate_qubit_ids(
-                        'GZ', 'D5', 'RZ', 'D2', 'RD', 'D4'
-                    ))
-                case 7:
-                    circuitry.append("XCZ", self.__translate_qubit_ids(
-                        'RZ', 'RD', 'GZ', 'GD', 'BZ', 'BD'
-                    ))
-                case 8:
-                    circuitry.append("XCZ", self.__translate_qubit_ids(
-                        'GZ', 'D2', 'GX', 'GD', 'BZ', 'D0', 'RZ', 'D3', 'RX', 'RD', 'EX4', 'D4'
-                    ))
-                # Separate GHZ-states
-                case 9:
-                    circuitry.append("CX", self.__translate_qubit_ids(
-                        'D0', 'RZ', 'D6', 'GZ', 'D2', 'BZ', 'RX', 'RD', 'GX', 'GD', 'EX4', 'D4'
-                    ))
-                case 10:
-                    measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX')
+                    measured_x_ancilla = self.__translate_qubit_ids('RX', 'GX', 'BX')
                     circuitry.append("MX", measured_x_ancilla)
                     for xa, color in zip(measured_x_ancilla, ['R', 'G', 'B']):
                         self.__available_qubits.record_measurement(f"{prefix}:X{color}", xa)
