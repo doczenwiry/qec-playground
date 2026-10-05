@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from pandas.core.groupby.base import transform_kernel_allowlist
 
 from library.circuitry import Circuitry
 from library.common import Pauli
@@ -228,12 +229,14 @@ class MagicStateCultivation:
                 self.steane.append_teleportation_round(
                     circuitry, round=rnd, moment=mmt, prefix=f"STN:TPT{rnd}"
                 )
-                translated_mmt = mmt
-                if not (1 <= mmt <= 3):
-                    if 4 <= mmt <= 7:
-                        translated_mmt = mmt - 3
-                    elif mmt == 10:
-                        translated_mmt = 5
+                if 0 <= mmt <= 4:
+                    translated_mmt = mmt
+                elif mmt == 10:
+                    translated_mmt = 5
+                else:
+                    translated_mmt = -1
+
+                if translated_mmt != -1:
                     self.__junction.append_syndrome(circuitry, moment=translated_mmt, prefix=f"JCT{rnd}")
                     self.source.append_round(
                         circuitry,
@@ -249,7 +252,7 @@ class MagicStateCultivation:
         )
         circuitry.annotate_polygons(
             self.steane.get_polygons(
-                opacity=2.25 * MagicStateCultivation.EXPANDED_OPACITY
+                opacity=2.25 * MagicStateCultivation.EXPANDED_OPACITY, compact=False
             )
         )
         circuitry.annotate_polygons(self.source.get_polygons())

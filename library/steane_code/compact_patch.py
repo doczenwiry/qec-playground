@@ -167,6 +167,8 @@ class SteaneCodePatch:
         circuitry.annotate_detector(
             f"{prefix}:TPT0:XG", f"{prefix}:SDC{last}:XR", postselected=True
         )
+        for rnd in range(tpt_rounds):
+            circuitry.annotate_detector(f"{prefix}:TPT{rnd}:XB", postselected=True)
 
         for prev, curr in itertools.pairwise(range(tpt_rounds)):
             circuitry.annotate_detector(
@@ -361,29 +363,29 @@ class SteaneCodePatch:
                 # Prepare Bell pairs
                 case 1:
                     circuitry.append("CX", self.__translate_qubit_ids(
-                        'EX1', 'D1', 'EX4', 'D4', 'RD', 'RZ', 'GD', 'GZ', 'BZ', 'BD'
+                        'EX4', 'D4', 'RD', 'RZ', 'GD', 'GZ', 'BZ', 'BD'
                     ))
                 # Perform extractions
                 case 2:
                     circuitry.append("ZCX", self.__translate_qubit_ids(
-                        'GZ', 'D2', 'RZ', 'D3'
+                        'EX1', 'D1', 'RZ', 'D2', 'GZ', 'D5'
                     ))
                     circuitry.append("CX", self.__translate_qubit_ids('D4', 'EX4'))
                 case 3:
                     circuitry.append("ZCX", self.__translate_qubit_ids(
-                        'RZ', 'D0', 'RD', 'D4', 'GZ', 'D6'
+                        'RZ', 'D0', 'GD', 'D4', 'GZ', 'D6'
                     ))
                 case 4:
                     circuitry.append("ZCX", self.__translate_qubit_ids(
-                        'RZ', 'D2', 'GD', 'D4', 'GZ', 'D5'
+                        'GZ', 'D2', 'RZ', 'D3', 'RD', 'D4'
                     ))
                 case 5:
                     circuitry.append("XCZ", self.__translate_qubit_ids(
-                        'BD', 'D1', 'RZ', 'D2', 'GD', 'D4', 'GZ', 'D5', 'BZ', 'D6'
+                        'BZ', 'D0', 'BD', 'D1', 'GZ', 'D2', 'RZ', 'D3', 'RD', 'D4'
                     ))
                 case 6:
                     circuitry.append("XCZ", self.__translate_qubit_ids(
-                        'BZ', 'D0', 'GZ', 'D2', 'RZ', 'D3', 'RD', 'D4'
+                        'RZ', 'D2', 'GD', 'D4', 'GZ', 'D5', 'BZ', 'D6'
                     ))
                 case 7:
                     circuitry.append("ZCX", self.__translate_qubit_ids('D0', 'RZ', 'D2', 'BZ', 'D6', 'GZ'))
@@ -421,9 +423,9 @@ class SteaneCodePatch:
             case 0:
                 circuit.append("R", self.__translate_qubit_ids('BZ', 'D1', 'GZ', 'RZ', 'D4', 'GX', 'EX0'))
             case 1:
-                circuit.append("ZCX", self.__translate_qubit_ids('D0', 'BZ', 'BD', 'D1', 'D2', 'GZ', 'D3', 'RZ', 'EX4', 'D4', 'D5', 'GX', 'D6', 'EX0'))
+                circuit.append("ZCX", self.__translate_qubit_ids('D0', 'BZ', 'EX1', 'D1', 'D2', 'GZ', 'D3', 'RZ', 'EX4', 'D4', 'D5', 'GX', 'D6', 'EX0'))
             case 3:
-                circuit.append("XCZ", self.__translate_qubit_ids('D0', 'BZ', 'BD', 'D1', 'D2', 'GZ', 'D3', 'RZ', 'EX4', 'D4', 'D5', 'GX', 'D6', 'EX0'))
+                circuit.append("XCZ", self.__translate_qubit_ids('D0', 'BZ', 'EX1', 'D1', 'D2', 'GZ', 'D3', 'RZ', 'EX4', 'D4', 'D5', 'GX', 'D6', 'EX0'))
             case 5:
                 measured_data_qubits = self.__translate_qubit_ids('BZ', 'D1', 'GZ', 'RZ', 'D4', 'GX', 'EX0')
                 circuit.append("MX", measured_data_qubits)
