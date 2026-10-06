@@ -116,7 +116,7 @@ class Circuitry:
                 lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)
             )
         )
-        return clifft.compile(text, postselection_mask=self.__postselection_mask, normalize_syndromes=True)
+        return clifft.compile(text, postselection_mask=self.__postselection_mask)
 
     @property
     def postselection_mask(self):

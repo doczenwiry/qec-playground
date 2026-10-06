@@ -312,7 +312,7 @@ class SteaneCodePatch:
                     ),
                 )
                 circuit.append(
-                    f"{self.__injection.name}_DAG", self.__translate_qubits("D6")
+                    f"{self.__injection.name}", self.__translate_qubits("D6")
                 )
             case 8:
                 circuit.append("CX", self.__translate_qubits("GZ", "D4", "BX", "D6"))
@@ -434,7 +434,7 @@ class SteaneCodePatch:
 
         match moment:
             case 0:
-                circuit.append(f"{self.__injection.name}_DAG", self.support)
+                circuit.append(f"{self.__injection.name}", self.support)
                 circuit.append(
                     "RX", self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX", "EX")
                 )
@@ -481,9 +481,44 @@ class SteaneCodePatch:
                 circuit.append("MX", measured_ancilla)
                 for index, xa in enumerate(measured_ancilla):
                     self.__physical_qubits.record_measurement(f"{prefix}:X{index + 1}", xa)
-                circuit.append(f"{self.__injection.name}", self.support)
+                circuit.append(f"{self.__injection.name}_DAG", self.support)
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
+
+    NOISELESS_MEASUREMENT_MOMENTS = range(6)
+    def append_noiseless_measurement(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:NOISELESS"):
+        if moment is None:
+            for moment in self.NOISELESS_MEASUREMENT_MOMENTS:
+                self.append_noiseless_measurement(circuitry, moment, prefix)
+                circuitry.append_tick()
+        else:
+            match moment:
+                case 0:
+                    circuitry.append(f"{self.__injection.name}", self.support)
+                    circuitry.append("RX", self.__translate_qubits(
+                        "GX", "GZ", "BX", "RX"
+                    ))
+                case 1:
+                    circuitry.append("CX", self.__translate_qubits(
+                "RX", "D3", "GX", "D5", "GZ", "D4", "BX", "D1"
+                    ))
+                case 2:
+                    circuitry.append("CX", self.__translate_qubits(
+                        "D2", "GZ", "D6", "BX", "RX", "D0")
+                    )
+                case 3:
+                    circuitry.append("CX", self.__translate_qubits(
+                        "D2", "RX", "GX", "D6"
+                    ))
+                case 4:
+                    circuitry.append("CX", self.__translate_qubits(
+                        "GX", "D2"
+                    ))
+                case 5:
+                    circuitry.append("MX", self.__translate_qubits("GX"))
+                    self.__physical_qubits.record_measurement(
+                        f"{prefix}:CC", self.__translate_qubits("GX")[0]
+                    )
 
     # TODO: synchronise the MX/MZ between the Steane Code and Surface Code
     def append_teleportation(
