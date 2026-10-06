@@ -205,7 +205,7 @@ class SteaneCodePatch:
             case 7:
                 circuit.append("CX", self.__translate_qubit_ids('D1', 'BD', 'GZ', 'D6'))
             case 8:
-                circuit.append(self.__injection.name + "_DAG", self.__translate_qubit_ids('D6'))
+                circuit.append(self.__injection.name, self.__translate_qubit_ids('D6'))
                 circuit.append("CX", self.__translate_qubit_ids('GZ', 'D5'))
             case 9:
                 circuit.append("CX", self.__translate_qubit_ids('GZ', 'D6'))
@@ -287,7 +287,7 @@ class SteaneCodePatch:
 
         match moment:
             case 0:
-                circuitry.append(f"{self.__injection.name}_DAG", self.support(compact=False))
+                circuitry.append(f"{self.__injection.name}", self.support(compact=False))
                 circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4'))
             case 1:
                 circuitry.append("CX", self.__translate_qubit_ids(
@@ -331,9 +331,79 @@ class SteaneCodePatch:
                 circuitry.append("MX", measured_ancilla)
                 for label, xa in zip(['RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4'], measured_ancilla):
                     self.__available_qubits.record_measurement(f"{prefix}:{label}", xa)
-                circuitry.append(f"{self.__injection.name}", self.support(compact=False))
+                circuitry.append(f"{self.__injection.name}_DAG", self.support(compact=False))
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
+
+    NOISELESS_MEASUREMENT_MOMENTS = range(6)
+    def append_noiseless_measurement(
+            self, circuitry: Circuitry, moment: Optional[int] = None,
+            prefix: str = "STN:NOISELESS", compact: bool = True
+    ):
+        if compact:
+            self.__append_noiseless_compact_measurement(circuitry, moment, prefix)
+        else:
+            self.__append_noiseless_diffuse_measurement(circuitry, moment, prefix)
+
+    def __append_noiseless_compact_measurement(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:NOISELESS"):
+        if moment is None:
+            for moment in self.NOISELESS_MEASUREMENT_MOMENTS:
+                self.__append_noiseless_compact_measurement(circuitry, moment, prefix)
+                circuitry.append_tick()
+        else:
+            match moment:
+                case 0:
+                    circuitry.append(f"{self.__injection.name}", self.support(compact=True))
+                    circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ'))
+                case 1:
+                    circuitry.append("CX", self.__translate_qubit_ids(
+                        'GZ', 'D5', 'D6', 'D1', 'D2', 'D4', 'RZ', 'D3'
+                    ))
+                case 2:
+                    circuitry.append("CX", self.__translate_qubit_ids(
+                        'GZ', 'D6', 'RZ', 'D0'
+                    ))
+                case 3:
+                    circuitry.append("CX", self.__translate_qubit_ids(
+                        'D2', 'RZ'
+                    ))
+                case 4:
+                    circuitry.append("CX", self.__translate_qubit_ids(
+                        'GZ', 'D2'
+                    ))
+                case 5:
+                    circuitry.append("MX", self.__translate_qubit_ids('GZ'))
+                    self.__available_qubits.record_measurement(f"{prefix}:CC", *self.__translate_qubit_ids('GZ'))
+
+    def __append_noiseless_diffuse_measurement(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:NOISELESS"):
+        if moment is None:
+            for moment in self.NOISELESS_MEASUREMENT_MOMENTS:
+                self.__append_noiseless_diffuse_measurement(circuitry, moment, prefix)
+                circuitry.append_tick()
+        else:
+            match moment:
+                case 0:
+                    circuitry.append(f"{self.__injection.name}", self.support(compact=False))
+                    circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4'))
+                case 1:
+                    circuitry.append("CX", self.__translate_qubit_ids(
+                        'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'GZ', 'D5'
+                    ))
+                case 2:
+                    circuitry.append("CX", self.__translate_qubit_ids(
+                        'D6', 'D1', 'D2', 'D4', 'RZ', 'D0'
+                    ))
+                case 3:
+                    circuitry.append("CX", self.__translate_qubit_ids(
+                        'GZ', 'D6', 'D2', 'RZ'
+                    ))
+                case 4:
+                    circuitry.append("CX", self.__translate_qubit_ids(
+                        'GZ', 'D2'
+                    ))
+                case 5:
+                    circuitry.append("MX", self.__translate_qubit_ids('GZ'))
+                    self.__available_qubits.record_measurement(f"{prefix}:CC", *self.__translate_qubit_ids('GZ'))
 
     TELEPORTATION_MOMENTS = range(11)
     def append_teleportation_round(self, circuitry: Circuitry, round: int, moment: Optional[int] = None, prefix: str = "STN:TPT"):
