@@ -278,17 +278,26 @@ class SteaneCodePatch:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
     CULTIVATION_MOMENTS = range(12)
-    def append_cultivation(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:CULT"):
+    def append_cultivation(
+        self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:CULT",
+        cultivation: bool = True
+    ):
         if moment is None:
             for moment in self.CULTIVATION_MOMENTS:
-                self.append_cultivation(circuitry, moment, prefix)
+                self.append_cultivation(circuitry, moment, prefix, cultivation)
                 circuitry.append_tick()
             return
 
         match moment:
             case 0:
-                circuitry.append(f"{self.__injection.name}", self.support(compact=False))
-                circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4'))
+                if cultivation:
+                    circuitry.append(f"{self.__injection.name}", self.__translate_qubit_ids(
+                        'D0', 'EX4', 'D6'
+                    ))
+                    circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubit_ids(
+                        'EX1', 'D2', 'D3', 'D5'
+                    ))
+                circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'D4', 'EX0'))
             case 1:
                 circuitry.append("CX", self.__translate_qubit_ids(
                     'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'GZ', 'D5', 'EX0', 'D6'
@@ -327,11 +336,18 @@ class SteaneCodePatch:
                     'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'GZ', 'D5', 'EX0', 'D6'
                 ))
             case 11:
-                measured_ancilla = self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4')
+                labels = ['RZ', 'GZ', 'D1', 'BZ', 'D4', 'EX0']
+                measured_ancilla = self.__translate_qubit_ids(*labels)
                 circuitry.append("MX", measured_ancilla)
-                for label, xa in zip(['RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4'], measured_ancilla):
+                for label, xa in zip(labels, measured_ancilla):
                     self.__available_qubits.record_measurement(f"{prefix}:{label}", xa)
-                circuitry.append(f"{self.__injection.name}_DAG", self.support(compact=False))
+                if cultivation:
+                    circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubit_ids(
+                        'D0', 'EX4', 'D6'
+                    ))
+                    circuitry.append(f"{self.__injection.name}", self.__translate_qubit_ids(
+                        'EX1', 'D2', 'D3', 'D5'
+                    ))
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
@@ -384,10 +400,10 @@ class SteaneCodePatch:
             match moment:
                 case 0:
                     circuitry.append(f"{self.__injection.name}", self.support(compact=False))
-                    circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4'))
+                    circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'D4'))
                 case 1:
                     circuitry.append("CX", self.__translate_qubit_ids(
-                        'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'GZ', 'D5'
+                        'D1', 'EX1', 'RZ', 'D3', 'D4', 'EX4', 'GZ', 'D5'
                     ))
                 case 2:
                     circuitry.append("CX", self.__translate_qubit_ids(
