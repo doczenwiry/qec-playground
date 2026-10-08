@@ -434,7 +434,12 @@ class SteaneCodePatch:
 
         match moment:
             case 0:
-                circuit.append(f"{self.__injection.name}", self.support)
+                circuit.append(f"{self.__injection.name}", self.__translate_qubits(
+                    "D0", "D4", "D6"
+                ))
+                circuit.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
+                    "D1", "D2", "D3", "D5"
+                ))
                 circuit.append(
                     "RX", self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX", "EX")
                 )
@@ -476,12 +481,17 @@ class SteaneCodePatch:
                     ),
                 )
             case 11:
-                # measured_ancilla = self.__shift_qubit_ids(10, 11, 13, 14, 15)
                 measured_ancilla = self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX", "EX")
                 circuit.append("MX", measured_ancilla)
                 for index, xa in enumerate(measured_ancilla):
                     self.__physical_qubits.record_measurement(f"{prefix}:X{index + 1}", xa)
-                circuit.append(f"{self.__injection.name}_DAG", self.support)
+
+                circuit.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
+                    "D0", "D4", "D6"
+                ))
+                circuit.append(f"{self.__injection.name}", self.__translate_qubits(
+                    "D1", "D2", "D3", "D5"
+                ))
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
@@ -520,7 +530,6 @@ class SteaneCodePatch:
                         f"{prefix}:CC", self.__translate_qubits("GX")[0]
                     )
 
-    # TODO: synchronise the MX/MZ between the Steane Code and Surface Code
     def append_teleportation(
         self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "STN:TPT"
     ):

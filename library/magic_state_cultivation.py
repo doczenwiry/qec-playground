@@ -228,16 +228,24 @@ class MagicStateCultivation:
                 self.steane.append_teleportation(
                     circuitry, moment=mmt, prefix=f"STN:TPT{rnd}"
                 )
-                self.__junction.append_syndrome(
-                    circuitry, moment=mmt, prefix=f"JCT{rnd}"
-                )
-                self.source.append_round(
-                    circuitry,
-                    moment=mmt,
-                    prepare=Pauli.X if rnd == 0 else None,
-                    prefix=f"SRC:R{rnd}",
-                    inactive=self.__inactive_source,
-                )
+                if 0 <= mmt <= 4:
+                    translated_mmt = mmt
+                elif mmt == 14:
+                    translated_mmt = 5
+                else:
+                    translated_mmt = -1
+
+                if translated_mmt != -1:
+                    self.__junction.append_syndrome(
+                        circuitry, moment=translated_mmt, prefix=f"JCT{rnd}"
+                    )
+                    self.source.append_round(
+                        circuitry,
+                        moment=translated_mmt,
+                        prepare=Pauli.X if rnd == 0 else None,
+                        prefix=f"SRC:R{rnd}",
+                        inactive=self.__inactive_source,
+                    )
                 circuitry.append_tick()
 
         circuitry.annotate_polygons(
