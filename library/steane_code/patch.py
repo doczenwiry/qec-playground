@@ -504,7 +504,12 @@ class SteaneCodePatch:
         else:
             match moment:
                 case 0:
-                    circuitry.append(f"{self.__injection.name}", self.support)
+                    circuitry.append(f"{self.__injection.name}", self.__translate_qubits(
+                        "D0", "D4", "D6"
+                    ))
+                    circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
+                        "D1", "D2", "D3", "D5"
+                    ))
                     circuitry.append("RX", self.__translate_qubits(
                         "GX", "GZ", "BX", "RX"
                     ))
