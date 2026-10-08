@@ -82,11 +82,10 @@ class SteaneCodePatch:
             case Pauli.Z:
                 return {self.__used_qubits[f"D{q}"]: 'Z' for q in [0, 1, 3]}
 
-    @property
-    def stabilizers(self):
+    def stabilizers(self, style: str = 'COMPACT'):
         return {
             color : self.__translate_qubit_ids(*stabs)
-            for color, stabs in SteaneCodePatch.SUPPORTS['COMPACT'].items()
+            for color, stabs in SteaneCodePatch.SUPPORTS[style].items()
         }
 
     def pauli_stabilizers(self, style: str = 'COMPACT') -> dict[str, dict[int, str]]:
@@ -122,7 +121,7 @@ class SteaneCodePatch:
 
     def annotate_detectors(self, circuitry: Circuitry, sdc_rounds: int = 0, tpt_rounds: int = 0, prefix: str = "STN"):
         # Annotate all SUPERDENSE detectors
-        for color in self.stabilizers.keys():
+        for color in self.stabilizers().keys():
             if sdc_rounds >= 1:
                 circuitry.annotate_detector(
                     f"{prefix}:SDC0:X{color}", postselected=True
@@ -152,7 +151,7 @@ class SteaneCodePatch:
 
         # Annotate the TELEPORTATION stabilized detectors
         last = sdc_rounds-1
-        for color in self.stabilizers.keys():
+        for color in self.stabilizers().keys():
             circuitry.annotate_detector(
                 f"{prefix}:TPT0:Z{color}", f"{prefix}:SDC{last}:Z{color}", postselected=True
             )
