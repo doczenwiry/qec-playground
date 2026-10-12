@@ -104,8 +104,7 @@ class Circuitry:
                 )
             )
 
-    @property
-    def as_clifft(self) -> clifft.Program:
+    def as_clifft(self, deterministic: bool = False) -> clifft.Program:
         if self.__clifford:
             raise NotImplementedError(
                 "Conversion from stim.Circuit to clifft.Program not supported. Use Circuitry.as_stim."
@@ -116,7 +115,7 @@ class Circuitry:
                 lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)
             )
         )
-        return clifft.compile(text, postselection_mask=self.__postselection_mask)
+        return clifft.compile(text, postselection_mask=self.__postselection_mask, normalize_syndromes=deterministic)
 
     @property
     def postselection_mask(self):

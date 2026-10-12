@@ -644,15 +644,15 @@
 	
 	\section{\Op{T}-gate construct}
 
-	We will use the following identities throughout this section. Normalisation constants are dropped for convenience.
+	We will use the following identities throughout this section.
 	\begin{equation*}
 		\sigma = e\Sup{i\frac{\pi}{2}}
 		\qquad\qquad
-		\ket{\mathcal{S}} = \kett{0} + \sigma\kett{1}
+		\ket{\mathcal{S}} = \frac{\kett{0} + \sigma\kett{1}}{\sqrt{2}}
 		\qquad\qquad
 		\tau = e\Sup{i\frac{\pi}{4}}		
 		\qquad\qquad
-		\ket{\mathcal{T}} = \kett{0} + \tau\kett{1}
+		\ket{\mathcal{T}} = \frac{\kett{0} + \tau\kett{1}}{\sqrt{2}}
 		\qquad\qquad
 		\sigma\Sup{2} = -1
 		\qquad\qquad
@@ -700,7 +700,7 @@
 
 	\subsection{Proof of correctness}
 
-	We start by focusing on the top two qubits
+	We start by focusing on the top two qubits (normalisation constants are left out)
 	\begin{align*}
 		\parentheses{\alpha\sub{0}\kett{0} + \alpha\sub{1}\kett{1}}\parentheses{\kett{0}+\tau\kett{1}}
 		~=&~~ \alpha\sub{0}\kett{00} + \alpha\sub{0}\tau\kett{01} + \alpha\sub{1}\kett{10} + \alpha\sub{1}\tau\kett{11} \\
