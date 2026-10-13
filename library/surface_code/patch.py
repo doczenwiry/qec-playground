@@ -323,3 +323,123 @@ class SurfaceCodePatch:
                     circuit.append(f"M{measure.name}", measured_data)
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
+
+    INJECTION_MOMENTS = range(5)
+    def append_injection(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "SFC:INJ"):
+        if self.__distance != 3:
+            raise NotImplementedError("Injection only with distance 3 SurfaceCodePatch.")
+
+        if moment is None:
+            for mmt in SurfaceCodePatch.INJECTION_MOMENTS:
+                self.append_injection(circuitry, mmt, prefix)
+                circuitry.append_tick()
+            return
+        else:
+            ax, ay = self.__anchor
+            match moment:
+                case 0:
+                    circuitry.append(
+                        f"RX", [
+                            self.__physical_qubits.qubits[(ax + px, ay + py)]
+                            for px,py in [(0,0), (1,1), (1,2), (2,0), (2,2)]
+                        ],
+                    )
+                    circuitry.append(
+                        f"RZ", [
+                            self.__physical_qubits.qubits[(ax + px, ay + py)]
+                            for px,py in [(1,0), (0,1), (0,2), (2,1)]
+                        ],
+                    )
+                case 1:
+                    circuitry.append("S", self.__physical_qubits[(ax, ay)])
+                    circuitry.append("CX", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(1, 2), (0, 1), (2,2), (0,2), (2,0), (2,1)]
+                    ])
+                case 2:
+                    circuitry.append("CX", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(0,2), (0,1), (1,2), (0,0)]
+                    ])
+                case 3:
+                    circuitry.append("CX", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(0,0), (2,1), (0,1), (2,0), (1,1), (1,2)]
+                    ])
+                case 4:
+                    circuitry.append("CX", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(0,0), (1,0)]
+                    ])
+
+    CHECKING_MOMENTS = range(9)
+    def append_checking(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "SFC:CHECK"):
+        if moment is None:
+            for mmt in SurfaceCodePatch.CHECKING_MOMENTS:
+                self.append_checking(circuitry, mmt, prefix)
+                circuitry.append_tick()
+            return
+        else:
+            ax, ay = self.__anchor
+            match moment:
+                case 0:
+                    circuitry.append("RX", self.__physical_qubits.qubits[(ax - 0.5, ay - 0.5)])
+                    circuitry.append("RZ", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px,py in [(-0.5, +0.5), (+0.5, -0.5)]
+                    ])
+                case 1:
+                    circuitry.append("CX", [
+                            self.__physical_qubits.qubits[(ax + px, ay + py)]
+                            for px, py in [(-0.5, -0.5), (-0.5, +0.5)]
+                        ]
+                    )
+                case 2:
+                    circuitry.append("CX", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(-0.5, -0.5), (+0.5, -0.5)]
+                    ])
+                    circuitry.append("CZ", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(-0.5, +0.5), (0, 0)]
+                    ])
+                case 3:
+                    circuitry.append("CX", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(+0.5, -0.5), (2,0)]
+                    ])
+                    circuitry.append("CZ", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(-0.5, +0.5), (0,1)]
+                    ])
+                case 4:
+                    circuitry.append("CX", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(+0.5, -0.5), (1,0)]
+                    ])
+                    circuitry.append("CZ", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(-0.5, +0.5), (0,2)]
+                    ])
+                case 5:
+                    circuitry.append("CX", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(-0.5, -0.5), (-0.5, +0.5), (+0.5, -0.5), (0,0)]
+                    ])
+                case 6:
+                    circuitry.append("CX", [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(-0.5, -0.5), (+0.5, -0.5)]
+                    ])
+                case 7:
+                    circuitry.append("S_DAG", self.__physical_qubits.qubits[(ax - 0.5, ay - 0.5)])
+                case 8:
+                    circuitry.append("MX", self.__physical_qubits.qubits[(ax - 0.5, ay - 0.5)])
+                    self.__physical_qubits.record_measurement("CHK:X")
+                    z_ancillas = [
+                        self.__physical_qubits.qubits[(ax + px, ay + py)]
+                        for px, py in [(-0.5, +0.5), (+0.5, -0.5)]
+                    ]
+                    circuitry.append("MZ", z_ancillas)
+                    for idx, za in enumerate(z_ancillas):
+                        self.__physical_qubits.record_measurement(f"CHK:Z{idx}", za)
