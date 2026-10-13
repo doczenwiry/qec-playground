@@ -120,7 +120,7 @@ SEED = 42
 
 # Thanks, Claude.AI (September 2026)
 def sample(
-    scenarios: Union[Circuitry, dict[str, Circuitry]],
+    scenarios: dict[str, Union[Circuitry, stim.Circuit]],
     correction: bool = True,
     title: str = "Sampling results",
     label: str = "Scenario",
@@ -128,20 +128,18 @@ def sample(
     figsize: tuple[float, float] = (11, 5),
     fontsize: int = 12,
 ):
-    if isinstance(scenarios, Circuitry):
-        scenarios = {"circuit": scenarios}
-
     dataframes: list[pd.DataFrame] = []
 
     for scenario, circuitry in scenarios.items():
         # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
+        circuit = circuitry.as_stim() if isinstance(circuitry, Circuitry) else circuitry
         if correction:
-            sampler = circuitry.as_stim().compile_detector_sampler(seed=SEED)
+            sampler = circuit.compile_detector_sampler(seed=SEED)
             _, outcomes = sampler.sample(shots=int(shots), separate_observables=True)
             outcomes = outcomes.astype(int)[:, 0]
         else:
             outcomes = (
-                circuitry.as_stim().compile_sampler()
+                circuit.compile_sampler()
                 .sample(shots=int(shots))
                 .astype(int)[:, -1]
             )
