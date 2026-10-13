@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import sinter
+import stim
 from matplotlib.container import BarContainer
 
 from library.circuitry import Circuitry
@@ -31,7 +32,7 @@ __all__ = ["simulate", "sample"]
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def simulate(
-    scenarios: Union[Circuitry, dict[str, Circuitry]],
+    scenarios: dict[str, Union[Circuitry, stim.Circuit]],
     title: str = "Simulation results",
     label: str = "",
     postselection: bool = False,
@@ -47,12 +48,10 @@ def simulate(
         scenarios = {"circuit": scenarios}
     tasks = [
         sinter.Task(
-            circuit=circuitry.as_stim(per=physical_error_rate),
+            circuit=circuitry if isinstance(circuitry, stim.Circuit) else circuitry.as_stim(per=physical_error_rate),
             postselection_mask=np.packbits(
                 np.array(circuitry.postselection_mask, dtype=bool)
-            )
-            if postselection
-            else None,
+            ) if postselection and isinstance(circuitry, Circuitry) else None,
             json_metadata={"scenario": scenario, "per": physical_error_rate},
         )
         for (scenario, circuitry), physical_error_rate in itertools.product(
