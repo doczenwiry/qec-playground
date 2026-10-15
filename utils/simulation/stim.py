@@ -22,6 +22,7 @@ import seaborn as sns
 import sinter
 import stim
 from matplotlib.container import BarContainer
+from scipy.constants import physical_constants
 
 from library.circuitry import Circuitry
 from utils.simulation.noise import make_noisy
@@ -48,7 +49,7 @@ def simulate(
         scenarios = {"circuit": scenarios}
     tasks = [
         sinter.Task(
-            circuit=circuitry if isinstance(circuitry, stim.Circuit) else circuitry.as_stim(per=physical_error_rate),
+            circuit=make_noisy(circuitry, per=physical_error_rate) if isinstance(circuitry, stim.Circuit) else circuitry.as_stim(per=physical_error_rate),
             postselection_mask=np.packbits(
                 np.array(circuitry.postselection_mask, dtype=bool)
             ) if postselection and isinstance(circuitry, Circuitry) else None,
