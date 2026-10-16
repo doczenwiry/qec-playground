@@ -36,6 +36,7 @@
 \tikzstyle{data}=[circle, fill=black, text=white]
 \tikzstyle{meas}=[circle, fill=white, draw=black, ultra thick]
 \tikzstyle{stabilizer}=[draw=black]
+\tikzset{pauli/.style={rounded corners, fill=yellow!50}}
 
 \tikzset{
   bfg/.style={rounded corners=5pt, minimum height=5.5cm}
@@ -110,7 +111,7 @@
 
 	\subsection{\mbox{\sc Injection} --- Modified Steane Code}
 
-	In order to prepare a logical magic state, the following modified Steane Code circuit\footnote{Based on the circuit from Figure 6 in arXiv:2409.17595} is used where a $\Op{T}^\dagger$-gate\footnote{Or an $\Op{S}^\dagger$-gate to enable simulation of the resulting circuit that the non-Clifford \Op{T}-gate prevents} has been strategically placed to inject the $\frac{\pi}{4}$ phase onto the $\kett{1}\sub{L}$ component of the $\kett{+}\sub{L}$ state. In the following circuit, we assume a numbering of data-qubits $1$ through $7$ from top to bottom. 
+	In order to prepare a logical magic state, the following modified Steane Code circuit\footnote{Based on the circuit from Figure 6 in arXiv:2409.17595} is used where a $\Op{T}$-gate\footnote{Or an $\Op{S}$-gate to enable simulation of the resulting circuit that the non-Clifford \Op{T}-gate prevents} has been strategically placed to inject the $\frac{\pi}{4}$ phase onto the $\kett{1}\sub{L}$ component of the $\kett{+}\sub{L}$ state. In the following circuit, we assume a numbering of data-qubits $1$ through $7$ from top to bottom. 
 
 	\begin{figure}[h!]
 		\centering
@@ -155,10 +156,10 @@
 				\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
 				& \phantom{i}&\ctrl{1}&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
 				\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
-				& \targ{}  & \targ{}  & \gate[style={fill=quantumP}]{\Op{T}^{\dagger}} & \targ{} & \targ{} &
+				& \targ{}  & \targ{}  & \gate[style={fill=quantumP}]{\Op{T}} & \targ{} & \targ{} &
 			\end{quantikz}
 		\end{subfigure}
-		\caption{Modified Steane Code with stabilizer diagram. Note that the abstract circuit can be performed in $8$ steps.}
+		\caption{Modified Steane Code with stabilizer diagram. Note that this abstract circuit can be performed in $8$ steps.}
 	\end{figure}
 
 	In the absence of errors, the seven data-qubits are in a logical state $\kett{+}\sub{L}$ once the red line is reached
@@ -171,7 +172,7 @@
 		\label{eq:logical-plus-state}
 	\end{equation*}
 
-	As pointed out by Austin, the first two \Op{CNOT} gates after the red line result in all the physical states of the logical $\kett{0}\sub{L}$ (resp. $\kett{1}\sub{L}$) having qubit $7$ set to $\kett{0}$ (resp. $\kett{1}$). Once the $e^{i\pi/4}$ phase has been injected by the $\Op{T}^{\dagger}$ gate, the last two \Op{CNOT} gates change the value of qubit $7$ as to return the seven qubits to the state $\kett{+}\sub{L}$. See Figure (\ref{fig:injection-states}) for the detailed superpositions. \\
+	As pointed out by Austin, the first two \Op{CNOT} gates after the red line result in all the physical states of the logical $\kett{0}\sub{L}$ (resp. $\kett{1}\sub{L}$) having qubit $7$ set to $\kett{0}$ (resp. $\kett{1}$). Once the $e^{i\pi/4}$ phase has been injected by the $\Op{T}$ gate, the last two \Op{CNOT} gates change the value of qubit $7$ as to return the seven qubits to the state $\kett{+}\sub{L}$. See Figure (\ref{fig:injection-states}) for the detailed superpositions. \\
 	
 	Note that after the red line, the first two \Op{CNOT} gates bring us out of the Steane Code for the injection and thus collapses the fault distance of our state to $1$; any single error occurring on any of the seven data-qubits corrupts the logical state.
 
@@ -209,15 +210,15 @@
 		\Op{X}_{1}\Op{X}_{3}\Op{X}_{5}\Op{X}_{7} \rightarrow \Op{X}_{124}\Op{X}_{2346}\Op{X}_{456}\Op{X}_{267} = \Op{X}_{1234567} = \Op{X}\sub{L}
 	\end{equation*}
 
-	\paragraph{Injection of $e^{\pi/2}$ phase}
+	\paragraph{Injection of $e^{i\pi/2}$ phase}
 
-	We need to prove that after the last five steps, assuming we use an $\Op{S}^{\dagger}$ gate instead of the $\Op{T}^{\dagger}$, we find that we have prepared the $+1$ eigenstate of the observable $\Op{Y}\sub{L}$
+	We need to prove that after the last five steps, assuming we use an $\Op{S}$ gate instead of the $\Op{T}$, we find that we have prepared the $+1$ eigenstate of the observable $\Op{Y}\sub{L}$
 
 	\begin{equation*}
 		\Op{X}_{1234567}\Op{Z}_{1345} \rightarrow \Op{Y}_{1234567} = \Op{Y}\sub{L}
 	\end{equation*}
 
-	\paragraph{(TBD) Injection of $e^{\pi/4}$ phase}
+	\paragraph{(TBD) Injection of $e^{i\pi/4}$ phase}
 
 	\newpage
 
@@ -320,68 +321,68 @@
 			\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
 			&& \ctrl{1} &\phantom{i}&&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
 			\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
-			&& \targ{}  & \targ{}  && \gate[style={fill=quantumP}]{\Op{T}^{\dagger}} & \targ{} & \targ{} &
+			&& \targ{}  & \targ{}  && \gate[style={fill=quantumP}]{\Op{T}} & \targ{} & \targ{} &
 		\end{quantikz}
 		}
-		\caption{Modified Steane Code with intermediate states (normalisation factor omitted). The basis states corresponding to the $\kett{0}\sub{L}$ (resp. $\kett{1}\sub{L}$) are aligned in the left (resp. right) column. Note that the 7-th qubit has a value of $\kett{0}$ (resp. $\kett{1}$) in all the components coming from $\kett{0}\sub{L}$ (resp. $\kett{1}\sub{L}$) before the $\Op{T}^{\dagger}$-gate is applied.}
+		\caption{Modified Steane Code with intermediate states (normalisation factor omitted). The basis states corresponding to the $\kett{0}\sub{L}$ (resp. $\kett{1}\sub{L}$) are aligned in the left (resp. right) column. Note that the 7-th qubit has a value of $\kett{0}$ (resp. $\kett{1}$) in all the components coming from $\kett{0}\sub{L}$ (resp. $\kett{1}\sub{L}$) before the $\Op{T}$-gate is applied.}
 		\label{fig:injection-states}
 	\end{figure}
 
 	\begin{figure}[h!]
 		\centering
-		\begin{quantikz}[row sep={0.85cm, between origins}, column sep={0.3cm}]
+		\begin{quantikz}[row sep={0.85cm, between origins}, column sep={0.4cm}]
 			% Data qubit 6
-			\lstick{$q_{6}$} & \gate{\Op{T}^\dagger} && \targ{} &\slice{}&&&&&&&&\slice{}&&\targ{} && \gate{\Op{T}} &
+			\lstick{$q_{6}$} & \gate{\Op{T}^\dagger} && \targ{} &\slice{}&&&&&&&&\slice{}&&\targ{} && \gate{\Op{T}} & \gate[style=pauli]{\Op{H}_{-}}\wire[d][2][dashed]{q}\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt}]{$\Op{H}_{\scriptscriptstyle XY}$} &
 			\\
 			% Ancilla 1
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} && \targ{} &&&
-			& &&&\targ{}&&\ctrl{-1} & \qmeasure{\Op{X}} &\swt{n}&
+			& &&&\targ{}&&\ctrl{-1} & \qmeasure{\Op{X}} &\swt{n}&&
 			\\
 			% Data qubit 7
-			\lstick{$q_{7}$} & \gate{\Op{T}^\dagger} & &\targ{} && \ctrl{-1} &\targ{}&&
-			& &&\targ{}&\ctrl{-1}&&\targ{}&&\gate{\Op{T}} &
+			\lstick{$q_{7}$} & \gate{\Op{T}} & &\targ{} && \ctrl{-1} &\targ{}&&
+			& &&\targ{}&\ctrl{-1}&&\targ{}&&\gate{\Op{T}^\dagger} & \gate[style=pauli]{\Op{H}_{+}}\wire[d][2][dashed]{q} &
 			\\
 			% Ancilla 2
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&\phantom{i}&&
-			& &&\phantom{i}&&&\ctrl{-1}& \qmeasure{\Op{X}} & \swt{n} &
+			& &&\phantom{i}&&&\ctrl{-1}& \qmeasure{\Op{X}} & \swt{n} &&
 			\\
 			% Data qubit 2
 			\lstick{$q_{2}$} & \gate{\Op{T}^\dagger} & &\targ{} &&&\phantom{i}&&
-			& &&\phantom{i}&&&\targ{}&&\gate{\Op{T}} &
+			& &&\phantom{i}&&&\targ{}&&\gate{\Op{T}} &\gate[style=pauli]{\Op{H}_{-}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 3
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&\targ{}&\phantom{i}&&
-			& &&\phantom{i}&\targ{}&&\ctrl{-1}& \qmeasure{\Op{X}} &\swt{n}&
+			& &&\phantom{i}&\targ{}&&\ctrl{-1}& \qmeasure{\Op{X}} &\swt{n}&&
 			\\
 			% Data qubit 3
 			\lstick{$q_{3}$} & \gate{\Op{T}^\dagger} & &\targ{} &&\ctrl{-1}&\ctrl{-4}&\ctrl{3}& \qmeasure{\Op{X}}
-			& \wireoverride{}\midstick{$\kett{+}$} &\ctrl{3}&\ctrl{-4}&\ctrl{-1}&&\targ{}&& \gate{\Op{T}} &
+			& \wireoverride{}\midstick{$\kett{+}$} &\ctrl{3}&\ctrl{-4}&\ctrl{-1}&&\targ{}&& \gate{\Op{T}} &\gate[style=pauli]{\Op{H}_{-}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 4
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&&\phantom{i}&
-			& &\phantom{i}&&&&\ctrl{-1}& \qmeasure{\Op{X}} &\swt{n}&
+			& &\phantom{i}&&&&\ctrl{-1}& \qmeasure{\Op{X}} &\swt{n}&&
 			\\
 			% Data qubit 1
-			\lstick{$q_{1}$} & \gate{\Op{T}^\dagger} & &&\targ{}&&&\phantom{i}&
-			& &&&&\targ{}&&&\gate{\Op{T}} &
+			\lstick{$q_{1}$} & \gate{\Op{T}} & &&\targ{}&&&\phantom{i}&
+			& &&&&\targ{}&&&\gate{\Op{T}^\dagger} &\gate[style=pauli]{\Op{H}_{+}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 5
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &\ctrl{-1}&&\ctrl{2}&\targ{}&
-			& &\targ{}&\ctrl{2}&&\ctrl{-1}&\ctrl{1}& \qmeasure{\Op{X}} &\swt{n}&
+			& &\targ{}&\ctrl{2}&&\ctrl{-1}&\ctrl{1}& \qmeasure{\Op{X}} &\swt{n}&&
 			\\
 			% Data qubit 5
-			\lstick{$q_{5}$} & \gate{\Op{T}^\dagger} & &\targ{} &&&\phantom{i}&&
-			& &&\phantom{i}&&&\targ{}&&\gate{\Op{T}} &
+			\lstick{$q_{5}$} & \gate{\Op{T}} & &\targ{} &&&\phantom{i}&&
+			& &&\phantom{i}&&&\targ{}&&\gate{\Op{T}^\dagger} &\gate[style=pauli]{\Op{H}_{+}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 6
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &&&\targ{}&&
-			& &&\targ{}&&&\ctrl{1}& \qmeasure{\Op{X}} &\swt{n}&
+			& &&\targ{}&&&\ctrl{1}& \qmeasure{\Op{X}} &\swt{n}&&
 			\\
 			% Data qubit 4
 			\lstick{$q_{4}$} & \gate{\Op{T}^\dagger} & &\targ{} &&&&&
-			& &&&&&\targ{}&&\gate{\Op{T}} &
+			& &&&&&\targ{}&&\gate{\Op{T}} &\gate[style=pauli]{\Op{H}_{-}}&
 		\end{quantikz}
-		\caption{Highlight on the central part of the cultivation in Gidney's circuit. Qubits have been re-ordered for a more readable circuit.}
+		\caption{Modified version of the cultivation stage from Gidney's circuit. Qubits have been re-ordered for a more readable circuit. Note the specific assignment of $\Op{T}$ and $\Op{T}^\dagger$ on the support and the $\Op{H}_{\scriptscriptstyle XY}$ observable appended as yellow boxes.}
 	\end{figure}
 
 	\newpage
