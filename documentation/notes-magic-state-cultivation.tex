@@ -18,6 +18,7 @@
 \newcommand{\etc}{{\it etc.~}}
 \newcommand{\sic}{{\it sic.~}}
 \newcommand{\wrt}{{w.r.t.~}}
+\newcommand{\etal}{{\it et.al.~}}
 
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
@@ -31,12 +32,22 @@
 \colorlet{quantumB}{blue!75!black!50}
 \colorlet{quantumG}{green!75!black!50}
 \colorlet{quantumY}{yellow!95!black!75}
-\colorlet{quantumP}{magenta!75}
+\colorlet{quantumP}{magenta!75!black!60}
 
 \tikzstyle{data}=[circle, fill=black, text=white]
 \tikzstyle{meas}=[circle, fill=white, draw=black, ultra thick]
 \tikzstyle{stabilizer}=[draw=black]
-\tikzset{pauli/.style={rounded corners, fill=yellow!50}}
+\tikzstyle{non-clifford}=[fill=quantumP, minimum width=0.8cm, minimum height=0.6cm]
+\tikzset{observableH/.style={rounded corners, fill=yellow!50, minimum width=0.8cm, minimum height=0.6cm}}
+\tikzset{observableXZ/.style={rounded corners,
+	path picture={
+		\fill[quantumR]  (path picture bounding box.south west)
+			rectangle (path picture bounding box.north);
+		\fill[quantumB] (path picture bounding box.north)
+			rectangle (path picture bounding box.south east);
+	}
+}}
+\tikzset{observableZ/.style={rounded corners, fill=quantumB}}
 
 \tikzset{
   bfg/.style={rounded corners=5pt, minimum height=5.5cm}
@@ -156,7 +167,7 @@
 				\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
 				& \phantom{i}&\ctrl{1}&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
 				\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
-				& \targ{}  & \targ{}  & \gate[style={fill=quantumP}]{\Op{T}} & \targ{} & \targ{} &
+				& \targ{}  & \targ{}  & \gate[style=non-clifford]{\Op{T}} & \targ{} & \targ{} &
 			\end{quantikz}
 		\end{subfigure}
 		\caption{Modified Steane Code with stabilizer diagram. Note that this abstract circuit can be performed in $8$ steps.}
@@ -282,7 +293,7 @@
 
 	\appendix
 
-	\section{Preparation stage --- Extra diagrams}
+	\section{Preparation stage --- Complete statevectors}
 
 	\begin{figure}[h!]
 		\centering
@@ -321,69 +332,167 @@
 			\lstick{$\kett{0}$~} & \targ{}  & \targ{}   &           &\phantom{i}& \targ{}
 			&& \ctrl{1} &\phantom{i}&&&\phantom{i}& \ctrl{1} & \\[-0.2cm]
 			\lstick{$\kett{+}$~} &          & \ctrl{-1} &           & \ctrl{-5} & 
-			&& \targ{}  & \targ{}  && \gate[style={fill=quantumP}]{\Op{T}} & \targ{} & \targ{} &
+			&& \targ{}  & \targ{}  && \gate[style=non-clifford]{\Op{T}} & \targ{} & \targ{} &
 		\end{quantikz}
 		}
 		\caption{Modified Steane Code with intermediate states (normalisation factor omitted). The basis states corresponding to the $\kett{0}\sub{L}$ (resp. $\kett{1}\sub{L}$) are aligned in the left (resp. right) column. Note that the 7-th qubit has a value of $\kett{0}$ (resp. $\kett{1}$) in all the components coming from $\kett{0}\sub{L}$ (resp. $\kett{1}\sub{L}$) before the $\Op{T}$-gate is applied.}
 		\label{fig:injection-states}
 	\end{figure}
 
+	\newpage
+
+	\section{Cultivation stage --- Fault analysis}
+
+	In the presence of $\Op{T}$ and $\Op{T}^{\dagger}$ gates, performing fault analysis becomes slightly more tricky. We will use the following definitions
+	\begin{equation*}
+		\Op{H}\Sup{+} ~=~ \frac{\Op{X} + \Op{Y}}{\sqrt{2}}
+		\qquad\qquad
+		\Op{H}\Sup{-} ~=~ \frac{\Op{X} - \Op{Y}}{\sqrt{2}}
+	\end{equation*}
+	The figure below presents a version of the cultivation stage from Gidney's paper adapted to work with the $\Op{H}\sub{XY}$ observable. The qubits have been re-ordered for a more readable circuit. In the circuitry designed for TQEC based on Hirano's paper, the teleportation rounds that follow the cultivation stage involve Steane checks\footnote{Note that the $\Op{H}\sub{XY}$ observable commutes with all the Steane checks.} with the exception of the $\Op{X}$-stabilizer on the blue plaquette.
+	\vspace{-0.4cm}
 	\begin{figure}[h!]
 		\centering
-		\begin{quantikz}[row sep={0.85cm, between origins}, column sep={0.4cm}]
+		\begin{quantikz}[row sep={0.65cm, between origins}, column sep={0.4cm}]
 			% Data qubit 6
-			\lstick{$q_{6}$} & \gate{\Op{T}^\dagger} && \targ{} &\slice{}&&&&&&&&\slice{}&&\targ{} && \gate{\Op{T}} & \gate[style=pauli]{\Op{H}_{-}}\wire[d][2][dashed]{q}\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt}]{$\Op{H}_{\scriptscriptstyle XY}$} &
+			\lstick{$q_{6}$} & \gate[style=non-clifford]{\Op{T}^\dagger} &
+			\gategroup[wires=13, steps=12, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, background]{\sc Clifford sub-circuit}
+			& \targ{} &&&&&&&&&\targ{} && \gate[style=non-clifford]{\Op{T}}
+			& \gate[style=observableXZ]{\Op{X}/\Op{Z}}\wire[d][2][dashed]{q}
+				\gategroup[wires=13, steps=3, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, background]{\sc Steane checks}
+			&
+			&
+			& \gate[style=observableH]{\Op{H}\Sup{-}}\wire[d][2][dashed]{q}
+				\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, background]{$\Op{H}_{\scriptscriptstyle XY}$} &
 			\\
 			% Ancilla 1
-			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} && \targ{} &&&
-			& &&&\targ{}&&\ctrl{-1} & \qmeasure{\Op{X}} &\swt{n}&&
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} & \targ{} &&&
+			& &&&\targ{}&\ctrl{-1} & \qmeasure{\Op{X}} &\swt{n}
+			&&&&&
 			\\
 			% Data qubit 7
-			\lstick{$q_{7}$} & \gate{\Op{T}} & &\targ{} && \ctrl{-1} &\targ{}&&
-			& &&\targ{}&\ctrl{-1}&&\targ{}&&\gate{\Op{T}^\dagger} & \gate[style=pauli]{\Op{H}_{+}}\wire[d][2][dashed]{q} &
+			\lstick{$q_{7}$} & \gate[style=non-clifford]{\Op{T}} & &\targ{} & \ctrl{-1} &\targ{}&&
+			& &&\targ{}&\ctrl{-1}&\targ{}&&\gate[style=non-clifford]{\Op{T}^\dagger}
+			& \gate[style=observableXZ]{\Op{X}/\Op{Z}}\wire[d][4][dashed]{q}
+			& \gate[style=observableZ]{\vphantom{/}\Op{Z}}\wire[d][2][dashed]{q}
+			&
+			& \gate[style=observableH]{\Op{H}\Sup{+}}\wire[d][2][dashed]{q} &
 			\\
 			% Ancilla 2
-			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&\phantom{i}&&
-			& &&\phantom{i}&&&\ctrl{-1}& \qmeasure{\Op{X}} & \swt{n} &&
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&\phantom{i}&&
+			& &&\phantom{i}&&\ctrl{-1}& \qmeasure{\Op{X}} & \swt{n}
+			&&&&&
 			\\
 			% Data qubit 2
-			\lstick{$q_{2}$} & \gate{\Op{T}^\dagger} & &\targ{} &&&\phantom{i}&&
-			& &&\phantom{i}&&&\targ{}&&\gate{\Op{T}} &\gate[style=pauli]{\Op{H}_{-}}\wire[d][2][dashed]{q}&
+			\lstick{$q_{2}$} & \gate[style=non-clifford]{\Op{T}^\dagger} & &\targ{} &&\phantom{i}&&
+			& &&\phantom{i}&&\targ{}&&\gate[style=non-clifford]{\Op{T}}
+			& \phantom{c}
+			& \gate[style=observableZ]{\vphantom{/}\Op{Z}}\wire[d][2][dashed]{q}
+			& 
+			& \gate[style=observableH]{\Op{H}\Sup{-}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 3
-			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&\targ{}&\phantom{i}&&
-			& &&\phantom{i}&\targ{}&&\ctrl{-1}& \qmeasure{\Op{X}} &\swt{n}&&
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &\targ{}&\phantom{i}&&
+			& &&\phantom{i}&\targ{}&\ctrl{-1}& \qmeasure{\Op{X}} &\swt{n}
+			&&&&&
 			\\
 			% Data qubit 3
-			\lstick{$q_{3}$} & \gate{\Op{T}^\dagger} & &\targ{} &&\ctrl{-1}&\ctrl{-4}&\ctrl{3}& \qmeasure{\Op{X}}
-			& \wireoverride{}\midstick{$\kett{+}$} &\ctrl{3}&\ctrl{-4}&\ctrl{-1}&&\targ{}&& \gate{\Op{T}} &\gate[style=pauli]{\Op{H}_{-}}\wire[d][2][dashed]{q}&
+			\lstick{$q_{3}$} & \gate[style=non-clifford]{\Op{T}^\dagger} & &\targ{} &\ctrl{-1}&\ctrl{-4}&\ctrl{3}& \qmeasure{\Op{X}}
+			& \wireoverride{}\midstick{$\kett{+}$} &\ctrl{3}&\ctrl{-4}&\ctrl{-1}&\targ{}&& \gate[style=non-clifford]{\Op{T}}
+			& \gate[style=observableXZ]{\Op{X}/\Op{Z}}\wire[d][4][dashed]{q}
+			& \gate[style=observableZ]{\vphantom{/}\Op{Z}}\wire[d][2][dashed]{q}
+			& \gate[style=observableXZ]{\Op{X}/\Op{Z}}\wire[d][2][dashed]{q}
+			& \gate[style=observableH]{\Op{H}\Sup{-}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 4
-			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&&\phantom{i}&
-			& &\phantom{i}&&&&\ctrl{-1}& \qmeasure{\Op{X}} &\swt{n}&&
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&\phantom{i}&
+			& &\phantom{i}&&&\ctrl{-1}& \qmeasure{\Op{X}} &\swt{n}
+			&&&&&
 			\\
 			% Data qubit 1
-			\lstick{$q_{1}$} & \gate{\Op{T}} & &&\targ{}&&&\phantom{i}&
-			& &&&&\targ{}&&&\gate{\Op{T}^\dagger} &\gate[style=pauli]{\Op{H}_{+}}\wire[d][2][dashed]{q}&
+			\lstick{$q_{1}$} & \gate[style=non-clifford]{\Op{T}} & &&\targ{}&&\phantom{i}&
+			& &&&\targ{}&&&\gate[style=non-clifford]{\Op{T}^\dagger}
+			& \phantom{c}
+			& \gate[style=observableZ]{\vphantom{/}\Op{Z}}
+			& \gate[style=observableXZ]{\Op{X}/\Op{Z}}\wire[d][2][dashed]{q}
+			& \gate[style=observableH]{\Op{H}\Sup{+}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 5
-			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &\ctrl{-1}&&\ctrl{2}&\targ{}&
-			& &\targ{}&\ctrl{2}&&\ctrl{-1}&\ctrl{1}& \qmeasure{\Op{X}} &\swt{n}&&
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &\ctrl{-1}&\ctrl{2}&\targ{}&
+			& &\targ{}&\ctrl{2}&\ctrl{-1}&\ctrl{1}& \qmeasure{\Op{X}} &\swt{n}
+			&&&&&
 			\\
 			% Data qubit 5
-			\lstick{$q_{5}$} & \gate{\Op{T}} & &\targ{} &&&\phantom{i}&&
-			& &&\phantom{i}&&&\targ{}&&\gate{\Op{T}^\dagger} &\gate[style=pauli]{\Op{H}_{+}}\wire[d][2][dashed]{q}&
+			\lstick{$q_{5}$} & \gate[style=non-clifford]{\Op{T}} & &\targ{} &&\phantom{i}&&
+			& &&\phantom{i}&&\targ{}&&\gate[style=non-clifford]{\Op{T}^\dagger}
+			& \gate[style=observableXZ]{\Op{X}/\Op{Z}}
+			&
+			& \gate[style=observableXZ]{\Op{X}/\Op{Z}}\wire[d][2][dashed]{q}
+			& \gate[style=observableH]{\Op{H}\Sup{+}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 6
-			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &&&\targ{}&&
-			& &&\targ{}&&&\ctrl{1}& \qmeasure{\Op{X}} &\swt{n}&&
+			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &&\targ{}&&
+			& &&\targ{}&&\ctrl{1}& \qmeasure{\Op{X}} &\swt{n}
+			&&&&&
 			\\
 			% Data qubit 4
-			\lstick{$q_{4}$} & \gate{\Op{T}^\dagger} & &\targ{} &&&&&
-			& &&&&&\targ{}&&\gate{\Op{T}} &\gate[style=pauli]{\Op{H}_{-}}&
+			\lstick{$q_{4}$} & \gate[style=non-clifford]{\Op{T}^\dagger} & &\targ{} &&&&
+			& &&&&\targ{}&&\gate[style=non-clifford]{\Op{T}}
+			& 
+			&
+			& \gate[style=observableXZ]{\Op{X}/\Op{Z}}
+			& \gate[style=observableH]{\Op{H}\Sup{-}}&
 		\end{quantikz}
-		\caption{Modified version of the cultivation stage from Gidney's circuit. Qubits have been re-ordered for a more readable circuit. Note the specific assignment of $\Op{T}$ and $\Op{T}^\dagger$ on the support and the $\Op{H}_{\scriptscriptstyle XY}$ observable appended as yellow boxes.}
+		\caption{Modified version of Gidney's cultivation stage. Note the matching of $\Op{T}$ and $\Op{T}\Sup{\dagger}$ with the components of the $\Op{H}\sub{XY}$ observable.}
 	\end{figure}
+
+	Note the matching of $\Op{T}$ (resp. $\Op{T}\Sup{\dagger}$) gates in the final layer of non-Cliffords with $\Op{H}\Sup{-}$ (resp. $\Op{H}\Sup{+}$) components of the observable. Those gates transform Pauli errors as follows
+	\vspace{-0.25cm}
+	\begin{equation*}
+		\Op{X} ~\xrightarrow{\Op{T}}~ \Op{H}\Sup{+}
+		\qquad
+		\Op{X} ~\xrightarrow{\Op{T}\Sup{\dagger}}~ \Op{H}\Sup{-}
+		\qquad\qquad
+		\Op{Y} ~\xrightarrow{\Op{T}}~ -\Op{H}\Sup{-}
+		\qquad
+		\Op{Y} ~\xrightarrow{\Op{T}\Sup{\dagger}}~ \Op{H}\Sup{+}
+		\qquad\qquad
+		\Op{Z} ~\xrightarrow{\Op{T}}~ \Op{Z}
+		\qquad
+		\Op{Z} ~\xrightarrow{\Op{T}\Sup{\dagger}}~ \Op{Z}
+	\end{equation*}
+
+	We summarise below the commutativity relationships by way of a multiplicative factor applied to the expectation for each type of errors (\ie $\Op{H}\Sup{+}$, $\Op{H}\Sup{-}$, $\Op{Z}$). Note that for most cases, the effect is deterministic; either a flip or not. We must be careful when dealing with the $\Op{X}$-stabilizers, as their behaviour becomes non-deterministic in the presence of the Clifford errors ($50\%$ flip chance).
+
+	\begin{center}
+		{\renewcommand{\arraystretch}{1.3}\begin{tabular}{|c|c|c|c|}
+			\hline
+			Obs. & $\Op{H}\Sup{+}$ & $\Op{H}\Sup{-}$ & $\Op{Z}$
+			\\\hline\hline
+			$\Op{H}\Sup{+}$ & \tt +1 & \tt -1 & \tt -1
+			\\\hline 
+			$\Op{H}\Sup{-}$ & \tt -1 & \tt +1 & \tt -1
+			\\\hline
+		\end{tabular}}
+		\hspace{2cm}
+		{\renewcommand{\arraystretch}{1.3}\begin{tabular}{|c|c|c|c|}
+			\hline
+			Stb. & $\Op{H}\Sup{+}$ & $\Op{H}\Sup{-}$ & $\Op{Z}$
+			\\\hline\hline
+			$\Op{X}$ & \tt 0 & \tt 0 & \tt -1
+			\\\hline 
+			$\Op{Z}$ & \tt -1 & \tt -1 & \tt +1
+			\\\hline
+		\end{tabular}}
+	\end{center}
+
+	Note that $\Op{Y}$ errors passing through the final layer of non-Clifford gates turn into Clifford errors that commute with the corresponding components of the logical observable. This means that we only need to worry about $\Op{X}$ and $\Op{Z}$ errors that are present prior to the final layer of non-Cliffords. The fault enumeration goes as follows: for every single Pauli error occurring at any point in the Clifford portion of the circuit, propagate it all the way through until the final non-Clifford layer. We can then analyse each of those final Pauli product to determine whether it is harmful.
+	
+	\paragraph{Logical observable.} If the number of $\Op{X}$/$\Op{Z}$ errors on the support of $\Op{H}\sub{XY}$ is odd, the logical observable flips.
+
+	\paragraph{$\Op{Z}$-stabilizers.} If the number of $\Op{X}$/$\Op{Y}$ errors on the support of a $\Op{Z}$-stabilizer is odd, the fault will flip it $100\%$ of the time.
+
+	\paragraph{$\Op{X}$-stabilizers.} If the number of $\Op{X}$/$\Op{Y}$ errors on the support of an $\Op{X}$-stabilizer is $1$, $2$ or $3$, the fault will flip it $50\%$ of the time. If the number of $\Op{Z}$ errors is odd, the fault will flip it $100\%$ of the time.
 
 	\newpage
 
