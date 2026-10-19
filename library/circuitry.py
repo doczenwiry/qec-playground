@@ -58,6 +58,18 @@ class Circuitry:
     def used_qubits(self):
         return self.__used_qubits
 
+    def remap_qubits(self, qubits: Iterable[int]) -> Iterable[int]:
+        mapping = list(self.__used_qubits)
+        return map(lambda tgt: mapping.index(tgt), qubits)
+
+    def __remap_instruction(self, instruction: stim.CircuitInstruction) -> stim.CircuitInstruction:
+        return stim.CircuitInstruction(
+            name=instruction.name,
+            targets=list(self.remap_qubits(map(lambda tgt: tgt.value, instruction.targets_copy()))),
+            #list( map(lambda tgt: qubit_mapping.index(tgt.value), instruction.targets_copy())),
+            gate_args=instruction.gate_args_copy()
+        )
+
     def as_stim(
         self, per: Optional[float] = None,
         noiseless_preparation_ticks: Optional[int] = None,
@@ -67,31 +79,32 @@ class Circuitry:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
         circuit = cast(stim.Circuit, self.__circuit)
-        if per:
-            preparation = stim.Circuit()
-            internal_op = stim.Circuit()
-            measurement = stim.Circuit()
 
-            start = noiseless_preparation_ticks or 0
-            final = circuit.num_ticks - (noiseless_measurement_ticks or 0)
+        preparation = stim.Circuit()
+        internal_op = stim.Circuit()
+        measurement = stim.Circuit()
 
-            tick = 0
-            ignored_qubits = set()
-            for instruction in circuit:
-                if instruction.name == "QUBIT_COORDS" and instruction.targets_copy()[0].value not in self.__used_qubits:
-                    ignored_qubits.add(instruction.targets_copy()[0].value)
+        start = noiseless_preparation_ticks or 0
+        final = circuit.num_ticks - (noiseless_measurement_ticks or 0)
+
+        tick = 0
+        for instruction in circuit.flattened():
+            if instruction.name == "QUBIT_COORDS":
+                if instruction.targets_copy()[0].value not in self.__used_qubits:
                     continue
-                if tick < start:
-                    preparation.append(instruction)
-                elif start <= tick < final:
-                    internal_op.append(instruction)
                 else:
-                    measurement.append(instruction)
-                tick += int(instruction.name == "TICK")
+                    preparation.append(self.__remap_instruction(instruction))
+            elif tick < start:
+                preparation.append(instruction)
+            elif start <= tick < final:
+                internal_op.append(self.__remap_instruction(instruction))
+            else:
+                measurement.append(instruction)
+            tick += int(instruction.name == "TICK")
 
-            circuit = preparation + make_noisy(internal_op, per, ignored_qubits) + measurement
+        central = make_noisy(internal_op, per) if per else internal_op
 
-        return circuit
+        return preparation + central + measurement
 
     @property
     def as_text(self) -> str:

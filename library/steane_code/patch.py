@@ -96,7 +96,7 @@ class SteaneCodePatch:
         self,
         array: QubitArray,
         anchor: tuple[int, int] = (0, 0),
-        injection: Injection = Injection.S,
+        injection: Optional[Injection] = Injection.S,
     ):
         self.__anchor = anchor
         self.__injection = injection
@@ -311,9 +311,10 @@ class SteaneCodePatch:
                         "D3", "RX", "GX", "D5", "GZ", "RD", "BX", "BD"
                     ),
                 )
-                circuit.append(
-                    f"{self.__injection.name}", self.__translate_qubits("D6")
-                )
+                if self.__injection:
+                    circuit.append(
+                        f"{self.__injection.name}", self.__translate_qubits("D6")
+                    )
             case 8:
                 circuit.append("CX", self.__translate_qubits("GZ", "D4", "BX", "D6"))
             case 9:
@@ -434,12 +435,13 @@ class SteaneCodePatch:
 
         match moment:
             case 0:
-                circuit.append(f"{self.__injection.name}", self.__translate_qubits(
-                    "D0", "D4", "D6"
-                ))
-                circuit.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
-                    "D1", "D2", "D3", "D5"
-                ))
+                if self.__injection:
+                    circuit.append(f"{self.__injection.name}", self.__translate_qubits(
+                        "D0", "D4", "D6"
+                    ))
+                    circuit.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
+                        "D1", "D2", "D3", "D5"
+                    ))
                 circuit.append(
                     "RX", self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX", "EX")
                 )
@@ -486,12 +488,13 @@ class SteaneCodePatch:
                 for index, xa in enumerate(measured_ancilla):
                     self.__physical_qubits.record_measurement(f"{prefix}:X{index + 1}", xa)
 
-                circuit.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
-                    "D0", "D4", "D6"
-                ))
-                circuit.append(f"{self.__injection.name}", self.__translate_qubits(
-                    "D1", "D2", "D3", "D5"
-                ))
+                if self.__injection:
+                    circuit.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
+                        "D0", "D4", "D6"
+                    ))
+                    circuit.append(f"{self.__injection.name}", self.__translate_qubits(
+                        "D1", "D2", "D3", "D5"
+                    ))
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
 
@@ -504,12 +507,13 @@ class SteaneCodePatch:
         else:
             match moment:
                 case 0:
-                    circuitry.append(f"{self.__injection.name}", self.__translate_qubits(
-                        "D0", "D4", "D6"
-                    ))
-                    circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
-                        "D1", "D2", "D3", "D5"
-                    ))
+                    if self.__injection:
+                        circuitry.append(f"{self.__injection.name}", self.__translate_qubits(
+                            "D0", "D4", "D6"
+                        ))
+                        circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
+                            "D1", "D2", "D3", "D5"
+                        ))
                     circuitry.append("RX", self.__translate_qubits(
                         "GX", "GZ", "BX", "RX"
                     ))
