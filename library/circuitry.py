@@ -58,9 +58,9 @@ class Circuitry:
     def used_qubits(self):
         return self.__used_qubits
 
-    def remap_qubits(self, qubits: Iterable[int]) -> Iterable[int]:
+    def remap_qubits(self, qubits: Iterable[int]) -> list[int]:
         mapping = list(self.__used_qubits)
-        return map(lambda tgt: mapping.index(tgt), qubits)
+        return list(map(lambda tgt: mapping.index(tgt), qubits))
 
     def __remap_instruction(self, instruction: stim.CircuitInstruction) -> stim.CircuitInstruction:
         return stim.CircuitInstruction(
@@ -178,13 +178,18 @@ class Circuitry:
         polygons: bool = True,
         spacing: bool = False,
         location: str = "https://algassert.com/crumble.html",
+        marks: Optional[list[tuple[int, dict[int,str], int]]] = None
     ):
         lines = (
             str(self.as_stim()).split("\n")
             if self.__clifford
             else cast(list, self.__circuit)
         )
-        if polygons:
+
+        if marks:
+            for op_idx, pauli, mk_idx in sorted(marks, key=lambda m: m[0], reverse=True):
+                lines[op_idx + 1:op_idx + 1] = ["TICK"] + [f"MARK{p}({mk_idx}) {q}" for q, p in sorted(pauli.items())]
+        elif polygons:
             lines = self.__insert_polygons(lines, spacing=spacing)
 
         return location + "#circuit=" + ";".join(lines).replace(" ", "_")
