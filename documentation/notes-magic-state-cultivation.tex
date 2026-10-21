@@ -342,7 +342,7 @@
 		\qquad\qquad
 		\Op{H}\Sup{-} ~=~ \frac{\Op{X} - \Op{Y}}{\sqrt{2}}
 	\end{equation*}
-	The figure below presents a version of the cultivation stage from Gidney's paper adapted to work with the $\Op{H}\sub{XY}$ observable. The qubits have been re-ordered for a more readable circuit. In the circuitry designed for TQEC based on Hirano's paper, the teleportation rounds that follow the cultivation stage involve Steane checks with the exception of the $\Op{X}$-stabilizer on the blue plaquette. That missing $\Op{X}$-check, with support on $1237$, is recovered at the end of the teleportation when a destructive measurement is performed.
+	The figure below presents a version of the cultivation stage from Gidney's paper adapted to work with the $\Op{H}\sub{XY}$ observable. The qubits have been re-ordered for a more readable circuit. In the circuitry designed for TQEC based on Hirano's paper, the teleportation rounds that follow the cultivation stage involve Steane checks with the exception of the $\Op{X}$-stabilizer on the blue plaquette. That missing $\Op{X}$-check (support $q\sub{1237}$) is recovered at the end of the teleportation when a destructive measurement is performed.
 	\vspace{-0.4cm}
 	\begin{figure}[h!]
 		\centering
@@ -351,15 +351,15 @@
 			\lstick{$q_{6}$} & \gate[style=non-clifford]{\Op{T}^\dagger} &
 			\gategroup[wires=13, steps=12, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, background]{\sc Clifford sub-circuit}
 			& \targ{} &&&&&&&&&\targ{} && \gate[style=non-clifford]{\Op{T}}
+			& \gate[style=observableH]{\Op{H}\Sup{-}}\wire[d][2][dashed]{q}
+				\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, background]{$\Op{H}_{\scriptscriptstyle XY}$}
 			& \gategroup[wires=13, steps=6, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, background]
 				{\sc Steane checks}
 			& \gate[style=observableZ]{\Op{Z}}\wire[d][2][dashed]{q}
 			&
 			&
 			& \gate[style=observableX]{\Op{X}}\wire[d][2][dashed]{q}
-			& 
-			& \gate[style=observableH]{\Op{H}\Sup{-}}\wire[d][2][dashed]{q}
-				\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, background]{$\Op{H}_{\scriptscriptstyle XY}$} &
+			&&
 			\\
 			% Ancilla 1
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} & \targ{} &&&
@@ -369,13 +369,13 @@
 			% Data qubit 7
 			\lstick{$q_{7}$} & \gate[style=non-clifford]{\Op{T}} & &\targ{} & \ctrl{-1} &\targ{}&&
 			& &&\targ{}&\ctrl{-1}&\targ{}&&\gate[style=non-clifford]{\Op{T}^\dagger}
+			& \gate[style=observableH]{\Op{H}\Sup{+}}\wire[d][2][dashed]{q}
 			& \gate[style=observableZ]{\Op{Z}}\wire[d][2][dashed]{q}
 			& \gate[style=observableZ]{\Op{Z}}\wire[d][4][dashed]{q}
 			&
 			& \gate[style=observableX]{\Op{X}}\wire[d][2][dashed]{q}
 			& \gate[style=observableX]{\Op{X}}\wire[d][4][dashed]{q}
-			&
-			& \gate[style=observableH]{\Op{H}\Sup{+}}\wire[d][2][dashed]{q} &
+			&&
 			\\
 			% Ancilla 2
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&\phantom{i}&&
@@ -385,13 +385,13 @@
 			% Data qubit 2
 			\lstick{$q_{2}$} & \gate[style=non-clifford]{\Op{T}^\dagger} & &\targ{} &&\phantom{i}&&
 			& &&\phantom{i}&&\targ{}&&\gate[style=non-clifford]{\Op{T}}
+			& \gate[style=observableH]{\Op{H}\Sup{-}}\wire[d][2][dashed]{q}
 			& \gate[style=observableZ]{\Op{Z}}\wire[d][2][dashed]{q}
 			& \phantom{c}
 			& 
 			& \gate[style=observableX]{\Op{X}}\wire[d][4][dashed]{q}
 			& \phantom{c}
-			&
-			& \gate[style=observableH]{\Op{H}\Sup{-}}\wire[d][2][dashed]{q}&
+			&&
 			\\
 			% Ancilla 3
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &\targ{}&\phantom{i}&&
@@ -401,13 +401,13 @@
 			% Data qubit 3
 			\lstick{$q_{3}$} & \gate[style=non-clifford]{\Op{T}^\dagger} & &\targ{} &\ctrl{-1}&\ctrl{-4}&\ctrl{3}& \qmeasure{\Op{X}}
 			& \wireoverride{}\midstick{$\kett{+}$} &\ctrl{3}&\ctrl{-4}&\ctrl{-1}&\targ{}&& \gate[style=non-clifford]{\Op{T}}
+			& \gate[style=observableH]{\Op{H}\Sup{-}}\wire[d][2][dashed]{q}
 			& \gate[style=observableZ]{\Op{Z}}\wire[d][2][dashed]{q}
 			& \gate[style=observableZ]{\Op{Z}}\wire[d][4][dashed]{q}
 			& \gate[style=observableZ]{\Op{Z}}\wire[d][2][dashed]{q}
 			& \gate[style=observableX]{\Op{X}}\wire[d][2][dashed]{q}
 			& \gate[style=observableX]{\Op{X}}\wire[d][4][dashed]{q}
-			& \gate[style=observableX]{\Op{X}}\wire[d][2][dashed]{q}
-			& \gate[style=observableH]{\Op{H}\Sup{-}}\wire[d][2][dashed]{q}&
+			& \gate[style=observableX]{\Op{X}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 4
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{-1} &&&\phantom{i}&
@@ -417,13 +417,13 @@
 			% Data qubit 1
 			\lstick{$q_{1}$} & \gate[style=non-clifford]{\Op{T}} & &&\targ{}&&\phantom{i}&
 			& &&&\targ{}&&&\gate[style=non-clifford]{\Op{T}^\dagger}
+			& \gate[style=observableH]{\Op{H}\Sup{+}}\wire[d][2][dashed]{q}
 			& \gate[style=observableZ]{\Op{Z}}
 			& \phantom{c}
 			& \gate[style=observableZ]{\Op{Z}}\wire[d][2][dashed]{q}
 			& \gate[style=observableX]{\Op{X}}
 			& \phantom{c}
-			& \gate[style=observableX]{\Op{X}}\wire[d][2][dashed]{q}
-			& \gate[style=observableH]{\Op{H}\Sup{+}}\wire[d][2][dashed]{q}&
+			& \gate[style=observableX]{\Op{X}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 5
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &\ctrl{-1}&\ctrl{2}&\targ{}&
@@ -433,13 +433,13 @@
 			% Data qubit 5
 			\lstick{$q_{5}$} & \gate[style=non-clifford]{\Op{T}} & &\targ{} &&\phantom{i}&&
 			& &&\phantom{i}&&\targ{}&&\gate[style=non-clifford]{\Op{T}^\dagger}
+			& \gate[style=observableH]{\Op{H}\Sup{+}}\wire[d][2][dashed]{q}
 			&
 			& \gate[style=observableZ]{\Op{Z}}
 			& \gate[style=observableZ]{\Op{Z}}\wire[d][2][dashed]{q}
 			&
 			& \gate[style=observableX]{\Op{X}}
-			& \gate[style=observableX]{\Op{X}}\wire[d][2][dashed]{q}
-			& \gate[style=observableH]{\Op{H}\Sup{+}}\wire[d][2][dashed]{q}&
+			& \gate[style=observableX]{\Op{X}}\wire[d][2][dashed]{q}&
 			\\
 			% Ancilla 6
 			&\wireoverride{n}& \midstick{$\kett{+}$}\wireoverride{n} & \ctrl{1} &&\targ{}&&
@@ -449,13 +449,13 @@
 			% Data qubit 4
 			\lstick{$q_{4}$} & \gate[style=non-clifford]{\Op{T}^\dagger} & &\targ{} &&&&
 			& &&&&\targ{}&&\gate[style=non-clifford]{\Op{T}}
+			& \gate[style=observableH]{\Op{H}\Sup{-}}
 			& 
 			&
 			& \gate[style=observableZ]{\Op{Z}}
 			&
 			&
-			& \gate[style=observableX]{\Op{X}}
-			& \gate[style=observableH]{\Op{H}\Sup{-}}&
+			& \gate[style=observableX]{\Op{X}}&
 		\end{quantikz}
 		\caption{Modified version of Gidney's cultivation stage. Note the matching of $\Op{T}$ and $\Op{T}\Sup{\dagger}$ with the components of the $\Op{H}\sub{XY}$ observable.}
 	\end{figure}
@@ -476,21 +476,19 @@
 		\Op{Z} ~\xrightarrow{\Op{T}\Sup{\dagger}}~ \Op{Z}
 	\end{equation*}
 
-	Note that an $\Op{X}$ (resp. $\Op{Y}$) error is always transformed into an error that anti-commutes (resp. commutes) with the matching component of $\Op{H}\sub{XY}$. More precisely, an $\Op{H}\Sup{\pm}$ component commutes with an $\Op{H}\Sup{\pm}$ error but anti-commutes with an $\Op{H}\Sup{\mp}$ error. This means that, for the logical observable, we can focus on the $\Op{X}$/$\Op{Z}$ errors present on the support at the end of the Clifford sub-circuit and ignore $\Op{Y}$ errors.
+	Note that passing the $\Op{H}\sub{XY}$ backwards through the final layer of non-Clifford gates will transform into a uniform weight-7 $\Op{X}$-observable. This means that in order to understand when the $\Op{H}\sub{XY}$ observable flips, we can focus on the $\Op{Y}$/$\Op{Z}$ errors present on the support at the end of the Clifford sub-circuit and ignore $\Op{X}$ errors.
 
+	\paragraph{Logical observable.} The $\Op{H}\sub{XY}$ observable flips iff the total number of $\Op{Y}$ and $\Op{Z}$ errors at the end of the Clifford sub-circuit is odd.
+
+	\paragraph{$\Op{Z}$-stabilizers.} The three Steane $\Op{Z}$-checks can detect any fault with an odd number of $\Op{H}\Sup{\pm}$ on their support. The faults involving an even number of $\Op{H}\Sup{\pm}$ errors are not detected while those made of $\Op{Z}$ errors will be invisible to those checks.
+
+	\paragraph{$\Op{X}$-stabilizers ($1$ or $3$ $\Op{H}\Sup{\pm}$).} The three Steane $\Op{X}$-checks cannot detect deterministically any faults when there is an odd number of $\Op{H}\Sup{\pm}$ errors on their support. This is because a $\Op{H}\Sup{\pm}$ error will collapse randomly onto an $\Op{X}$ or $\Op{Y}$ error and those two cases either cancel an existing odd number of $\Op{Z}$ errors or they don't. However, these faults will be detected by the $\Op{Z}$-checks.
+
+	\paragraph{$\Op{X}$-stabilizers ($0$ $\Op{H}\Sup{\pm}$).} The three Steane $\Op{X}$-checks will detect any fault with an odd number of $\Op{Z}$ errors on their support so long as there are no $\Op{H}\Sup{\pm}$ errors on their support.
+
+	\paragraph{$\Op{X}$-stabilizers ($2$ $\Op{H}\Sup{\pm}$).} The three Steane $\Op{X}$-checks cannot detect deterministically any faults when there are exactly two $\Op{H}\Sup{\pm}$ errors passing through them. We will disregard the probabilistic nature and treat the faults for which the joint detection is non-deterministic as being undetected.
 	
-
-	\paragraph{$\Op{Z}$-stabilizers.} The three Steane $\Op{Z}$-checks can detect any fault with an odd number of $\Op{H}\Sup{\pm}$ on their support while leaving them in a coherent state (\ie they remain Clifford errors). The faults involving an even number of $\Op{H}\Sup{\pm}$ errors are not detected while those made of $\Op{Z}$ errors will be invisible to those checks.
-
-	\paragraph{$\Op{X}$-stabilizers ($1$ or $3$ $\Op{H}\Sup{\pm}$).} These faults are already detected by the $\Op{Z}$-checks.
-
-	\paragraph{$\Op{X}$-stabilizers ($0$ $\Op{H}\Sup{\pm}$).} The three Steane $\Op{X}$-checks will detect any fault with an odd number of $\Op{Z}$ errors on their support so long as there are no $\Op{H}\Sup{\pm}$ errors passing through them.
-
-	\paragraph{$\Op{X}$-stabilizers ($2$ $\Op{H}\Sup{\pm}$).} The three Steane $\Op{X}$-checks cannot detect deterministically any faults when there are exactly two $\Op{H}\Sup{\pm}$ errors passing through them. However, they may jointly detect some of those faults when combined together. We will disregard the probabilistic nature and treat the faults for which the joint detection is non-deterministic as being undetected.
-	
-	\paragraph{$\Op{X}$-stabilizers ($4$ $\Op{H}\Sup{\pm}$).} The three Steane $\Op{X}$-checks will detect any fault involving $\Op{H}\Sup{\pm}$ errors where an odd number of them originate from $\Op{X}$ errors at the end of the Clifford sub-circuit so long as there are exactly four $\Op{H}\Sup{\pm}$ errors.
-
-	\paragraph{Logical observable.} The logical observable flips whenever the total number of $\Op{Z}$ errors and $\Op{H}\Sup{\pm}$ errors originating from $\Op{X}$ errors at the end of the Clifford sub-circuit is odd.
+	\paragraph{$\Op{X}$-stabilizers ($4$ $\Op{H}\Sup{\pm}$).} The three Steane $\Op{X}$-checks will detect any fault involving $\Op{H}\Sup{\pm}$ errors where an odd number of them originate from $\Op{X}$ errors at the end of the Clifford sub-circuit so long as there are exactly four $\Op{H}\Sup{\pm}$ errors on their support.
 
 	\newpage
 
