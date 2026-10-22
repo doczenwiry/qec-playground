@@ -403,7 +403,13 @@ class SteaneCodePatch:
         else:
             match moment:
                 case 0:
-                    circuitry.append(f"{self.__injection.name}", self.support(compact=True))
+                    if self.__injection:
+                        circuitry.append(f"{self.__injection.name}", self.__translate_qubit_ids(
+                            "D0", "D4", "D6"
+                        ))
+                        circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubit_ids(
+                            "D1", "D2", "D3", "D5"
+                        ))
                     circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ'))
                 case 1:
                     circuitry.append("CX", self.__translate_qubit_ids(
@@ -434,7 +440,12 @@ class SteaneCodePatch:
             match moment:
                 case 0:
                     if self.__injection:
-                        circuitry.append(f"{self.__injection.name}", self.support(compact=False))
+                        circuitry.append(f"{self.__injection.name}", self.__translate_qubit_ids(
+                            "D0", "EX4", "D6"
+                        ))
+                        circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubit_ids(
+                            "EX1", "D2", "D3", "D5"
+                        ))
                     circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'D4'))
                 case 1:
                     circuitry.append("CX", self.__translate_qubit_ids(
