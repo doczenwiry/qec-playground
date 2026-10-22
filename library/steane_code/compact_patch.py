@@ -45,7 +45,7 @@ class SteaneCodePatch:
         'FINAL': {'R': ['D0', 'D2', 'EX4', 'D3'], 'G': ['D2', 'D6', 'D5', 'EX4'], 'B': ['D0', 'BD', 'D6', 'D2']},
     }
 
-    def __init__(self, qubits: QubitArray, anchor: tuple[int, int] = (0, 1), injection: Injection = Injection.S):
+    def __init__(self, qubits: QubitArray, anchor: tuple[int, int] = (0, 1), injection: Optional[Injection] = Injection.S):
         self.__anchor = anchor
         self.__injection = injection
         self.__available_qubits = qubits
@@ -148,6 +148,8 @@ class SteaneCodePatch:
         # Annotate the CULTIVATION detectors
         for measurement in ['CC', 'RZ', 'GZ', 'D1', 'BZ', 'EX0', 'D4']:
             circuitry.annotate_detector(f"{prefix}:CULT:{measurement}", postselected=True)
+        for measurement in range(3):
+            circuitry.annotate_detector(f"{prefix}:CULT:Z{measurement}", postselected=True)
 
         # Annotate the TELEPORTATION stabilized detectors
         last = sdc_rounds-1
@@ -204,7 +206,8 @@ class SteaneCodePatch:
             case 7:
                 circuit.append("CX", self.__translate_qubit_ids('D1', 'BD', 'GZ', 'D6'))
             case 8:
-                circuit.append(self.__injection.name, self.__translate_qubit_ids('D6'))
+                if self.__injection:
+                    circuit.append(self.__injection.name, self.__translate_qubit_ids('D6'))
                 circuit.append("CX", self.__translate_qubit_ids('GZ', 'D5'))
             case 9:
                 circuit.append("CX", self.__translate_qubit_ids('GZ', 'D6'))
@@ -276,71 +279,103 @@ class SteaneCodePatch:
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    CULTIVATION_MOMENTS = range(12)
+    CULTIVATION_MOMENTS = range(20)
     def append_cultivation(
         self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:CULT",
-        cultivation: bool = True
     ):
         if moment is None:
             for moment in self.CULTIVATION_MOMENTS:
-                self.append_cultivation(circuitry, moment, prefix, cultivation)
+                self.append_cultivation(circuitry, moment, prefix)
                 circuitry.append_tick()
             return
 
         match moment:
             case 0:
-                if cultivation:
+                if self.__injection:
                     circuitry.append(f"{self.__injection.name}", self.__translate_qubit_ids(
                         'D0', 'EX4', 'D6'
                     ))
                     circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubit_ids(
                         'EX1', 'D2', 'D3', 'D5'
                     ))
-                circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'BZ', 'D4', 'EX0'))
+                circuitry.append("RX", self.__translate_qubit_ids(
+                    'RZ', 'GZ', 'D1', 'BZ', 'D4', 'EX0', 'RX', 'GX', 'BX'
+                ))
+                circuitry.append("RZ", self.__translate_qubit_ids('RD', 'GD', 'BD'))
             case 1:
+                circuitry.append(
+                    "CX", self.__translate_qubit_ids("RZ", "RD", "GZ", "GD", "BZ", "BD")
+                )
+            case 2:
                 circuitry.append("CX", self.__translate_qubit_ids(
                     'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'GZ', 'D5', 'EX0', 'D6'
                 ))
-            case 2:
+            case 3:
+                circuitry.append("CX", self.__translate_qubit_ids("D6", "BZ", "D4", "RD"))
+            case 4:
+                circuitry.append("CX", self.__translate_qubit_ids("D2", "BZ", "D4", "GD"))
+            case 5:
                 circuitry.append("CX", self.__translate_qubit_ids(
                     'D6', 'D1', 'D2', 'D4', 'RZ', 'D0'
                 ))
-            case 3:
+            case 6:
                 circuitry.append("CX", self.__translate_qubit_ids(
                     'GZ', 'D6', 'D2', 'RZ'
                 ))
-            case 4:
-                circuitry.append("CX", self.__translate_qubit_ids(
-                    'GZ', 'D2'
-                ))
-            case 5:
-                circuitry.append("MX", self.__translate_qubit_ids('GZ'))
-                self.__available_qubits.record_measurement(f"{prefix}:CC", *self.__translate_qubit_ids('GZ'))
-            case 6:
-                circuitry.append("RX", self.__translate_qubit_ids('GZ'))
             case 7:
                 circuitry.append("CX", self.__translate_qubit_ids(
                     'GZ', 'D2'
                 ))
             case 8:
+                circuitry.append("MX", self.__translate_qubit_ids('GZ'))
+                self.__available_qubits.record_measurement(f"{prefix}:CC", *self.__translate_qubit_ids('GZ'))
+            case 9:
+                circuitry.append("RX", self.__translate_qubit_ids('GZ'))
+            case 10:
+                circuitry.append("CX", self.__translate_qubit_ids(
+                    'GZ', 'D2'
+                ))
+            case 11:
                 circuitry.append("CX", self.__translate_qubit_ids(
                     'GZ', 'D6', 'D2', 'RZ'
                 ))
-            case 9:
+            case 12:
                 circuitry.append("CX", self.__translate_qubit_ids(
                     'D6', 'D1', 'D2', 'D4', 'RZ', 'D0'
                 ))
-            case 10:
+            case 13:
+                circuitry.append("CX", self.__translate_qubit_ids("D6", "BZ", "D4", "GD"))
+            case 14:
+                circuitry.append("CX", self.__translate_qubit_ids("D2", "BZ", "D4", "RD"))
+            case 15:
                 circuitry.append("CX", self.__translate_qubit_ids(
                     'D1', 'EX1', 'BZ', 'D2', 'RZ', 'D3', 'D4', 'EX4', 'GZ', 'D5', 'EX0', 'D6'
                 ))
-            case 11:
+            case 16:
+                circuitry.append(
+                    "CX", self.__translate_qubit_ids("RZ", "RD", "GZ", "GD", "BZ", "BD")
+                )
+            case 17:
+                circuitry.append(
+                    "CX", self.__translate_qubit_ids("GX", "GD", "BX", "BD", "RX", "RD", "D2", "BZ")
+                )
+            case 18:
+                circuitry.append(
+                    "CX", self.__translate_qubit_ids("GD", "GX", "BD", "BX", "RD", "RX", "D6", "BZ")
+                )
+            case 19:
                 labels = ['RZ', 'GZ', 'D1', 'BZ', 'D4', 'EX0']
                 measured_ancilla = self.__translate_qubit_ids(*labels)
                 circuitry.append("MX", measured_ancilla)
                 for label, xa in zip(labels, measured_ancilla):
                     self.__available_qubits.record_measurement(f"{prefix}:{label}", xa)
-                if cultivation:
+
+                measured_ancilla = self.__translate_qubit_ids("RX", "GX", "BX")
+                circuitry.append("MZ", measured_ancilla)
+                for index, za in enumerate(measured_ancilla):
+                    self.__available_qubits.record_measurement(f"{prefix}:Z{index}", za)
+
+                if self.__injection:
                     circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubit_ids(
                         'D0', 'EX4', 'D6'
                     ))
@@ -348,7 +383,7 @@ class SteaneCodePatch:
                         'EX1', 'D2', 'D3', 'D5'
                     ))
             case _:
-                raise ValueError(f"Invalid moment requested [moment={moment}, max=10]")
+                raise ValueError(f"Invalid moment requested [moment={moment}, max=19]")
 
     NOISELESS_MEASUREMENT_MOMENTS = range(6)
     def append_noiseless_measurement(
@@ -398,7 +433,8 @@ class SteaneCodePatch:
         else:
             match moment:
                 case 0:
-                    circuitry.append(f"{self.__injection.name}", self.support(compact=False))
+                    if self.__injection:
+                        circuitry.append(f"{self.__injection.name}", self.support(compact=False))
                     circuitry.append("RX", self.__translate_qubit_ids('RZ', 'GZ', 'D1', 'D4'))
                 case 1:
                     circuitry.append("CX", self.__translate_qubit_ids(
