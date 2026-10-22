@@ -61,37 +61,43 @@ class Circuitry:
     def as_stim(
         self, per: Optional[float] = None,
         noiseless_preparation_ticks: Optional[int] = None,
-        noiseless_measurement_ticks: Optional[int] = None
-    ) -> stim.Circuit:
+        noiseless_measurement_ticks: Optional[int] = None,
+        report_dropped: bool = False
+    ) -> Union[stim.Circuit, tuple[stim.Circuit, int]]:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
         circuit = cast(stim.Circuit, self.__circuit)
-        if per:
-            preparation = stim.Circuit()
-            internal_op = stim.Circuit()
-            measurement = stim.Circuit()
 
-            start = noiseless_preparation_ticks or 0
-            final = circuit.num_ticks - (noiseless_measurement_ticks or 0)
+        preparation = stim.Circuit()
+        internal_op = stim.Circuit()
+        measurement = stim.Circuit()
 
-            tick = 0
-            ignored_qubits = set()
-            for instruction in circuit:
-                if instruction.name == "QUBIT_COORDS" and instruction.targets_copy()[0].value not in self.__used_qubits:
-                    ignored_qubits.add(instruction.targets_copy()[0].value)
-                    continue
-                if tick < start:
+        start = noiseless_preparation_ticks or 0
+        final = circuit.num_ticks - (noiseless_measurement_ticks or 0)
+
+        tick = 0
+        dropped_coords = 0
+        for instruction in circuit.flattened():
+            if instruction.name == "QUBIT_COORDS":
+                if instruction.targets_copy()[0].value in self.__used_qubits:
                     preparation.append(instruction)
-                elif start <= tick < final:
-                    internal_op.append(instruction)
                 else:
-                    measurement.append(instruction)
-                tick += int(instruction.name == "TICK")
+                    dropped_coords += 1
+            elif tick < start:
+                preparation.append(instruction)
+            elif start <= tick < final:
+                internal_op.append(instruction)
+            else:
+                measurement.append(instruction)
+            tick += int(instruction.name == "TICK")
 
-            circuit = preparation + make_noisy(internal_op, per, ignored_qubits) + measurement
+        central = make_noisy(internal_op, per) if per else internal_op
 
-        return circuit
+        if report_dropped:
+            return preparation + central + measurement, dropped_coords
+        else:
+            return preparation + central + measurement
 
     @property
     def as_text(self) -> str:
@@ -104,8 +110,7 @@ class Circuitry:
                 )
             )
 
-    @property
-    def as_clifft(self) -> clifft.Program:
+    def as_clifft(self, deterministic: bool = False) -> clifft.Program:
         if self.__clifford:
             raise NotImplementedError(
                 "Conversion from stim.Circuit to clifft.Program not supported. Use Circuitry.as_stim."
@@ -116,7 +121,7 @@ class Circuitry:
                 lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)
             )
         )
-        return clifft.compile(text, postselection_mask=self.__postselection_mask)
+        return clifft.compile(text, postselection_mask=self.__postselection_mask, normalize_syndromes=deterministic)
 
     @property
     def postselection_mask(self):
@@ -128,16 +133,16 @@ class Circuitry:
 
         return self.as_stim().missing_detectors(unknown_input=unknown_input)
 
-    def __insert_polygons(self, lines: list[str], spacing: bool = False):
+    def __insert_polygons(self, lines: list[str], dropped: int = 0, spacing: bool = False):
         inserted = 0
 
         # Insert all registered polygons where they belong
         for line_number, polygons in self.__polygons.items():
             for polygon in polygons:
-                lines.insert(line_number + inserted, polygon)
+                lines.insert(line_number - dropped + inserted, polygon)
                 inserted += 1
             if spacing:
-                lines.insert(line_number + inserted, "TICK")
+                lines.insert(line_number - dropped + inserted, "TICK")
                 inserted += 1
 
         return lines
@@ -166,32 +171,43 @@ class Circuitry:
         polygons: bool = True,
         spacing: bool = False,
         location: str = "https://algassert.com/crumble.html",
+        marks: Optional[list[tuple[int, dict[int,str], int]]] = None
     ):
-        lines = (
-            str(self.as_stim()).split("\n")
-            if self.__clifford
-            else cast(list, self.__circuit)
-        )
-        if polygons:
-            lines = self.__insert_polygons(lines, spacing=spacing)
+        if self.__clifford:
+            circuit, dropped = self.as_stim(report_dropped=True)
+            lines = str(circuit).splitlines()
+        else:
+            dropped = 0
+            lines = cast(list, self.__circuit)
+
+        if marks:
+            for op_idx, pauli, mk_idx in sorted(marks, key=lambda m: m[0], reverse=True):
+                lines[op_idx + 1:op_idx + 1] = ["TICK"] + [f"MARK{p}({mk_idx}) {q}" for q, p in sorted(pauli.items())]
+        elif polygons:
+            lines = self.__insert_polygons(lines, dropped=dropped, spacing=spacing)
 
         return location + "#circuit=" + ";".join(lines).replace(" ", "_")
 
     def to_file(self, filename: str, polygons: bool = True, spacing: bool = False):
         filename += ".stim" if self.__clifford else ".clifft"
-        lines = (
-            str(self.__circuit).split("\n")
-            if self.__clifford
-            else cast(list, self.__circuit)
-        )
+
+        if self.__clifford:
+            circuit, dropped = self.as_stim(report_dropped=True)
+            lines = str(circuit).splitlines()
+        else:
+            dropped = 0
+            lines = cast(list, self.__circuit)
 
         if polygons:
-            lines = self.__insert_polygons(lines, spacing=spacing)
+            lines = self.__insert_polygons(lines, dropped=dropped, spacing=spacing)
 
         with open(filename, "w", encoding="utf-8") as file:
             file.write("\n".join(lines) + "\n")
 
     def annotate_polygons(self, polygons: list[str]):
+        for polygon in polygons:
+            for qb in polygon.split(' ')[1:]:
+                self.__used_qubits.add(int(qb))
         self.__polygons[len(self.__circuit)].extend(polygons)
 
     def annotate_detector(self, *labels: str, postselected: bool = False) -> bool:

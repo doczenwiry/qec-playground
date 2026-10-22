@@ -53,7 +53,7 @@ if __name__ == "__main__":
     )
 
     msc = MagicStateCultivation(
-        qubits, target=target, injection=SteaneCodePatch.Injection.S
+        qubits, target=target, injection=SteaneCodePatch.Injection.S, draw_neighbors=DRAW_NEIGHBORS
     )
 
     msc.append_preparation(circuitry)

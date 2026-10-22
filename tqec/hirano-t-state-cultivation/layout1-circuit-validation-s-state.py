@@ -27,9 +27,9 @@ from utils.circuit_flows import (
 if __name__ == "__main__":
     # Validate the Steane Code preparation (under S-injection)
     print("Modified Steane Code (w/ S-injection) --- Preparation")
-    qubits = QubitArray(dimensions=(5, 3))
+    qubits = QubitArray(dimensions=(6, 6))
     circuitry = Circuitry(qubits)
-    steane = SteaneCodePatch(array=qubits)
+    steane = SteaneCodePatch(array=qubits, anchor=(1,1))
     steane.append_preparation(circuitry)
 
     for stabilizer, support in itertools.product(
@@ -48,9 +48,9 @@ if __name__ == "__main__":
     print(
         "Modified Steane Code (w/ S-injection) --- Superdense Code Cycle [w/ GHZ states]"
     )
-    qubits = QubitArray(dimensions=(5, 3))
+    qubits = QubitArray(dimensions=(6, 6))
     circuitry = Circuitry(qubits)
-    steane = SteaneCodePatch(array=qubits)
+    steane = SteaneCodePatch(array=qubits, anchor=(1,1))
     steane.append_superdense_cycle(circuitry)
 
     print("Stabilizer flows")
@@ -71,9 +71,9 @@ if __name__ == "__main__":
 
     # Validate the Steane Code cultivation stage (under S-injection)
     print("Modified Steane Code (w/ S-injection) --- Double-Check-S")
-    qubits = QubitArray(dimensions=(5, 3))
+    qubits = QubitArray(dimensions=(6, 6))
     circuitry = Circuitry(qubits)
-    steane = SteaneCodePatch(array=qubits)
+    steane = SteaneCodePatch(array=qubits, anchor=(1,1))
     steane.append_cultivation(circuitry)
 
     print("Stabilizer flows")
