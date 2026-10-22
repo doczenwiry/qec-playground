@@ -190,14 +190,16 @@ class Circuitry:
 
     def to_file(self, filename: str, polygons: bool = True, spacing: bool = False):
         filename += ".stim" if self.__clifford else ".clifft"
-        lines = (
-            str(self.as_stim()).split("\n")
-            if self.__clifford
-            else cast(list, self.__circuit)
-        )
+
+        if self.__clifford:
+            circuit, dropped = self.as_stim(report_dropped=True)
+            lines = str(circuit).splitlines()
+        else:
+            dropped = 0
+            lines = cast(list, self.__circuit)
 
         if polygons:
-            lines = self.__insert_polygons(lines, spacing=spacing)
+            lines = self.__insert_polygons(lines, dropped=dropped, spacing=spacing)
 
         with open(filename, "w", encoding="utf-8") as file:
             file.write("\n".join(lines) + "\n")
