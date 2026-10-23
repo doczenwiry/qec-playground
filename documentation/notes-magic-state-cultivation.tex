@@ -286,7 +286,7 @@
 
 	\appendix
 
-	\section{Preparation stage --- Complete statevectors}
+	\section{Injection stage --- Complete statevectors}
 
 	\begin{figure}[h!]
 		\centering
@@ -334,7 +334,7 @@
 
 	\newpage
 
-	\section{Cultivation stage --- Fault analysis}
+	\section{Double-check --- Fault analysis}
 
 	In the presence of $\Op{T}$ and $\Op{T}^{\dagger}$ gates, performing fault analysis becomes slightly more tricky. We will use the following definitions
 	\begin{equation*}
@@ -489,6 +489,151 @@
 	\paragraph{$\Op{X}$-stabilizers ($2$ $\Op{H}\Sup{\pm}$).} The three Steane $\Op{X}$-checks cannot detect deterministically any faults when there are exactly two $\Op{H}\Sup{\pm}$ errors passing through them. We will disregard the probabilistic nature and treat the faults for which the joint detection is non-deterministic as being undetected.
 	
 	\paragraph{$\Op{X}$-stabilizers ($4$ $\Op{H}\Sup{\pm}$).} The three Steane $\Op{X}$-checks will detect any fault involving $\Op{H}\Sup{\pm}$ errors where an odd number of them originate from $\Op{X}$ errors at the end of the Clifford sub-circuit so long as there are exactly four $\Op{H}\Sup{\pm}$ errors on their support.
+
+	\newpage
+
+	\section{Reconciliation of asynchronous MSC with synchronous QEC}
+
+	\begin{figure}[h!]
+		\centering
+		\rotatebox{90}{%
+		\begin{minipage}{0.9\textheight}
+		\scalebox{0.5}{\begin{tabular}{@{}r@{}}
+			\begin{quantikz}[row sep={0.65cm, between origins}]
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=13, steps=10, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}]{\textsc{Injection}}
+					\gategroup[wires=13, steps=10, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{10}$}
+				&&&&&&&&& 
+				& \gategroup[wires=13, steps=9, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}]{\textsc{Superdense}}
+					\gategroup[wires=13, steps=9, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{9}$}
+				&&&&&&&&
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=13, steps=6, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}]{\textsc{Check $1$}}
+					\gategroup[wires=13, steps=6, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{6}$}
+				&&&&&
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=13, steps=6, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}]{\textsc{Check $2$}}
+					\gategroup[wires=13, steps=6, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{6}$}
+				&&&&&
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=13, steps=9, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}]{\textsc{Teleportation $1$}}
+					\gategroup[wires=13, steps=9, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{9}$}
+				&&&&&&&&
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=13, steps=9, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}]{\textsc{Teleportation $2$}}
+					\gategroup[wires=13, steps=9, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{9}$}
+				&&&&&&&&
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=13, steps=9, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}]{\textsc{Teleportation $3$}}
+					\gategroup[wires=13, steps=9, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{9}$}
+				&&&&&&&&
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=13, steps=5, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}]{\textsc{Destruction}}
+					\gategroup[wires=13, steps=5, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{5}$}
+				&&&&
+				& \gate[13, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=13, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				&
+				\\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+			\end{quantikz}\\
+			\begin{quantikz}[row sep={0.65cm, between origins}]
+				% QEC round 1
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=5, steps=5, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, label style={label position=below, yshift=-0.5cm}]{\textsc{Extraction}}
+					\gategroup[wires=5, steps=5, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{5}$}
+				&&&&
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				% QEC round 2
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=5, steps=5, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, label style={label position=below, yshift=-0.5cm}]{\textsc{Extraction}}
+					\gategroup[wires=5, steps=5, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{5}$}
+				&&&&
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				% QEC round 3
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=5, steps=5, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, label style={label position=below, yshift=-0.5cm}]{\textsc{Extraction}}
+					\gategroup[wires=5, steps=5, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{5}$}
+				&&&&
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				% QEC round 4
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=5, steps=5, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, label style={label position=below, yshift=-0.5cm}]{\textsc{Extraction}}
+					\gategroup[wires=5, steps=5, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{5}$}
+				&&&&
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				% QEC round 5
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=5, steps=5, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, label style={label position=below, yshift=-0.5cm}]{\textsc{Extraction}}
+					\gategroup[wires=5, steps=5, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{5}$}
+				&&&&
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				% QEC round 6
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=5, steps=5, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, label style={label position=below, yshift=-0.5cm}]{\textsc{Extraction}}
+					\gategroup[wires=5, steps=5, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{5}$}
+				&&&&
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				% QEC round 7
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Resets}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \gategroup[wires=5, steps=5, style={inner sep=1pt, rounded corners=5pt, fill=lightgray!50}, label style={label position=below, yshift=-0.5cm}]{\textsc{Extraction}}
+					\gategroup[wires=5, steps=5, style={draw=none}, label style={label position=center, anchor=center, yshift=-0.2cm}]{\fontsize{48}{48}\selectfont $\mathpzc{5}$}
+				&&&&
+				& \gate[5, disable auto height, style={minimum width=0pt, fill=black}]{\rotatebox{90}{\color{white}\textsc{Measurements}}}
+					\gategroup[wires=5, steps=1, style={inner sep=1pt, rounded corners=5pt, fill=black}, background]{}
+				& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \\
+				&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+			\end{quantikz}
+		\end{tabular}}
+		\caption{The design for the MSC process in TQEC contains $7$ reset-measurement cycles and can be performed in-place with a minimal target code distance of $7$. The surface code expansion is omitted but requires a full memory experiment. Given the extra layers in the various stages of the MSC, it is necessary to consider \underline{\bf three} successive memory experiments to be able to fit one entire end-to-end attempt a target code distance $7$. Furthermore, in order to make sure that the destructive measurements line up with the ancilla measurements of the QEC rounds, it is necessary to include $7$ layers of idling somewhere in the MSC. This is because the MSC requires $63$ layers of operations while $2$ memory experiments of a surface code require $70$ layers of operations. Once the target code distance is $13$ or higher, one attempt of the MSC process can fit within \underline{\bf two} consecutive memory experiments.}
+		\end{minipage}}
+	\end{figure}
 
 	\newpage
 
@@ -772,9 +917,9 @@
 				\lstick{\makebox[0.5cm][l]{\hfil$\ket{\psi}$\hfil}}
 					& \targ{}
 					& \meter{}
-					& \ctrl[vertical wire=c]{1}\wire[l][1]["\tt m"{above, pos=0.65}]{c}\swt{c}
+					& \ctrl[vertical wire=c]{1}\wire[l][1]["\tt m"{above, pos=0.75}]{c}\swt{c}
 					& 
-					& \ctrl[vertical wire=c]{2}
+					& \octrl[vertical wire=c]{2}
 					& \swt{n}
 					& 
 				\\
@@ -782,7 +927,7 @@
 					& \ctrl{-1}
 					& 
 					& \gate{\Op{X}}
-					& \ctrl{1}\gategroup[wires=2, steps=3, style={dashed,rounded corners,fill=gray!40, xshift=-1pt, yshift=-1pt, inner xsep=3pt, inner ysep=2pt}
+					& \ctrl{1}\gategroup[wires=2, steps=3, style={dashed,rounded corners,fill=quantumY, xshift=-1pt, yshift=-1pt, inner xsep=3pt, inner ysep=2pt}
 	            ,background, label style={rounded corners, label position=below, yshift=-0.5cm}]{\Op{S}-correction}
 					& \phantom{n}
 					& \gate{\Op{Z}}
@@ -794,8 +939,8 @@
 					& 
 					& \midstick{$\ket{\mathcal{S}}$}
 					& \targ{}\swt{q}
-					& \qmeasure{\Op{X} or \Op{Z}}
-					& \ctrl[vertical wire=c]{-1}\wire[l][1]["\tt s"{above, pos=0.65}]{c}\swt{c}
+					& \gate{\Op{H}}
+					& \meter{}\wire[u][1]["\tt s"{right, pos=0.35}]{c}
 					& \swt{n}
 			\end{quantikz}
 		}
@@ -819,7 +964,7 @@
 			\kett{m}\Op{X}^{\tt m}\parentheses{\alpha\sub{0}\kett{0} + \overline{\sigma}^{\tt m}\alpha\sub{1}\tau\kett{1}}
 	\end{align*}
 
-	The last equality\footnote{Equality up to a global phase $\overline{\tau}^{\tt m}$} shows that the measurement outcome {\tt m} determines whether the state requires an \Op{X}-correction and an \Op{S}-correction. As we enter the blue sub-circuit, we focus our attention on the bottom two qubits and start from the following state
+	The last equality\footnote{Equality up to a global phase of $\overline{\tau}^{\tt m}$} shows that the outcome {\tt m} of the  first measurement determines whether the state requires an \Op{X}-correction and an \Op{S}-correction. In the yellow sub-circuit, we focus our attention on the bottom two qubits which start from the following state
 	\begin{align*}
 		\parentheses{\alpha\sub{0}\kett{0} + \overline{\sigma}^{\tt m}\alpha\sub{1}\tau\kett{1}}
 			\parentheses{\kett{0} + \sigma\kett{1}}
@@ -834,7 +979,7 @@
 			+ \parentheses{\sigma\alpha\sub{0}\kett{0} + \overline{\sigma}^{\tt m}\alpha\sub{1}\tau\kett{1}}\kett{1}
 	\end{align*}
 
-	\paragraph{Case {\tt m = 0} (\Op{X}-basis measurement).} We apply an \Op{H}-gate prior to performing the \Op{Z}-measurement
+	\paragraph{Case {\tt m = 0} (\Op{X}-basis measurement).} We apply an \Op{H}-gate prior to performing the second measurement
 	\begin{align*}
 		\parentheses{\alpha\sub{0}\kett{0} + \sigma\alpha\sub{1}\tau\kett{1}}\kett{+}
 		+ \parentheses{\sigma\alpha\sub{0}\kett{0} + \alpha\sub{1}\tau\kett{1}}\kett{-}
@@ -845,7 +990,6 @@
 		\\
 		~=&~ \frac{1+(-1)^{\tt s}\sigma}{\sqrt{2}} \: \Op{Z}^{\tt s}\parentheses{\alpha\sub{0}\kett{0} + \alpha\sub{1}\tau\kett{1}}\kett{s}
 	\end{align*}
-	and see that the measurement outcome {\tt s} determines whether the state requires a \Op{Z}-correction.
 
 	\paragraph{Case {\tt m = 1} (\Op{Z}-basis measurement).} Noting that $\sigma\overline{\sigma} = 1$ and $\overline{\sigma}\overline{\sigma} = -1$, we can simplify the state as
 	\begin{align*}
@@ -861,7 +1005,7 @@
 		~=~
 			\Op{Z}^{\tt s}\parentheses{\alpha\sub{0}\kett{0} + \alpha\sub{1}\tau\kett{1}}\kett{s}
 	\end{align*}
-	and see that the measurement outcome {\tt s} determines whether the state requires a \Op{Z}-correction.
+	In both those cases, we can see that the outcome {\tt s} determines whether the state requires a \Op{Z}-correction.
 
 	\newpage
 
