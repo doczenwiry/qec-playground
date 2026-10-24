@@ -86,7 +86,7 @@ class ExpansionSurgery:
         preceding: Optional[str] = None,
     ):
         tx, ty = self.__target.anchor
-        last = self.__distance - 1
+        # last = self.__distance - 1
         for stabilizer in ["X", "Z"]:
             for (px, py), (qa, qi) in self.__target.qubits[stabilizer].items():
                 if self.__qubit_in_expansion(px, py):

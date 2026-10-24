@@ -59,10 +59,11 @@ class Circuitry:
         return self.__used_qubits
 
     def as_stim(
-        self, per: Optional[float] = None,
+        self,
+        per: Optional[float] = None,
         noiseless_preparation_ticks: Optional[int] = None,
         noiseless_measurement_ticks: Optional[int] = None,
-        report_dropped: bool = False
+        report_dropped: bool = False,
     ) -> Union[stim.Circuit, tuple[stim.Circuit, int]]:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
@@ -106,7 +107,8 @@ class Circuitry:
         else:
             return "\n".join(
                 filter(
-                    lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)
+                    lambda ln: not ln.startswith("POLYGON"),
+                    cast(Iterable, self.__circuit),
                 )
             )
 
@@ -121,7 +123,11 @@ class Circuitry:
                 lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)
             )
         )
-        return clifft.compile(text, postselection_mask=self.__postselection_mask, normalize_syndromes=deterministic)
+        return clifft.compile(
+            text,
+            postselection_mask=self.__postselection_mask,
+            normalize_syndromes=deterministic,
+        )
 
     @property
     def postselection_mask(self):
@@ -131,9 +137,13 @@ class Circuitry:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
-        return self.as_stim().missing_detectors(unknown_input=unknown_input)
+        return cast(stim.Circuit, self.as_stim()).missing_detectors(
+            unknown_input=unknown_input
+        )
 
-    def __insert_polygons(self, lines: list[str], dropped: int = 0, spacing: bool = False):
+    def __insert_polygons(
+        self, lines: list[str], dropped: int = 0, spacing: bool = False
+    ):
         inserted = 0
 
         # Insert all registered polygons where they belong
@@ -171,7 +181,7 @@ class Circuitry:
         polygons: bool = True,
         spacing: bool = False,
         location: str = "https://algassert.com/crumble.html",
-        marks: Optional[list[tuple[int, dict[int,str], int]]] = None
+        marks: Optional[list[tuple[int, dict[int, str], int]]] = None,
     ):
         if self.__clifford:
             circuit, dropped = self.as_stim(report_dropped=True)
@@ -181,8 +191,12 @@ class Circuitry:
             lines = cast(list, self.__circuit)
 
         if marks:
-            for op_idx, pauli, mk_idx in sorted(marks, key=lambda m: m[0], reverse=True):
-                lines[op_idx + 1:op_idx + 1] = ["TICK"] + [f"MARK{p}({mk_idx}) {q}" for q, p in sorted(pauli.items())]
+            for op_idx, pauli, mk_idx in sorted(
+                marks, key=lambda m: m[0], reverse=True
+            ):
+                lines[op_idx + 1 : op_idx + 1] = ["TICK"] + [
+                    f"MARK{p}({mk_idx}) {q}" for q, p in sorted(pauli.items())
+                ]
         elif polygons:
             lines = self.__insert_polygons(lines, dropped=dropped, spacing=spacing)
 
@@ -206,7 +220,7 @@ class Circuitry:
 
     def annotate_polygons(self, polygons: list[str]):
         for polygon in polygons:
-            for qb in polygon.split(' ')[1:]:
+            for qb in polygon.split(" ")[1:]:
                 self.__used_qubits.add(int(qb))
         self.__polygons[len(self.__circuit)].extend(polygons)
 
@@ -342,7 +356,9 @@ class Circuitry:
 
         gauge_found = False
         try:
-            self.as_stim().detector_error_model(allow_gauge_detectors=False)
+            cast(stim.Circuit, self.as_stim()).detector_error_model(
+                allow_gauge_detectors=False
+            )
         except ValueError:
             gauge_found = True
         missing_detectors = self.missing_detectors(unknown_input=open_boundaries)

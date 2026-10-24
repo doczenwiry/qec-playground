@@ -14,9 +14,7 @@
 
 from typing import Optional
 
-import stim
 
-from library import circuitry
 from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
 from library.surface_code.patch import SurfaceCodePatch
@@ -31,7 +29,9 @@ class MergeSurgery:
             raise ValueError("source and target must have the same code distance.")
 
         if source.coloring != target.coloring:
-            raise ValueError("source and target must have the same coloring [i.e. red/blue pattern].")
+            raise ValueError(
+                "source and target must have the same coloring [i.e. red/blue pattern]."
+            )
 
         sx, sy = source.anchor
         tx, ty = target.anchor
@@ -49,7 +49,9 @@ class MergeSurgery:
         self.target = target
         self.__target_inactive = lambda ql: ql[0] == tx - 0.5
 
-        self.merger = SurfaceCodePatch(qubits, self.__distance, (jx, jy), self.__coloring)
+        self.merger = SurfaceCodePatch(
+            qubits, self.__distance, (jx, jy), self.__coloring
+        )
         self.__merger_inactive = lambda ql: not (jx + 0.5 <= ql[0] < jx + 2)
 
     def annotate_polygons(self, circuitry: Circuitry):
@@ -70,17 +72,23 @@ class MergeSurgery:
         for rnd in range(rounds or self.__distance):
             for mmt in SurfaceCodePatch.MOMENTS:
                 self.source.append_round(
-                    circuitry, mmt, inactive=self.__source_inactive,
+                    circuitry,
+                    mmt,
+                    inactive=self.__source_inactive,
                     prefix=f"{prefix}:SRC:R{rnd}",
                 )
                 self.merger.append_round(
-                    circuitry, mmt, inactive=self.__merger_inactive,
+                    circuitry,
+                    mmt,
+                    inactive=self.__merger_inactive,
                     prefix=f"{prefix}:JCT:R{rnd}",
                     prepare=transition if rnd == start_round else None,
                     measure=transition if rnd == final_round else None,
                 )
                 self.target.append_round(
-                    circuitry, mmt, inactive=self.__target_inactive,
+                    circuitry,
+                    mmt,
+                    inactive=self.__target_inactive,
                     prefix=f"{prefix}:TGT:R{rnd}",
                 )
                 circuitry.append_tick()
@@ -88,8 +96,8 @@ class MergeSurgery:
     def annotate_detectors(
         self,
         circuitry: Circuitry,
-        preceding: tuple[str,str],
-        following: tuple[str,str],
+        preceding: tuple[str, str],
+        following: tuple[str, str],
         prefix: str = "MRG",
     ):
         self.source.annotate_detectors(
@@ -112,20 +120,24 @@ class MergeSurgery:
                 if self.__source_inactive(ql):
                     continue
                 circuitry.annotate_detector(
-                    f"{prefix}:SRC:R0:{stabilizer}{qi}", f"{preceding_source}:R{last}:{stabilizer}{qi}"
+                    f"{prefix}:SRC:R0:{stabilizer}{qi}",
+                    f"{preceding_source}:R{last}:{stabilizer}{qi}",
                 )
                 circuitry.annotate_detector(
-                    f"{prefix}:SRC:R{last}:{stabilizer}{qi}", f"{following_source}:R0:{stabilizer}{qi}"
+                    f"{prefix}:SRC:R{last}:{stabilizer}{qi}",
+                    f"{following_source}:R0:{stabilizer}{qi}",
                 )
             # Annotate the detectors across the merger and the target
             for ql, (qa, qi) in self.target.qubits[stabilizer].items():
                 if self.__target_inactive(ql):
                     continue
                 circuitry.annotate_detector(
-                    f"{prefix}:TGT:R0:{stabilizer}{qi}", f"{preceding_target}:R{last}:{stabilizer}{qi}"
+                    f"{prefix}:TGT:R0:{stabilizer}{qi}",
+                    f"{preceding_target}:R{last}:{stabilizer}{qi}",
                 )
                 circuitry.annotate_detector(
-                    f"{prefix}:TGT:R{last}:{stabilizer}{qi}", f"{following_target}:R0:{stabilizer}{qi}"
+                    f"{prefix}:TGT:R{last}:{stabilizer}{qi}",
+                    f"{following_target}:R0:{stabilizer}{qi}",
                 )
 
         transition = Pauli.Z if self.__coloring else Pauli.X
@@ -139,22 +151,30 @@ class MergeSurgery:
             if ql[0] == jx + 0.5:
                 qsi = self.source.get_qubit_index(stabilizer, qa)
                 circuitry.annotate_detector(
-                    f"{prefix}:JCT:R0:{stabilizer}{qi}", f"{preceding_source}:R{last}:{stabilizer}{qsi}"
+                    f"{prefix}:JCT:R0:{stabilizer}{qi}",
+                    f"{preceding_source}:R{last}:{stabilizer}{qsi}",
                 )
                 circuitry.annotate_detector(
-                    f"{prefix}:JCT:R{last}:{stabilizer}{qi}", f"{following_source}:R0:{stabilizer}{qsi}",
-                    *(f"{prefix}:JCT:R{last}:D{self.merger.get_qubit_index('D', self.__physical_qubits[(px+dx, py+dy)])}"
-                    for dx, dy in [ (+0.5, -0.5), (+0.5, +0.5) ])
+                    f"{prefix}:JCT:R{last}:{stabilizer}{qi}",
+                    f"{following_source}:R0:{stabilizer}{qsi}",
+                    *(
+                        f"{prefix}:JCT:R{last}:D{self.merger.get_qubit_index('D', self.__physical_qubits[(px + dx, py + dy)])}"
+                        for dx, dy in [(+0.5, -0.5), (+0.5, +0.5)]
+                    ),
                 )
 
             # Annotate the detectors on the side of the target
             elif ql[0] == jx + 1.5:
                 qti = self.target.get_qubit_index(stabilizer, qa)
                 circuitry.annotate_detector(
-                    f"{prefix}:JCT:R0:{stabilizer}{qi}", f"{preceding_target}:R{last}:{stabilizer}{qti}"
+                    f"{prefix}:JCT:R0:{stabilizer}{qi}",
+                    f"{preceding_target}:R{last}:{stabilizer}{qti}",
                 )
                 circuitry.annotate_detector(
-                    f"{prefix}:JCT:R{last}:{stabilizer}{qi}", f"{following_target}:R0:{stabilizer}{qti}",
-                    *(f"{prefix}:JCT:R{last}:D{self.merger.get_qubit_index('D', self.__physical_qubits[(px+dx, py+dy)])}"
-                    for dx, dy in [ (-0.5, -0.5), (-0.5, +0.5) ])
+                    f"{prefix}:JCT:R{last}:{stabilizer}{qi}",
+                    f"{following_target}:R0:{stabilizer}{qti}",
+                    *(
+                        f"{prefix}:JCT:R{last}:D{self.merger.get_qubit_index('D', self.__physical_qubits[(px + dx, py + dy)])}"
+                        for dx, dy in [(-0.5, -0.5), (-0.5, +0.5)]
+                    ),
                 )

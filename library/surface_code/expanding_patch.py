@@ -256,7 +256,9 @@ class ExpandingSurfaceCodePatch:
                     measured = []
                     for qa in self.active_qubits(stabilizer, True):
                         _, qi = self.qubits[stabilizer][qa]
-                        self.__physical_qubits.record_measurement(f"{prefix}:{stabilizer}{qi}", qa)
+                        self.__physical_qubits.record_measurement(
+                            f"{prefix}:{stabilizer}{qi}", qa
+                        )
                         measured.append(qa)
                     circuit.append(f"M{stabilizer}", measured)
             case _:

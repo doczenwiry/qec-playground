@@ -45,10 +45,14 @@ def sample(
 
     for scenario, circuit in scenarios.items():
         if postselection:
-            results = clifft.sample_survivors(circuit.as_clifft(), keep_records=True, shots=int(shots), seed=SEED)
+            results = clifft.sample_survivors(
+                circuit.as_clifft(), keep_records=True, shots=int(shots), seed=SEED
+            )
         else:
             results = clifft.sample(circuit.as_clifft(), shots=int(shots), seed=SEED)
-        outcomes = results.observables[:, 0] if correction else results.measurements[:, -1]
+        outcomes = (
+            results.observables[:, 0] if correction else results.measurements[:, -1]
+        )
 
         df = pd.DataFrame()
         df["Measured"] = outcomes.flatten()

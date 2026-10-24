@@ -147,7 +147,9 @@ class SteaneCodePatch:
     @property
     def pauli_stabilizers(self) -> dict[str, dict[int, str]]:
         return {
-            stabilizer + color : { qubit : stabilizer for qubit in self.__translate_qubits(*support) }
+            stabilizer + color: {
+                qubit: stabilizer for qubit in self.__translate_qubits(*support)
+            }
             for stabilizer, (color, support) in itertools.product(
                 ["X", "Z"], SteaneCodePatch.SUPPORTS["FINAL"].items()
             )
@@ -441,18 +443,21 @@ class SteaneCodePatch:
         match moment:
             case 0:
                 if self.__injection:
-                    circuit.append(f"{self.__injection.name}", self.__translate_qubits(
-                        "D0", "D4", "D6"
-                    ))
-                    circuit.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
-                        "D1", "D2", "D3", "D5"
-                    ))
+                    circuit.append(
+                        f"{self.__injection.name}",
+                        self.__translate_qubits("D0", "D4", "D6"),
+                    )
+                    circuit.append(
+                        f"{self.__injection.name}_DAG",
+                        self.__translate_qubits("D1", "D2", "D3", "D5"),
+                    )
                 circuit.append(
-                    "RX", self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX", "EX", "CT1", "CT2", "CT3")
+                    "RX",
+                    self.__translate_qubits(
+                        "GX", "GZ", "BX", "BZ", "RX", "EX", "CT1", "CT2", "CT3"
+                    ),
                 )
-                circuit.append(
-                    "RZ", self.__translate_qubits("RD", "GD", "BD")
-                )
+                circuit.append("RZ", self.__translate_qubits("RD", "GD", "BD"))
             case 1:
                 circuit.append(
                     "CX", self.__translate_qubits("RX", "RD", "GX", "GD", "BZ", "BD")
@@ -461,17 +466,24 @@ class SteaneCodePatch:
                 circuit.append(
                     "CX",
                     self.__translate_qubits(
-                        "RX", "D3", "GX", "D5", "GZ", "D4", "BX", "D1", "BZ", "D2", "EX", "D6"
+                        "RX",
+                        "D3",
+                        "GX",
+                        "D5",
+                        "GZ",
+                        "D4",
+                        "BX",
+                        "D1",
+                        "BZ",
+                        "D2",
+                        "EX",
+                        "D6",
                     ),
                 )
             case 3:
-                circuit.append(
-                    "CX", self.__translate_qubits("D6", "BZ", "GZ", "RD")
-                )
+                circuit.append("CX", self.__translate_qubits("D6", "BZ", "GZ", "RD"))
             case 4:
-                circuit.append(
-                    "CX", self.__translate_qubits("D2", "BZ", "GZ", "GD")
-                )
+                circuit.append("CX", self.__translate_qubits("D2", "BZ", "GZ", "GD"))
             case 5:
                 circuit.append(
                     "CX", self.__translate_qubits("D2", "GZ", "D6", "BX", "RX", "D0")
@@ -496,18 +508,25 @@ class SteaneCodePatch:
                     "CX", self.__translate_qubits("D2", "GZ", "D6", "BX", "RX", "D0")
                 )
             case 13:
-                circuit.append(
-                    "CX", self.__translate_qubits("D6", "BZ", "GZ", "GD")
-                )
+                circuit.append("CX", self.__translate_qubits("D6", "BZ", "GZ", "GD"))
             case 14:
-                circuit.append(
-                    "CX", self.__translate_qubits("D2", "BZ", "GZ", "RD")
-                )
+                circuit.append("CX", self.__translate_qubits("D2", "BZ", "GZ", "RD"))
             case 15:
                 circuit.append(
                     "CX",
                     self.__translate_qubits(
-                        "RX", "D3", "GX", "D5", "GZ", "D4", "BX", "D1", "BZ", "D2", "EX", "D6"
+                        "RX",
+                        "D3",
+                        "GX",
+                        "D5",
+                        "GZ",
+                        "D4",
+                        "BX",
+                        "D1",
+                        "BZ",
+                        "D2",
+                        "EX",
+                        "D6",
                     ),
                 )
             case 16:
@@ -516,34 +535,54 @@ class SteaneCodePatch:
                 )
             case 17:
                 circuit.append(
-                    "CX", self.__translate_qubits("CT1", "GD", "CT2", "BD", "CT3", "RD", "D2", "BZ")
+                    "CX",
+                    self.__translate_qubits(
+                        "CT1", "GD", "CT2", "BD", "CT3", "RD", "D2", "BZ"
+                    ),
                 )
             case 18:
                 circuit.append(
-                    "CX", self.__translate_qubits("GD", "CT1", "BD", "CT2", "RD", "CT3", "D6", "BZ")
+                    "CX",
+                    self.__translate_qubits(
+                        "GD", "CT1", "BD", "CT2", "RD", "CT3", "D6", "BZ"
+                    ),
                 )
             case 19:
-                measured_ancilla = self.__translate_qubits("GX", "GZ", "BX", "BZ", "RX", "EX")
+                measured_ancilla = self.__translate_qubits(
+                    "GX", "GZ", "BX", "BZ", "RX", "EX"
+                )
                 circuit.append("MX", measured_ancilla)
                 for index, xa in enumerate(measured_ancilla):
-                    self.__physical_qubits.record_measurement(f"{prefix}:X{index + 1}", xa)
+                    self.__physical_qubits.record_measurement(
+                        f"{prefix}:X{index + 1}", xa
+                    )
                 measured_ancilla = self.__translate_qubits("CT1", "CT2", "CT3")
                 circuit.append("MZ", measured_ancilla)
                 for index, za in enumerate(measured_ancilla):
                     self.__physical_qubits.record_measurement(f"{prefix}:Z{index}", za)
 
                 if self.__injection:
-                    circuit.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
-                        "D0", "D4", "D6"
-                    ))
-                    circuit.append(f"{self.__injection.name}", self.__translate_qubits(
-                        "D1", "D2", "D3", "D5"
-                    ))
+                    circuit.append(
+                        f"{self.__injection.name}_DAG",
+                        self.__translate_qubits("D0", "D4", "D6"),
+                    )
+                    circuit.append(
+                        f"{self.__injection.name}",
+                        self.__translate_qubits("D1", "D2", "D3", "D5"),
+                    )
             case _:
-                raise ValueError(f"Invalid cultivation moment requested [moment={moment}, max=10]")
+                raise ValueError(
+                    f"Invalid cultivation moment requested [moment={moment}, max=10]"
+                )
 
     NOISELESS_MEASUREMENT_MOMENTS = range(6)
-    def append_noiseless_measurement(self, circuitry: Circuitry, moment: Optional[int] = None, prefix: str = "STN:NOISELESS"):
+
+    def append_noiseless_measurement(
+        self,
+        circuitry: Circuitry,
+        moment: Optional[int] = None,
+        prefix: str = "STN:NOISELESS",
+    ):
         if moment is None:
             for moment in self.NOISELESS_MEASUREMENT_MOMENTS:
                 self.append_noiseless_measurement(circuitry, moment, prefix)
@@ -552,31 +591,35 @@ class SteaneCodePatch:
             match moment:
                 case 0:
                     if self.__injection:
-                        circuitry.append(f"{self.__injection.name}", self.__translate_qubits(
-                            "D0", "D4", "D6"
-                        ))
-                        circuitry.append(f"{self.__injection.name}_DAG", self.__translate_qubits(
-                            "D1", "D2", "D3", "D5"
-                        ))
-                    circuitry.append("RX", self.__translate_qubits(
-                        "GX", "GZ", "BX", "RX"
-                    ))
+                        circuitry.append(
+                            f"{self.__injection.name}",
+                            self.__translate_qubits("D0", "D4", "D6"),
+                        )
+                        circuitry.append(
+                            f"{self.__injection.name}_DAG",
+                            self.__translate_qubits("D1", "D2", "D3", "D5"),
+                        )
+                    circuitry.append(
+                        "RX", self.__translate_qubits("GX", "GZ", "BX", "RX")
+                    )
                 case 1:
-                    circuitry.append("CX", self.__translate_qubits(
-                "RX", "D3", "GX", "D5", "GZ", "D4", "BX", "D1"
-                    ))
+                    circuitry.append(
+                        "CX",
+                        self.__translate_qubits(
+                            "RX", "D3", "GX", "D5", "GZ", "D4", "BX", "D1"
+                        ),
+                    )
                 case 2:
-                    circuitry.append("CX", self.__translate_qubits(
-                        "D2", "GZ", "D6", "BX", "RX", "D0")
+                    circuitry.append(
+                        "CX",
+                        self.__translate_qubits("D2", "GZ", "D6", "BX", "RX", "D0"),
                     )
                 case 3:
-                    circuitry.append("CX", self.__translate_qubits(
-                        "D2", "RX", "GX", "D6"
-                    ))
+                    circuitry.append(
+                        "CX", self.__translate_qubits("D2", "RX", "GX", "D6")
+                    )
                 case 4:
-                    circuitry.append("CX", self.__translate_qubits(
-                        "GX", "D2"
-                    ))
+                    circuitry.append("CX", self.__translate_qubits("GX", "D2"))
                 case 5:
                     circuitry.append("MX", self.__translate_qubits("GX"))
                     self.__physical_qubits.record_measurement(

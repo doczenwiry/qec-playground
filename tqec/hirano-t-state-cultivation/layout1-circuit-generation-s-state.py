@@ -53,7 +53,10 @@ if __name__ == "__main__":
     )
 
     msc = MagicStateCultivation(
-        qubits, target=target, injection=SteaneCodePatch.Injection.S, draw_neighbors=DRAW_NEIGHBORS
+        qubits,
+        target=target,
+        injection=SteaneCodePatch.Injection.S,
+        draw_neighbors=DRAW_NEIGHBORS,
     )
 
     msc.append_preparation(circuitry)
@@ -62,9 +65,7 @@ if __name__ == "__main__":
     msc.append_teleportation(circuitry, TELEPORT_ROUNDS)
     msc.append_expansion(circuitry)
 
-    msc.annotate_detectors(
-        circuitry, sdc_rounds=1, tpt_rounds=TELEPORT_ROUNDS
-    )
+    msc.annotate_detectors(circuitry, sdc_rounds=1, tpt_rounds=TELEPORT_ROUNDS)
 
     circuitry.append_observable(
         0,

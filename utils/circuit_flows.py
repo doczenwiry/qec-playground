@@ -85,12 +85,13 @@ def check_flow_preservation(
     report = f"Preserved {inclusion}" if preserved else "DISTORTED"
     print(f"> +{pauli}({','.join(map(str, support))}) : {report}")
 
+
 def check_state_preparation(
     circuit: stim.Circuit,
     pauli: str,
     support: list[int],
     measurements: Optional[list[str]] = None,
-    label: str = ""
+    label: str = "",
 ):
     measurements_index = extract_measurements(circuit) or list()
     solution = None
@@ -109,7 +110,7 @@ def check_state_preparation(
     else:
         inclusion = ""
     report = f"Prepared {inclusion}" if preserved else "DISTORTED"
-    print(f"{label}> +{pauli}({",".join(map(str, support))}) : {report}")
+    print(f"{label}> +{pauli}({','.join(map(str, support))}) : {report}")
 
 
 def check_syndrome_extraction(

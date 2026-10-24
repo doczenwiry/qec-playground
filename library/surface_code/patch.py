@@ -88,7 +88,7 @@ class SurfaceCodePatch:
         )
 
     @staticmethod
-    def make_array(distance: int, counts: tuple[int, int] = (1,1)) -> QubitArray:
+    def make_array(distance: int, counts: tuple[int, int] = (1, 1)) -> QubitArray:
         if distance % 2 != 1:
             raise ValueError("Code distance must be odd.")
 
@@ -134,12 +134,12 @@ class SurfaceCodePatch:
             case Pauli.X:
                 if self.__coloring:
                     return {
-                        self.__physical_qubits.qubits[(ax+offset, ay + i)]: "X"
+                        self.__physical_qubits.qubits[(ax + offset, ay + i)]: "X"
                         for i in range(self.__distance)
                     }
                 else:
                     return {
-                        self.__physical_qubits.qubits[(ax + i, ay+offset)]: "X"
+                        self.__physical_qubits.qubits[(ax + i, ay + offset)]: "X"
                         for i in range(self.__distance)
                     }
             case Pauli.Y:
@@ -160,12 +160,12 @@ class SurfaceCodePatch:
             case Pauli.Z:
                 if self.__coloring:
                     return {
-                        self.__physical_qubits.qubits[(ax + i, ay+offset)]: "Z"
+                        self.__physical_qubits.qubits[(ax + i, ay + offset)]: "Z"
                         for i in range(self.__distance)
                     }
                 else:
                     return {
-                        self.__physical_qubits.qubits[(ax+offset, ay + i)]: "Z"
+                        self.__physical_qubits.qubits[(ax + offset, ay + i)]: "Z"
                         for i in range(self.__distance)
                     }
 
@@ -225,7 +225,7 @@ class SurfaceCodePatch:
         rounds: Optional[int] = None,
         prepared: Optional[Pauli] = None,
         measured: Optional[Pauli] = None,
-        inactive: Callable[[tuple[float, float]], bool] = lambda _ : False,
+        inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
     ):
         last = (rounds or self.distance) - 1
         for stabilizer in ["X", "Z"]:
@@ -243,9 +243,10 @@ class SurfaceCodePatch:
                 if measured is not None and measured.name == stabilizer:
                     circuitry.annotate_detector(
                         f"{prefix}:R{last}:{stabilizer}{qi}",
-                        *[ f"{prefix}:R{last}:D{self.get_qubit_index("D", qd)}"
-                           for qd in self.get_polygon(*ql)
-                        ]
+                        *[
+                            f"{prefix}:R{last}:D{self.get_qubit_index('D', qd)}"
+                            for qd in self.get_polygon(*ql)
+                        ],
                     )
 
     def append_memory(
@@ -312,7 +313,9 @@ class SurfaceCodePatch:
                 for stabilizer in ["X", "Z"]:
                     measured = []
                     for ql, (qa, qi) in self.__get_qubits(stabilizer, inactive):
-                        self.__physical_qubits.record_measurement(f"{prefix}:{stabilizer}{qi}", qa)
+                        self.__physical_qubits.record_measurement(
+                            f"{prefix}:{stabilizer}{qi}", qa
+                        )
                         measured.append(qa)
                     circuit.append(f"M{stabilizer}", measured)
                 if measure:

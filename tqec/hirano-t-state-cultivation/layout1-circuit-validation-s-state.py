@@ -29,7 +29,7 @@ if __name__ == "__main__":
     print("Modified Steane Code (w/ S-injection) --- Preparation")
     qubits = QubitArray(dimensions=(6, 6))
     circuitry = Circuitry(qubits)
-    steane = SteaneCodePatch(array=qubits, anchor=(1,1))
+    steane = SteaneCodePatch(array=qubits, anchor=(1, 1))
     steane.append_preparation(circuitry)
 
     for stabilizer, support in itertools.product(
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     )
     qubits = QubitArray(dimensions=(6, 6))
     circuitry = Circuitry(qubits)
-    steane = SteaneCodePatch(array=qubits, anchor=(1,1))
+    steane = SteaneCodePatch(array=qubits, anchor=(1, 1))
     steane.append_superdense_cycle(circuitry)
 
     print("Stabilizer flows")
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     print("Modified Steane Code (w/ S-injection) --- Double-Check-S")
     qubits = QubitArray(dimensions=(6, 6))
     circuitry = Circuitry(qubits)
-    steane = SteaneCodePatch(array=qubits, anchor=(1,1))
+    steane = SteaneCodePatch(array=qubits, anchor=(1, 1))
     steane.append_cultivation(circuitry)
 
     print("Stabilizer flows")

@@ -22,7 +22,6 @@ import seaborn as sns
 import sinter
 import stim
 from matplotlib.container import BarContainer
-from scipy.constants import physical_constants
 
 from library.circuitry import Circuitry
 from utils.simulation.noise import make_noisy
@@ -49,10 +48,14 @@ def simulate(
         scenarios = {"circuit": scenarios}
     tasks = [
         sinter.Task(
-            circuit=make_noisy(circuitry, per=physical_error_rate) if isinstance(circuitry, stim.Circuit) else circuitry.as_stim(per=physical_error_rate),
+            circuit=make_noisy(circuitry, per=physical_error_rate)
+            if isinstance(circuitry, stim.Circuit)
+            else circuitry.as_stim(per=physical_error_rate),
             postselection_mask=np.packbits(
                 np.array(circuitry.postselection_mask, dtype=bool)
-            ) if postselection and isinstance(circuitry, Circuitry) else None,
+            )
+            if postselection and isinstance(circuitry, Circuitry)
+            else None,
             json_metadata={"scenario": scenario, "per": physical_error_rate},
         )
         for (scenario, circuitry), physical_error_rate in itertools.product(
@@ -133,16 +136,17 @@ def sample(
 
     for scenario, circuitry in scenarios.items():
         # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
-        circuit = circuitry.as_stim() if isinstance(circuitry, Circuitry) else circuitry
+        circuit = cast(
+            stim.Circuit,
+            circuitry.as_stim() if isinstance(circuitry, Circuitry) else circuitry,
+        )
         if correction:
             sampler = circuit.compile_detector_sampler(seed=SEED)
             _, outcomes = sampler.sample(shots=int(shots), separate_observables=True)
             outcomes = outcomes.astype(int)[:, 0]
         else:
             outcomes = (
-                circuit.compile_sampler()
-                .sample(shots=int(shots))
-                .astype(int)[:, -1]
+                circuit.compile_sampler().sample(shots=int(shots)).astype(int)[:, -1]
             )
 
         df = pd.DataFrame()

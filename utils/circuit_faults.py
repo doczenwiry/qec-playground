@@ -16,8 +16,8 @@ from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
 
 import stim
-from tqec import NoiseModel
-from tqec.utils.noise_model import NoiseRule
+from tqec.utils.noise_model import NoiseModel, NoiseRule
+
 
 def __make_noisy_circuit(circuit: stim.Circuit, per: float = 0.01) -> stim.Circuit:
     return NoiseModel(
@@ -37,16 +37,19 @@ def __make_noisy_circuit(circuit: stim.Circuit, per: float = 0.01) -> stim.Circu
         },
     ).noisy_circuit(circuit)
 
+
 def analyse_heuristic(circuit: stim.Circuit, verbose: bool = False):
     found = circuit.search_for_undetectable_logical_errors(
         dont_explore_detection_event_sets_with_size_above=4,
         dont_explore_edges_with_degree_above=4,
-        dont_explore_edges_increasing_symptom_degree=False)
+        dont_explore_edges_increasing_symptom_degree=False,
+    )
 
     print(f"Minimum weight undetectable logical error : {len(found)}")
     if verbose:
         for e in circuit.explain_detector_error_model_errors():
             print(e)
+
 
 def analyse_sat_solving(circuit: stim.Circuit):
     wcnf = WCNF(from_string=circuit.shortest_error_sat_problem())

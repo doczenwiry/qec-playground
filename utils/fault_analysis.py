@@ -16,7 +16,7 @@ import operator
 from collections import defaultdict
 from functools import reduce
 from itertools import product, combinations
-from typing import Union
+from typing import Union, cast
 
 import numpy as np
 import stim
@@ -24,10 +24,15 @@ import stim
 from library.circuitry import Circuitry
 
 _IGNORED = ("QUBIT_COORDS", "DETECTOR", "OBSERVABLE_INCLUDE", "SHIFT_COORDS")
+
+
 def enumerate_faults(circuitry: Union[Circuitry, stim.Circuit], k: int = 1):
     tk_idx = 0
     faults: list[tuple[int, int, dict]] = []
-    circuit = circuitry.as_stim() if isinstance(circuitry, Circuitry) else circuitry
+    circuit = cast(
+        stim.Circuit,
+        circuitry.as_stim() if isinstance(circuitry, Circuitry) else circuitry,
+    )
     for op_idx, instruction in enumerate(circuit.flattened()):
         if instruction.name in _IGNORED:
             continue
@@ -42,18 +47,22 @@ def enumerate_faults(circuitry: Union[Circuitry, stim.Circuit], k: int = 1):
                     if pa + pb == "II":
                         continue
                     faults.append(
-                        (op_idx, tk_idx, {q: p for q, p in ((qa, pa), (qb, pb)) if p != "I"})
+                        (
+                            op_idx,
+                            tk_idx,
+                            {q: p for q, p in ((qa, pa), (qb, pb)) if p != "I"},
+                        )
                     )
         elif instruction.name in ("MX", "MY", "MZ"):
             continue
         else:
             for q, p in product(qs, "XYZ"):
-                faults.append(
-                    (op_idx, tk_idx, {q: p})
-                )
+                faults.append((op_idx, tk_idx, {q: p}))
 
     simulator = stim.FlipSimulator(
-        batch_size=len(faults), num_qubits=circuit.num_qubits, disable_stabilizer_randomization=True
+        batch_size=len(faults),
+        num_qubits=circuit.num_qubits,
+        disable_stabilizer_randomization=True,
     )
 
     for op_idx, instruction in enumerate(circuit.flattened()):
@@ -76,7 +85,9 @@ def enumerate_faults(circuitry: Union[Circuitry, stim.Circuit], k: int = 1):
     for configuration in combinations(range(len(faults)), k):
         product_frame = reduce(operator.mul, (frames[fi] for fi in configuration))
         product_frame.sign = +1
-        product_flips = reduce(operator.xor, (detector_flips[:,fi] for fi in configuration))
-        outcomes[ (str(product_frame), product_flips.tobytes()) ].append( configuration )
+        product_flips = reduce(
+            operator.xor, (detector_flips[:, fi] for fi in configuration)
+        )
+        outcomes[(str(product_frame), product_flips.tobytes())].append(configuration)
 
     return faults, dict(outcomes)

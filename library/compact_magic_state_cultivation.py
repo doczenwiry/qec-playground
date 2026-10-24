@@ -11,7 +11,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-from pandas.core.groupby.base import transform_kernel_allowlist
 
 from library.circuitry import Circuitry
 from library.common import Pauli
@@ -237,7 +236,9 @@ class MagicStateCultivation:
                     translated_mmt = -1
 
                 if translated_mmt != -1:
-                    self.__junction.append_syndrome(circuitry, moment=translated_mmt, prefix=f"JCT{rnd}")
+                    self.__junction.append_syndrome(
+                        circuitry, moment=translated_mmt, prefix=f"JCT{rnd}"
+                    )
                     self.source.append_round(
                         circuitry,
                         moment=translated_mmt,
@@ -287,21 +288,20 @@ class MagicStateCultivation:
         # The X_{0126ab} detector.
         last = sdc_rounds - 1
         circuitry.annotate_detector(
-            *(f"STN:DST:{mx}" for mx in ['X0', 'X1', 'X2', 'X6']),
+            *(f"STN:DST:{mx}" for mx in ["X0", "X1", "X2", "X6"]),
             "SRC:REC:X0",
             postselected=True,
         )
 
         # The X_{2456} detector
         circuitry.annotate_detector(
-            *(f"STN:DST:{mx}" for mx in [ 'X2', 'X4', 'X5', 'X6' ]),
+            *(f"STN:DST:{mx}" for mx in ["X2", "X4", "X5", "X6"]),
             postselected=True,
         )
 
         # The X_{0234} detector
         circuitry.annotate_detector(
-            *(f"STN:DST:{mx}" for mx in ['X0', 'X2', 'X3', 'X4']),
-            postselected=True
+            *(f"STN:DST:{mx}" for mx in ["X0", "X2", "X3", "X4"]), postselected=True
         )
 
         self.__junction.annotate_detectors(circuitry, rounds=tpt_rounds)
