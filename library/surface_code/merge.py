@@ -71,13 +71,13 @@ class MergeSurgery:
         final_round = (rounds or self.__distance) - 1
         for rnd in range(rounds or self.__distance):
             for mmt in SurfaceCodePatch.MOMENTS:
-                self.source.append_round(
+                self.source.append_round_6steps(
                     circuitry,
                     mmt,
                     inactive=self.__source_inactive,
                     prefix=f"{prefix}:SRC:R{rnd}",
                 )
-                self.merger.append_round(
+                self.merger.append_round_6steps(
                     circuitry,
                     mmt,
                     inactive=self.__merger_inactive,
@@ -85,7 +85,7 @@ class MergeSurgery:
                     prepare=transition if rnd == start_round else None,
                     measure=transition if rnd == final_round else None,
                 )
-                self.target.append_round(
+                self.target.append_round_6steps(
                     circuitry,
                     mmt,
                     inactive=self.__target_inactive,

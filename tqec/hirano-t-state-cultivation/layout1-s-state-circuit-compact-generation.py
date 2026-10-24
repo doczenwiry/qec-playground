@@ -63,9 +63,11 @@ if __name__ == "__main__":
     msc.append_superdense_cycle(circuitry, prefix="STN:SDC0")
     msc.append_cultivation(circuitry)
     msc.append_teleportation(circuitry, TELEPORT_ROUNDS)
-    msc.append_expansion(circuitry)
+    padding = msc.append_expansion(circuitry)
 
-    msc.annotate_detectors(circuitry, sdc_rounds=1, tpt_rounds=TELEPORT_ROUNDS)
+    msc.annotate_detectors(
+        circuitry, sdc_rounds=1, tpt_rounds=TELEPORT_ROUNDS, padding=padding
+    )
 
     circuitry.append_observable(
         0,

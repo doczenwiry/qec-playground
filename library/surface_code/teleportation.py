@@ -82,14 +82,14 @@ class TeleportationSurgery:
         final_round = (rounds or self.__distance) - 1
         for rnd in range(rounds or self.__distance):
             for mmt in SurfaceCodePatch.MOMENTS:
-                self.source.append_round(
+                self.source.append_round_6steps(
                     circuit,
                     mmt,
                     measure=transition if rnd == final_round else None,
                     inactive=self.__source_inactive,
                     prefix=f"{prefix}:SRC:R{rnd}",
                 )
-                self.__merger.append_round(
+                self.__merger.append_round_6steps(
                     circuit,
                     mmt,
                     prepare=transition if rnd == start_round else None,
@@ -97,7 +97,7 @@ class TeleportationSurgery:
                     inactive=self.__merger_inactive,
                     prefix=f"{prefix}:JCT:R{rnd}",
                 )
-                self.target.append_round(
+                self.target.append_round_6steps(
                     circuit,
                     mmt,
                     prepare=transition if rnd == start_round else None,

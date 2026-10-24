@@ -768,7 +768,7 @@ class SteaneCodePatch:
                 case _:
                     logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    DESTRUCTION_MOMENTS = range(6)
+    DESTRUCTION_MOMENTS = range(7)
 
     def append_destruction(
         self, circuit: Circuitry, moment: Optional[int] = None, prefix: str = "DST"
@@ -787,7 +787,7 @@ class SteaneCodePatch:
                         "BZ", "D1", "GZ", "RZ", "D4", "GX", "EX0"
                     ),
                 )
-            case 1:
+            case 2:
                 circuit.append(
                     "ZCX",
                     self.__translate_qubit_ids(
@@ -807,7 +807,7 @@ class SteaneCodePatch:
                         "EX0",
                     ),
                 )
-            case 3:
+            case 4:
                 circuit.append(
                     "XCZ",
                     self.__translate_qubit_ids(
@@ -827,7 +827,7 @@ class SteaneCodePatch:
                         "EX0",
                     ),
                 )
-            case 5:
+            case 6:
                 measured_data_qubits = self.__translate_qubit_ids(
                     "BZ", "D1", "GZ", "RZ", "D4", "GX", "EX0"
                 )

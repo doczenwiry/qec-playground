@@ -73,8 +73,11 @@ class JunctionPatch:
             case 1 | 2 | 3 | 4:
                 cx_targets = []
                 for zi, ((px, py), za) in enumerate(self.z_ancilla.items()):
-                    interaction = SurfaceCodePatch.SCHEDULE["Z"][moment - 1]
-                    if interaction not in JunctionPatch.STABILIZERS[zi]:
+                    interaction = SurfaceCodePatch.SCHEDULE["6_STEPS"]["Z"][moment - 1]
+                    if (
+                        interaction is None
+                        or interaction not in JunctionPatch.STABILIZERS[zi]
+                    ):
                         continue
                     dx, dy = interaction
                     qd = self.__physical_qubits.qubits[px + dx, py + dy]

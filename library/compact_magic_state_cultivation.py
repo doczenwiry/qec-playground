@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import math
 
 from library.circuitry import Circuitry
 from library.common import Pauli
@@ -239,7 +240,7 @@ class MagicStateCultivation:
                     self.__junction.append_syndrome(
                         circuitry, moment=translated_mmt, prefix=f"JCT{rnd}"
                     )
-                    self.source.append_round(
+                    self.source.append_round_6steps(
                         circuitry,
                         moment=translated_mmt,
                         prepare=Pauli.X if rnd == 0 else None,
@@ -264,7 +265,7 @@ class MagicStateCultivation:
 
         for mmt in self.steane.DESTRUCTION_MOMENTS:
             self.steane.append_destruction(circuitry, moment=mmt, prefix="STN:DST")
-            self.source.append_round(circuitry, moment=mmt, prefix="SRC:REC")
+            self.source.append_round_7steps(circuitry, moment=mmt, prefix="SRC:REC")
             circuitry.append_tick()
 
     def append_expansion(self, circuitry: Circuitry):
@@ -274,11 +275,21 @@ class MagicStateCultivation:
                 self.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
             )
 
+        distance = self.target.distance
+        memories = math.ceil(
+            11 / distance
+        )  # Number of memory experiment to fit a single end-to-end MSC attempt
+        padding = (
+            (memories * distance) - 11
+        )  # Number of padding rounds required to line up the destructive measurements
+
         # Append the rounds of the expansion stage
-        self.__expansion.append_expansion(circuitry)
+        self.__expansion.append_expansion(circuitry, padding)
+
+        return padding
 
     def annotate_detectors(
-        self, circuitry: Circuitry, sdc_rounds: int, tpt_rounds: int
+        self, circuitry: Circuitry, sdc_rounds: int, tpt_rounds: int, padding: int
     ):
         self.steane.annotate_detectors(
             circuitry, sdc_rounds=sdc_rounds, tpt_rounds=tpt_rounds
@@ -338,5 +349,5 @@ class MagicStateCultivation:
                 circuitry.annotate_detector(f"TGT:EXP:R0:X{qti}", f"SRC:REC:X{qsi}")
 
         self.target.annotate_detectors(
-            circuitry, rounds=self.target.distance, prefix="TGT:EXP"
+            circuitry, rounds=self.target.distance + padding, prefix="TGT:EXP"
         )

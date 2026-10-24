@@ -47,14 +47,12 @@ class ExpansionSurgery:
 
         self.__source = source
         self.__target = target
-        # self.__source_inactive = lambda ql: ql[0] == sx + self.__distance - 0.5
-        # self.__target_inactive = lambda ql: ql[0] == tx - 0.5
 
     def __qubit_in_expansion(self, px: float, py: float) -> bool:
         tx, ty = self.__target.anchor
         return not (px >= tx + self.__expansion and py >= ty + self.__expansion)
 
-    def append_expansion(self, circuit: Circuitry):
+    def append_expansion(self, circuit: Circuitry, padding: int = 0):
         circuit.annotate_polygons(self.__target.get_polygons(opacity=0.125))
         circuit.annotate_polygons(self.__source.get_polygons(opacity=0.25))
 
@@ -72,9 +70,11 @@ class ExpansionSurgery:
         circuit.append("RX", rx_data_qubits)
         circuit.append("RZ", rz_data_qubits)
 
-        for rnd in range(self.__distance):
-            for mmt in SurfaceCodePatch.MOMENTS:
-                self.__target.append_round(circuit, mmt, prefix=f"TGT:EXP:R{rnd}")
+        for rnd in range(self.__distance + padding):
+            for mmt in range(7):
+                self.__target.append_round_7steps(
+                    circuit, mmt, prefix=f"TGT:EXP:R{rnd}"
+                )
                 circuit.append_tick()
 
         circuit.annotate_polygons(self.__target.get_polygons(opacity=0.25))

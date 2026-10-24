@@ -26,9 +26,16 @@ logger = logging.getLogger(__name__)
 
 class SurfaceCodePatch:
     MOMENTS: Final[range] = range(6)
-    SCHEDULE = {
-        "X": [(-0.5, -0.5), (+0.5, -0.5), (-0.5, +0.5), (+0.5, +0.5)],
-        "Z": [(-0.5, -0.5), (-0.5, +0.5), (+0.5, -0.5), (+0.5, +0.5)],
+
+    SCHEDULE: dict[str, dict[str, list[Optional[tuple[float, float]]]]] = {
+        "6_STEPS": {
+            "X": [(-0.5, -0.5), (+0.5, -0.5), (-0.5, +0.5), (+0.5, +0.5)],
+            "Z": [(-0.5, -0.5), (-0.5, +0.5), (+0.5, -0.5), (+0.5, +0.5)],
+        },
+        "7_STEPS": {
+            "X": [(-0.5, -0.5), (+0.5, -0.5), (-0.5, +0.5), None, (+0.5, +0.5)],
+            "Z": [(-0.5, -0.5), None, (-0.5, +0.5), (+0.5, -0.5), (+0.5, +0.5)],
+        },
     }
 
     def __init__(
@@ -259,14 +266,14 @@ class SurfaceCodePatch:
         start = 0
         final = self.__distance - 1
         for rnd in range(self.__distance):
-            self.append_round(
+            self.append_round_6steps(
                 circuit,
                 prepare=prepare if (rnd == start) else None,
                 measure=measure if (rnd == final) else None,
                 prefix=f"{prefix}:R{rnd}",
             )
 
-    def append_round(
+    def append_round_6steps(
         self,
         circuit: Circuitry,
         moment: Optional[int] = None,
@@ -277,7 +284,9 @@ class SurfaceCodePatch:
     ):
         if moment is None:
             for mmt in SurfaceCodePatch.MOMENTS:
-                self.append_round(circuit, mmt, prepare, measure, inactive, prefix)
+                self.append_round_6steps(
+                    circuit, mmt, prepare, measure, inactive, prefix
+                )
                 circuit.append_tick()
             return
 
@@ -299,7 +308,12 @@ class SurfaceCodePatch:
                 targets = []
                 for stabilizer in ["X", "Z"]:
                     for (px, py), (qa, _) in self.__get_qubits(stabilizer, inactive):
-                        dx, dy = SurfaceCodePatch.SCHEDULE[stabilizer][moment - 1]
+                        interaction = SurfaceCodePatch.SCHEDULE["6_STEPS"][stabilizer][
+                            moment - 1
+                        ]
+                        if interaction is None:
+                            continue
+                        dx, dy = interaction
                         qd = self.get_qubit_at_location((px + dx, py + dy))
                         if qd != -1:
                             if stabilizer == "Z":
@@ -310,6 +324,74 @@ class SurfaceCodePatch:
                                 targets.append(qd)
                 circuit.append("CX", targets)
             case 5:
+                for stabilizer in ["X", "Z"]:
+                    measured = []
+                    for ql, (qa, qi) in self.__get_qubits(stabilizer, inactive):
+                        self.__physical_qubits.record_measurement(
+                            f"{prefix}:{stabilizer}{qi}", qa
+                        )
+                        measured.append(qa)
+                    circuit.append(f"M{stabilizer}", measured)
+                if measure:
+                    measured_data = []
+                    for dl, (dq, di) in self.__get_qubits("D", inactive):
+                        self.__physical_qubits.record_measurement(f"{prefix}:D{di}", dq)
+                        measured_data.append(dq)
+                    circuit.append(f"M{measure.name}", measured_data)
+            case _:
+                logger.warning(f"Nothing to do at requested moment [{moment}]")
+
+    def append_round_7steps(
+        self,
+        circuit: Circuitry,
+        moment: Optional[int] = None,
+        prepare: Optional[Pauli] = None,
+        measure: Optional[Pauli] = None,
+        inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
+        prefix: str = "",
+    ):
+        if moment is None:
+            for mmt in range(7):
+                self.append_round_7steps(
+                    circuit, mmt, prepare, measure, inactive, prefix
+                )
+                circuit.append_tick()
+            return
+
+        match moment:
+            case 0:
+                for stabilizer in ["X", "Z"]:
+                    circuit.append(
+                        f"R{stabilizer}",
+                        [qa for _, (qa, _) in self.__get_qubits(stabilizer, inactive)],
+                    )
+                if prepare:
+                    if prepare == Pauli.Y:
+                        raise NotImplementedError("Y-basis preparation not supported.")
+                    circuit.append(
+                        f"R{prepare.name}",
+                        [qd for _, (qd, _) in self.__get_qubits("D", inactive)],
+                    )
+            case 1 | 2 | 3 | 4 | 5:
+                targets = []
+                for stabilizer in ["X", "Z"]:
+                    for (px, py), (qa, _) in self.__get_qubits(stabilizer, inactive):
+                        interaction = SurfaceCodePatch.SCHEDULE["7_STEPS"][stabilizer][
+                            moment - 1
+                        ]
+                        if interaction is None:
+                            continue
+                        dx, dy = interaction
+                        qd = self.get_qubit_at_location((px + dx, py + dy))
+                        if qd != -1:
+                            if stabilizer == "Z":
+                                targets.append(qd)
+                                targets.append(qa)
+                            else:
+                                targets.append(qa)
+                                targets.append(qd)
+                circuit.append("CX", targets)
+            case 6:
                 for stabilizer in ["X", "Z"]:
                     measured = []
                     for ql, (qa, qi) in self.__get_qubits(stabilizer, inactive):
