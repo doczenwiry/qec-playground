@@ -17,7 +17,7 @@ from library.circuitry import Circuitry
 from library.common import Pauli
 from library.junction_patch import JunctionPatch
 from library.qubit_array import QubitArray
-from library.steane_code.patch import SteaneCodePatch
+from library.deprecated.patch import SteaneCodePatch
 from library.surface_code.expansion import ExpansionSurgery
 from library.surface_code.patch import SurfaceCodePatch
 

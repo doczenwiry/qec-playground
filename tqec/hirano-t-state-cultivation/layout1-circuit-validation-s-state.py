@@ -14,7 +14,7 @@
 
 from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
-from library.steane_code.patch import SteaneCodePatch
+from library.deprecated.patch import SteaneCodePatch
 
 import itertools
 

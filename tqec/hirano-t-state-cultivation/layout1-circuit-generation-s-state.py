@@ -16,9 +16,9 @@ import logging
 from pathlib import Path
 
 from library.circuitry import Circuitry
-from library.magic_state_cultivation import MagicStateCultivation
+from library.deprecated.magic_state_cultivation import MagicStateCultivation
 from library.qubit_array import QubitArray
-from library.steane_code.patch import SteaneCodePatch
+from library.deprecated.patch import SteaneCodePatch
 from library.common import Pauli
 from library.surface_code.patch import SurfaceCodePatch
 
@@ -63,9 +63,11 @@ if __name__ == "__main__":
     msc.append_superdense_cycle(circuitry, 0)
     msc.append_cultivation(circuitry)
     msc.append_teleportation(circuitry, TELEPORT_ROUNDS)
-    msc.append_expansion(circuitry)
+    padding = msc.append_expansion(circuitry)
 
-    msc.annotate_detectors(circuitry, sdc_rounds=1, tpt_rounds=TELEPORT_ROUNDS)
+    msc.annotate_detectors(
+        circuitry, sdc_rounds=1, tpt_rounds=TELEPORT_ROUNDS, padding=padding
+    )
 
     circuitry.append_observable(
         0,
