@@ -48,6 +48,7 @@ class SteaneCodePatch:
         "BX": (1.5, 2.5),
         "BZ": (1.5, 1.5),
         "EX0": (0.5, 0.5),
+        "EX1": (0.5, 2.5),
         "d1": (0.0, 2.0),
         "d4": (3.0, 0.0),
     }
@@ -208,7 +209,7 @@ class SteaneCodePatch:
             )
 
         # Annotate the CULTIVATION detectors
-        for label in ["CC", "RZ", "GZ", "D1", "BZ", "EX0", "D4"]:
+        for label in ["CC", "RZ", "GZ", "D1", "BZ", "EX0", "EX1", "D4"]:
             circuitry.annotate_detector(f"{prefix}:CULT:{label}", postselected=True)
         for number in range(3):
             circuitry.annotate_detector(f"{prefix}:CULT:Z{number}", postselected=True)
@@ -429,7 +430,7 @@ class SteaneCodePatch:
                 circuitry.append(
                     "RX",
                     self.__translate_qubit_ids(
-                        "RD", "BD", "RZ", "GZ", "D1", "BZ", "D4", "EX0"
+                        "RD", "BD", "RZ", "GZ", "D1", "BZ", "D4", "EX0", "EX1"
                     ),
                 )
                 circuitry.append("RZ", self.__translate_qubit_ids("RX", "BX"))
@@ -495,7 +496,7 @@ class SteaneCodePatch:
                 )
             case 13:
                 circuitry.append(
-                    "CX", self.__translate_qubit_ids("D0", "BX", "RZ", "RD")
+                    "CX", self.__translate_qubit_ids("BD", "BX", "RZ", "RD")
                 )
             case 14:
                 circuitry.append(
@@ -513,13 +514,16 @@ class SteaneCodePatch:
                         "D5",
                         "EX0",
                         "D6",
+                        "EX1",
+                        "BD",
+                        "D0",
+                        "BX",
+                        "RD",
+                        "RX",
                     ),
                 )
-                circuitry.append(
-                    "CX", self.__translate_qubit_ids("RD", "RX", "BD", "BX")
-                )
             case 15:
-                labels = ["RZ", "GZ", "D1", "BZ", "D4", "EX0"]
+                labels = ["RZ", "GZ", "D1", "BZ", "D4", "EX0", "EX1"]
                 measured_ancilla = self.__translate_qubit_ids(*labels)
                 circuitry.append("MX", measured_ancilla)
                 for label, xa in zip(labels, measured_ancilla):
