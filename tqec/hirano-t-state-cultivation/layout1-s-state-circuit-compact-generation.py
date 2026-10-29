@@ -59,9 +59,9 @@ if __name__ == "__main__":
         draw_neighbors=DRAW_NEIGHBORS,
     )
 
-    msc.append_preparation(circuitry)
+    msc.append_injection(circuitry)
     msc.append_superdense_cycle(circuitry, prefix="STN:SDC0")
-    msc.append_cultivation(circuitry)
+    msc.append_doublecheck(circuitry)
     msc.append_teleportation(circuitry, TELEPORT_ROUNDS)
     padding = msc.append_expansion(circuitry)
 

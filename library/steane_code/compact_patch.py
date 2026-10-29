@@ -248,10 +248,10 @@ class SteaneCodePatch:
 
     PREPARATION_MOMENTS = range(11)
 
-    def append_preparation(self, circuit: Circuitry, moment: Optional[int] = None):
+    def append_injection(self, circuit: Circuitry, moment: Optional[int] = None):
         if moment is None:
             for moment in self.PREPARATION_MOMENTS:
-                self.append_preparation(circuit, moment)
+                self.append_injection(circuit, moment)
                 circuit.append_tick()
             return
 
@@ -402,17 +402,17 @@ class SteaneCodePatch:
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
 
-    CULTIVATION_MOMENTS = range(16)
+    DOUBLECHECK_MOMENTS = range(16)
 
-    def append_cultivation(
+    def append_doublecheck(
         self,
         circuitry: Circuitry,
         moment: Optional[int] = None,
         prefix: str = "STN:CULT",
     ):
         if moment is None:
-            for moment in self.CULTIVATION_MOMENTS:
-                self.append_cultivation(circuitry, moment, prefix)
+            for moment in self.DOUBLECHECK_MOMENTS:
+                self.append_doublecheck(circuitry, moment, prefix)
                 circuitry.append_tick()
             return
 

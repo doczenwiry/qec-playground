@@ -169,7 +169,7 @@ class MagicStateCultivation:
 
         return polygons
 
-    def append_preparation(self, circuitry: Circuitry):
+    def append_injection(self, circuitry: Circuitry):
         circuitry.annotate_polygons(
             self.target.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
         )
@@ -179,7 +179,7 @@ class MagicStateCultivation:
                 self.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
             )
 
-        self.steane.append_preparation(circuitry)
+        self.steane.append_injection(circuitry)
 
     def append_superdense_cycle(self, circuitry: Circuitry, prefix: str = "SDC"):
         circuitry.annotate_polygons(
@@ -194,7 +194,7 @@ class MagicStateCultivation:
         # Append the superdense syndrome measurement code cycle (one round)
         self.steane.append_superdense_cycle(circuitry, prefix=f"{prefix}")
 
-    def append_cultivation(self, circuitry: Circuitry):
+    def append_doublecheck(self, circuitry: Circuitry):
         circuitry.annotate_polygons(
             self.target.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
         )
@@ -205,7 +205,7 @@ class MagicStateCultivation:
             )
 
         # Append the cultivation stage with the Double-Check-S/T
-        self.steane.append_cultivation(circuitry, prefix="STN:CULT")
+        self.steane.append_doublecheck(circuitry, prefix="STN:CULT")
 
     def append_teleportation(self, circuitry: Circuitry, rounds: int = 3):
         if rounds not in range(4):
