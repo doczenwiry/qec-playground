@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 510" width="560" height="510" shape-rendering="geometricPrecision" stroke-linecap="round" stroke-linejoin="round" font-family="'TeX Gyre Pagella', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif">
+<rect width="560" height="510" fill="white"/>
+<g transform="matrix(0 1 1 0 0 0)">
+<rect x="190" y="250" width="60" height="60" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="250" y="250" width="60" height="60" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="310" y="250" width="60" height="60" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="370" y="250" width="60" height="60" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<path d="M 430 250 A 30.0 30.0 0 0 1 430 310 Z" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<path d="M 190 310 A 30.0 30.0 0 0 0 190 370 Z" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="190" y="310" width="60" height="60" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="250" y="310" width="60" height="60" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="310" y="310" width="60" height="60" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="370" y="310" width="60" height="60" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="190" y="370" width="60" height="60" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="250" y="370" width="60" height="60" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="310" y="370" width="60" height="60" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="370" y="370" width="60" height="60" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<path d="M 430 370 A 30.0 30.0 0 0 1 430 430 Z" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<path d="M 190 430 A 30.0 30.0 0 0 0 190 490 Z" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="190" y="430" width="60" height="60" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="250" y="430" width="60" height="60" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="310" y="430" width="60" height="60" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="370" y="430" width="60" height="60" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<path d="M 250 490 A 30.0 30.0 0 0 0 310 490 Z" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<path d="M 370 490 A 30.0 30.0 0 0 0 430 490 Z" fill="#d9534f" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<rect x="250" y="190" width="60" height="60" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<path d="M 370 250 A 30.0 30.0 0 0 1 430 250 Z" fill="#3a7bd5" stroke="#222" stroke-width="3" fill-opacity="0.85" stroke-linejoin="round"/>
+<path d="M 190 250 A 90 90 0 0 0 130 190 A 90 90 0 0 0 190 250 Z" fill="#3a7bd5" fill-opacity="0.85" stroke="#222" stroke-width="3"/>
+<polygon points="250,190 250,130 310,70 310,190" fill="#4cae4f" fill-opacity="0.85" stroke="#222" stroke-width="3"/>
+<polygon points="250,130 190,130 190,70 310,70" fill="#4cae4f" fill-opacity="0.85" stroke="#222" stroke-width="3"/>
+<polygon points="250,190 130,190 190,130 250,130" fill="#3a7bd5" fill-opacity="0.85" stroke="#222" stroke-width="3"/>
+<circle cx="190" cy="70" r="9.5" fill="white"/>
+<circle cx="190" cy="70" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="310" cy="70" r="9.5" fill="white"/>
+<circle cx="310" cy="70" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="190" cy="130" r="9.5" fill="white"/>
+<circle cx="190" cy="130" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="250" cy="130" r="9.5" fill="white"/>
+<circle cx="250" cy="130" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="130" cy="190" r="9.5" fill="white"/>
+<circle cx="130" cy="190" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="250" cy="190" r="9.5" fill="white"/>
+<circle cx="250" cy="190" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="310" cy="190" r="9.5" fill="white"/>
+<circle cx="310" cy="190" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="190" cy="250" r="9.5" fill="white"/>
+<circle cx="190" cy="250" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="250" cy="250" r="9.5" fill="white"/>
+<circle cx="250" cy="250" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="310" cy="250" r="9.5" fill="white"/>
+<circle cx="310" cy="250" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="370" cy="250" r="9.5" fill="white"/>
+<circle cx="370" cy="250" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="430" cy="250" r="9.5" fill="white"/>
+<circle cx="430" cy="250" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="190" cy="310" r="9.5" fill="white"/>
+<circle cx="190" cy="310" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="250" cy="310" r="9.5" fill="white"/>
+<circle cx="250" cy="310" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="310" cy="310" r="9.5" fill="white"/>
+<circle cx="310" cy="310" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="370" cy="310" r="9.5" fill="white"/>
+<circle cx="370" cy="310" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="430" cy="310" r="9.5" fill="white"/>
+<circle cx="430" cy="310" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="190" cy="370" r="9.5" fill="white"/>
+<circle cx="190" cy="370" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="250" cy="370" r="9.5" fill="white"/>
+<circle cx="250" cy="370" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="310" cy="370" r="9.5" fill="white"/>
+<circle cx="310" cy="370" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="370" cy="370" r="9.5" fill="white"/>
+<circle cx="370" cy="370" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="430" cy="370" r="9.5" fill="white"/>
+<circle cx="430" cy="370" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="190" cy="430" r="9.5" fill="white"/>
+<circle cx="190" cy="430" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="250" cy="430" r="9.5" fill="white"/>
+<circle cx="250" cy="430" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="310" cy="430" r="9.5" fill="white"/>
+<circle cx="310" cy="430" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="370" cy="430" r="9.5" fill="white"/>
+<circle cx="370" cy="430" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="430" cy="430" r="9.5" fill="white"/>
+<circle cx="430" cy="430" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="190" cy="490" r="9.5" fill="white"/>
+<circle cx="190" cy="490" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="250" cy="490" r="9.5" fill="white"/>
+<circle cx="250" cy="490" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="310" cy="490" r="9.5" fill="white"/>
+<circle cx="310" cy="490" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="370" cy="490" r="9.5" fill="white"/>
+<circle cx="370" cy="490" r="8" fill="white" stroke="#111" stroke-width="3"/>
+<circle cx="430" cy="490" r="9.5" fill="white"/>
+<circle cx="430" cy="490" r="8" fill="white" stroke="#111" stroke-width="3"/>
+</g>
+<text x="130.0" y="102" text-anchor="middle" font-size="22" font-weight="normal" fill="#111">Steane patch</text>
+<text x="370.0" y="490.0" text-anchor="middle" font-size="22" font-weight="normal" fill="#111">Source patch [d=5]</text>
+</svg>
