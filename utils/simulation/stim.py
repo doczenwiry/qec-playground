@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import itertools
-from typing import Union, Optional, cast
+from typing import Optional, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +24,6 @@ import stim
 from matplotlib.container import BarContainer
 
 from library.circuitry import Circuitry
-from utils.simulation.noise import make_noisy
 
 __all__ = ["simulate", "sample"]
 
@@ -32,7 +31,7 @@ __all__ = ["simulate", "sample"]
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def simulate(
-    scenarios: dict[str, Union[Circuitry, stim.Circuit]],
+    scenarios: dict[str, tuple[Circuitry, int, int]],
     title: str = "Simulation results",
     label: str = "",
     postselection: bool = False,
@@ -44,13 +43,13 @@ def simulate(
     figsize: tuple[float, float] = (11, 5),
     filename: Optional[str] = None,
 ):
-    if isinstance(scenarios, Circuitry):
-        scenarios = {"circuit": scenarios}
     tasks = [
         sinter.Task(
-            circuit=make_noisy(circuitry, per=physical_error_rate)
-            if isinstance(circuitry, stim.Circuit)
-            else circuitry.as_stim(per=physical_error_rate),
+            circuit=circuitry.as_stim(
+                per=physical_error_rate,
+                noiseless_preparation_ticks=npt,
+                noiseless_measurement_ticks=nmt,
+            ),
             postselection_mask=np.packbits(
                 np.array(circuitry.postselection_mask, dtype=bool)
             )
@@ -58,7 +57,7 @@ def simulate(
             else None,
             json_metadata={"scenario": scenario, "per": physical_error_rate},
         )
-        for (scenario, circuitry), physical_error_rate in itertools.product(
+        for (scenario, (circuitry, npt, nmt)), physical_error_rate in itertools.product(
             scenarios.items(), np.logspace(-1, minimal_noise, num=points)
         )
     ]
@@ -75,7 +74,7 @@ def simulate(
 
     fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)
     labels = {
-        scenario: f"{label} {index} - {scenario}"
+        scenario: f"{label} {index} - {scenario}" if label != "" else scenario
         for index, scenario in enumerate(scenarios)
     }
     error_rates = axes[0] if postselection else axes
@@ -124,7 +123,7 @@ SEED = 42
 
 # Thanks, Claude.AI (September 2026)
 def sample(
-    scenarios: dict[str, Union[Circuitry, stim.Circuit]],
+    scenarios: dict[str, tuple[Circuitry, int, int]],
     correction: bool = True,
     title: str = "Sampling results",
     label: str = "Scenario",
@@ -134,7 +133,7 @@ def sample(
 ):
     dataframes: list[pd.DataFrame] = []
 
-    for scenario, circuitry in scenarios.items():
+    for scenario, (circuitry, _, _) in scenarios.items():
         # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
         circuit = cast(
             stim.Circuit,

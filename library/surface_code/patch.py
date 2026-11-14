@@ -17,6 +17,8 @@ from typing import Optional, Final, Callable
 
 import logging
 
+import stim
+
 from library.circuitry import Circuitry
 from library.common import Pauli
 from library.qubit_array import QubitArray
@@ -129,7 +131,7 @@ class SurfaceCodePatch:
     def num_x_ancilla(self):
         return len(self.qubits["X"])
 
-    def logical(self, basis: Pauli, offset: Optional[int] = None):
+    def logical(self, basis: Pauli, offset: Optional[int] = None) -> dict[int, str]:
         if offset:
             if not (0 <= offset < self.distance):
                 raise ValueError(f"Invalid index (0 <= {offset} < distance).")
@@ -408,3 +410,42 @@ class SurfaceCodePatch:
                     circuit.append(f"M{measure.name}", measured_data)
             case _:
                 logger.warning(f"Nothing to do at requested moment [{moment}]")
+
+    def annotate_stabilizers(
+        self,
+        circuitry: Circuitry,
+        inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
+    ):
+        stabilizer = "X"
+        x_ancilla = list(self.__get_qubits(stabilizer, inactive))
+        for location, (xq, xi) in filter(
+            lambda xa: (xa[0][0] - 0.5) % 2.0 == 0.0, x_ancilla
+        ):
+            polygon = self.get_polygon(*location)
+            circuitry.append("MPP", stim.PauliString({q: stabilizer for q in polygon}))
+            self.__physical_qubits.record_measurement(f"STB:{stabilizer}{xi}", xq)
+        circuitry.append_tick()
+        for location, (xq, xi) in filter(
+            lambda xa: (xa[0][0] - 0.5) % 2.0 == 1.0, x_ancilla
+        ):
+            polygon = self.get_polygon(*location)
+            circuitry.append("MPP", stim.PauliString({q: stabilizer for q in polygon}))
+            self.__physical_qubits.record_measurement(f"STB:{stabilizer}{xi}", xq)
+        circuitry.append_tick()
+
+        stabilizer = "Z"
+        z_ancilla = list(self.__get_qubits(stabilizer, inactive))
+        for location, (zq, zi) in filter(
+            lambda za: (za[0][1] - 0.5) % 2.0 == 0.0, z_ancilla
+        ):
+            polygon = self.get_polygon(*location)
+            circuitry.append("MPP", stim.PauliString({q: stabilizer for q in polygon}))
+            self.__physical_qubits.record_measurement(f"STB:{stabilizer}{zi}", zq)
+        circuitry.append_tick()
+        for location, (zq, zi) in filter(
+            lambda za: (za[0][1] - 0.5) % 2.0 == 1.0, z_ancilla
+        ):
+            polygon = self.get_polygon(*location)
+            circuitry.append("MPP", stim.PauliString({q: stabilizer for q in polygon}))
+            self.__physical_qubits.record_measurement(f"STB:{stabilizer}{zi}", zq)
+        circuitry.append_tick()

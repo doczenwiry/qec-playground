@@ -18,6 +18,8 @@ from enum import Enum
 
 from typing import List, Optional
 
+import stim
+
 from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
 from library.common import Pauli
@@ -838,3 +840,9 @@ class SteaneCodePatch:
                 circuit.append("MX", measured_data_qubits)
                 for index, qd in enumerate(measured_data_qubits):
                     self.__available_qubits.record_measurement(f"{prefix}:X{index}", qd)
+
+    def annotate_stabilizers(self, circuitry: Circuitry, style: str = "COMPACT"):
+        for stabilizer, pauli in self.pauli_stabilizers(style).items():
+            circuitry.append("MPP", stim.PauliString(pauli))
+            self.__available_qubits.record_measurement(f"STN:{stabilizer}")
+            circuitry.append_tick()
