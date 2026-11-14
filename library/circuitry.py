@@ -58,13 +58,12 @@ class Circuitry:
     def used_qubits(self):
         return self.__used_qubits
 
-    def as_stim(
+    def as_stim_dropped_coords(
         self,
         per: Optional[float] = None,
         noiseless_preparation_ticks: Optional[int] = None,
         noiseless_measurement_ticks: Optional[int] = None,
-        report_dropped: bool = False,
-    ) -> Union[stim.Circuit, tuple[stim.Circuit, int]]:
+    ) -> tuple[stim.Circuit, int]:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
@@ -95,10 +94,42 @@ class Circuitry:
 
         central = make_noisy(internal_op, per) if per else internal_op
 
-        if report_dropped:
-            return preparation + central + measurement, dropped_coords
-        else:
-            return preparation + central + measurement
+        return preparation + central + measurement, dropped_coords
+
+    def as_stim(
+        self,
+        per: Optional[float] = None,
+        noiseless_preparation_ticks: Optional[int] = None,
+        noiseless_measurement_ticks: Optional[int] = None,
+    ) -> stim.Circuit:
+        if not self.__clifford:
+            raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
+
+        circuit = cast(stim.Circuit, self.__circuit)
+
+        preparation = stim.Circuit()
+        internal_op = stim.Circuit()
+        measurement = stim.Circuit()
+
+        start = noiseless_preparation_ticks or 0
+        final = circuit.num_ticks - (noiseless_measurement_ticks or 0)
+
+        tick = 0
+        for instruction in circuit.flattened():
+            if instruction.name == "QUBIT_COORDS":
+                if instruction.targets_copy()[0].value in self.__used_qubits:
+                    preparation.append(instruction)
+            elif tick < start:
+                preparation.append(instruction)
+            elif start <= tick < final:
+                internal_op.append(instruction)
+            else:
+                measurement.append(instruction)
+            tick += int(instruction.name == "TICK")
+
+        central = make_noisy(internal_op, per) if per else internal_op
+
+        return preparation + central + measurement
 
     @property
     def as_text(self) -> str:
@@ -184,7 +215,7 @@ class Circuitry:
         marks: Optional[list[tuple[int, dict[int, str], int]]] = None,
     ):
         if self.__clifford:
-            circuit, dropped = self.as_stim(report_dropped=True)
+            circuit, dropped = self.as_stim_dropped_coords()
             lines = str(circuit).splitlines()
         else:
             dropped = 0
@@ -206,7 +237,7 @@ class Circuitry:
         filename += ".stim" if self.__clifford else ".clifft"
 
         if self.__clifford:
-            circuit, dropped = self.as_stim(report_dropped=True)
+            circuit, dropped = self.as_stim_dropped_coords()
             lines = str(circuit).splitlines()
         else:
             dropped = 0

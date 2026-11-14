@@ -50,7 +50,7 @@ def analyse_heuristic(circuit: stim.Circuit, urls: bool = False, verbose: bool =
 
     display(
         Markdown(
-            f"[Open in Crumble (Undetected error)]({circuit.to_crumble_url(mark={1: found})})"
+            f"[Open in Crumble (Undetected error weight : {len(found)})]({circuit.to_crumble_url(mark={1: found})})"
         )
     )
 
