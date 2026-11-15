@@ -20,7 +20,7 @@ import clifft
 import stim
 
 from library.qubit_array import QubitArray
-from utils.simulation.noise import make_noisy
+from simulation.noise import NOISELESS
 
 
 class Circuitry:
@@ -33,6 +33,7 @@ class Circuitry:
             stim.Circuit() if clifford else []
         )
         self.__used_qubits: set[int] = set()
+        self.__polygon_qubits: set[int] = set()
         self.__num_cnots = 0
         self.__num_measurements = 0
         self.__num_detectors = 0
@@ -59,77 +60,109 @@ class Circuitry:
         return self.__used_qubits
 
     def as_stim_dropped_coords(
-        self,
-        per: Optional[float] = None,
-        noiseless_preparation_ticks: Optional[int] = None,
-        noiseless_measurement_ticks: Optional[int] = None,
-    ) -> tuple[stim.Circuit, int]:
+        self, per: Optional[float] = None, keep_polygon_coords: bool = True
+    ) -> tuple[stim.Circuit, list[int]]:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
         circuit = cast(stim.Circuit, self.__circuit)
 
-        preparation = stim.Circuit()
-        internal_op = stim.Circuit()
-        measurement = stim.Circuit()
-
-        start = noiseless_preparation_ticks or 0
-        final = circuit.num_ticks - (noiseless_measurement_ticks or 0)
-
-        tick = 0
-        dropped_coords = 0
+        used_in_tick: set[int] = set()
+        active_qubits: set[int] = set()
+        noisy = stim.Circuit()
+        offsets: list[int] = []
         for instruction in circuit.flattened():
+            offsets.append(len(noisy))
             if instruction.name == "QUBIT_COORDS":
-                if instruction.targets_copy()[0].value in self.__used_qubits:
-                    preparation.append(instruction)
-                else:
-                    dropped_coords += 1
-            elif tick < start:
-                preparation.append(instruction)
-            elif start <= tick < final:
-                internal_op.append(instruction)
+                qubit = instruction.targets_copy()[0].value
+                if qubit in self.__used_qubits or (
+                    keep_polygon_coords and qubit in self.__polygon_qubits
+                ):
+                    noisy.append(instruction)
+                continue
+            elif instruction.name in ["DETECTOR", "OBSERVABLE_INCLUDE"]:
+                noisy.append(instruction)
+                continue
+
+            gate = stim.gate_data(instruction.name)
+
+            qubits = [
+                t.value
+                for t in instruction.targets_copy()
+                if not (t.is_combiner or t.is_measurement_record_target)
+            ]
+            # Make qubits that underwent a reset or a unitary operation active
+            if gate.is_reset or gate.is_unitary:
+                active_qubits.update(qubits)
+            # Make qubits that underwent a measurement inactive
+            elif gate.produces_measurements and instruction.name != "MPP":
+                active_qubits.difference_update(qubits)
+
+            if gate.is_unitary:
+                used_in_tick.update(
+                    map(lambda tgt: tgt.value, instruction.targets_copy())
+                )
+                noisy.append(instruction)
+                if instruction.tag == NOISELESS or per is None:
+                    continue
+
+                if gate.is_single_qubit_gate:
+                    noisy.append("DEPOLARIZE1", instruction.targets_copy(), per)
+                if gate.is_two_qubit_gate:
+                    noisy.append("DEPOLARIZE2", instruction.targets_copy(), per)
+            elif gate.is_reset or gate.produces_measurements:
+                used_in_tick.update(
+                    tgt.value
+                    for tgt in instruction.targets_copy()
+                    if not tgt.is_combiner
+                )
+                if gate.produces_measurements:
+                    if instruction.tag == NOISELESS:
+                        noisy.append(instruction)
+                    else:
+                        noisy.append(
+                            instruction.name, instruction.targets_copy(), arg=per
+                        )
+                if gate.is_reset:
+                    if not gate.produces_measurements:
+                        noisy.append(instruction)
+                    if instruction.tag == NOISELESS or per is None:
+                        continue
+                    match gate.name:
+                        case "RX" | "MRX":
+                            noisy.append("Z_ERROR", instruction.targets_copy(), per)
+                        case "RY" | "MRY":
+                            noisy.append("Z_ERROR", instruction.targets_copy(), per)
+                        case "R" | "MR" | "RZ" | "MRZ":
+                            noisy.append("X_ERROR", instruction.targets_copy(), per)
+            elif instruction.name == "TICK":
+                noisy.append(instruction)
+                idling = list(sorted(active_qubits - used_in_tick))
+                used_in_tick.clear()
+                if instruction.tag != NOISELESS and per is not None and len(idling) > 0:
+                    try:
+                        noisy.append("DEPOLARIZE1", idling, per)
+                    except ValueError as ve:
+                        print(f"Idling [{per}] : {idling}")
+                        raise ve
             else:
-                measurement.append(instruction)
-            tick += int(instruction.name == "TICK")
+                raise NotImplementedError(f"Unrecognized instruction : {instruction}")
 
-        central = make_noisy(internal_op, per) if per else internal_op
+        offsets.append(len(noisy))
 
-        return preparation + central + measurement, dropped_coords
+        return noisy, offsets
 
     def as_stim(
         self,
         per: Optional[float] = None,
+        keep_polygons: bool = True,
         noiseless_preparation_ticks: Optional[int] = None,
         noiseless_measurement_ticks: Optional[int] = None,
     ) -> stim.Circuit:
-        if not self.__clifford:
-            raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
-
-        circuit = cast(stim.Circuit, self.__circuit)
-
-        preparation = stim.Circuit()
-        internal_op = stim.Circuit()
-        measurement = stim.Circuit()
-
-        start = noiseless_preparation_ticks or 0
-        final = circuit.num_ticks - (noiseless_measurement_ticks or 0)
-
-        tick = 0
-        for instruction in circuit.flattened():
-            if instruction.name == "QUBIT_COORDS":
-                if instruction.targets_copy()[0].value in self.__used_qubits:
-                    preparation.append(instruction)
-            elif tick < start:
-                preparation.append(instruction)
-            elif start <= tick < final:
-                internal_op.append(instruction)
-            else:
-                measurement.append(instruction)
-            tick += int(instruction.name == "TICK")
-
-        central = make_noisy(internal_op, per) if per else internal_op
-
-        return preparation + central + measurement
+        return self.compact_qubits(
+            self.as_stim_dropped_coords(per, keep_polygon_coords=keep_polygons)[0],
+            extra=self.__polygon_qubits if keep_polygons else {},
+        )[0]
 
     @property
     def as_text(self) -> str:
@@ -168,22 +201,32 @@ class Circuitry:
         if not self.__clifford:
             raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
 
-        return cast(stim.Circuit, self.as_stim()).missing_detectors(
-            unknown_input=unknown_input
-        )
+        return self.as_stim().missing_detectors(unknown_input=unknown_input)
+
+    @staticmethod
+    def __remap_polygon(polygon: str, mapping: dict[int, int]) -> str:
+        head, *qubits = polygon.split(" ")
+        return " ".join([head, *(str(mapping[int(q)]) for q in qubits)])
 
     def __insert_polygons(
-        self, lines: list[str], dropped: int = 0, spacing: bool = False
+        self,
+        lines: list[str],
+        offsets: list[int],
+        mapping: dict[int, int],
+        spacing: bool = False,
     ):
         inserted = 0
 
         # Insert all registered polygons where they belong
         for line_number, polygons in self.__polygons.items():
             for polygon in polygons:
-                lines.insert(line_number - dropped + inserted, polygon)
+                lines.insert(
+                    offsets[line_number] + inserted,
+                    self.__remap_polygon(polygon, mapping),
+                )
                 inserted += 1
             if spacing:
-                lines.insert(line_number - dropped + inserted, "TICK")
+                lines.insert(offsets[line_number] + inserted, "TICK")
                 inserted += 1
 
         return lines
@@ -215,11 +258,13 @@ class Circuitry:
         marks: Optional[list[tuple[int, dict[int, str], int]]] = None,
     ):
         if self.__clifford:
-            circuit, dropped = self.as_stim_dropped_coords()
-            lines = str(circuit).splitlines()
+            circuit, offsets = self.as_stim_dropped_coords()
+            compact, mapping = self.compact_qubits(circuit, extra=self.__polygon_qubits)
+            lines = str(compact).splitlines()
         else:
-            dropped = 0
             lines = cast(list, self.__circuit)
+            offsets = list(range(len(lines) + 1))
+            mapping = {q: q for q in offsets}
 
         if marks:
             for op_idx, pauli, mk_idx in sorted(
@@ -229,30 +274,42 @@ class Circuitry:
                     f"MARK{p}({mk_idx}) {q}" for q, p in sorted(pauli.items())
                 ]
         elif polygons:
-            lines = self.__insert_polygons(lines, dropped=dropped, spacing=spacing)
+            lines = self.__insert_polygons(lines, offsets, mapping, spacing=spacing)
 
-        return location + "#circuit=" + ";".join(lines).replace(" ", "_")
+        return (
+            location
+            + "#circuit="
+            + ";".join(lines).replace(" ", "_").replace(f"[{NOISELESS}]", "")
+        )
 
-    def to_file(self, filename: str, polygons: bool = True, spacing: bool = False):
+    def to_file(
+        self,
+        filename: str,
+        polygons: bool = True,
+        spacing: bool = False,
+        per: Optional[float] = None,
+    ):
         filename += ".stim" if self.__clifford else ".clifft"
 
         if self.__clifford:
-            circuit, dropped = self.as_stim_dropped_coords()
-            lines = str(circuit).splitlines()
+            circuit, offsets = self.as_stim_dropped_coords(per=per)
+            compact, mapping = self.compact_qubits(circuit, extra=self.__polygon_qubits)
+            lines = str(compact).splitlines()
         else:
-            dropped = 0
             lines = cast(list, self.__circuit)
+            offsets = list(range(len(lines) + 1))
+            mapping = {q: q for q in offsets}
 
         if polygons:
-            lines = self.__insert_polygons(lines, dropped=dropped, spacing=spacing)
+            lines = self.__insert_polygons(lines, offsets, mapping, spacing=spacing)
 
         with open(filename, "w", encoding="utf-8") as file:
-            file.write("\n".join(lines) + "\n")
+            file.write("\n".join(lines).replace(f"[{NOISELESS}]", "") + "\n")
 
     def annotate_polygons(self, polygons: list[str]):
         for polygon in polygons:
             for qb in polygon.split(" ")[1:]:
-                self.__used_qubits.add(int(qb))
+                self.__polygon_qubits.add(int(qb))
         self.__polygons[len(self.__circuit)].extend(polygons)
 
     def annotate_detector(self, *labels: str, postselected: bool = False) -> bool:
@@ -282,19 +339,22 @@ class Circuitry:
         observable: dict[int, str],
         *extras: str,
         flip: bool = False,
+        noiseless: bool = True,
     ):
+        tag = NOISELESS if noiseless else ""
         pauli = stim.PauliString(observable)
-        self.append("MPP", -pauli if flip else pauli)
+        self.append("MPP", -pauli if flip else pauli, tag=tag)
         self.__physical_qubits.record_measurement(label)
         self.append(
             "OBSERVABLE_INCLUDE",
             map(self.__physical_qubits.retrieve_target_rec, [label, *extras]),
             index,
         )
-        self.append_tick()
+        self.append_tick(tag=tag)
 
-    def append_tick(self):
-        self.__circuit.append("TICK")
+    def append_tick(self, tag: str = ""):
+        if isinstance(self.__circuit, stim.Circuit):
+            self.__circuit.append("TICK", tag=tag)
 
     def __update_internal_counters(
         self, name: str, targets: list[Union[int, stim.GateTarget, stim.PauliString]]
@@ -329,13 +389,14 @@ class Circuitry:
             Iterable[Union[int, stim.GateTarget, stim.PauliString]],
         ],
         arg: Union[float, Iterable[float], None] = None,
+        tag: str = "",
     ):
         targets = list(targets) if isinstance(targets, Iterable) else [targets]
 
         self.__update_internal_counters(name, targets)
 
         if isinstance(self.__circuit, stim.Circuit):
-            self.__circuit.append(name, targets, arg)
+            self.__circuit.append(name, targets, arg, tag=tag)
         else:
             match name:
                 case "DETECTOR" | "OBSERVABLE_INCLUDE":
@@ -387,9 +448,7 @@ class Circuitry:
 
         gauge_found = False
         try:
-            cast(stim.Circuit, self.as_stim()).detector_error_model(
-                allow_gauge_detectors=False
-            )
+            self.as_stim().detector_error_model(allow_gauge_detectors=False)
         except ValueError:
             gauge_found = True
         missing_detectors = self.missing_detectors(unknown_input=open_boundaries)
@@ -403,6 +462,48 @@ class Circuitry:
             )
             print(f">> Detector : {records}")
         print(f"> Gauge detectors : {'FOUND' if gauge_found else 'NONE'}")
+
+    @staticmethod
+    def _remap_target(t: stim.GateTarget, mapping: dict[int, int]) -> stim.GateTarget:
+        remapped = t
+        if t.is_x_target:
+            remapped = stim.target_x(mapping[t.value], t.is_inverted_result_target)
+        elif t.is_y_target:
+            remapped = stim.target_y(mapping[t.value], t.is_inverted_result_target)
+        elif t.is_z_target:
+            remapped = stim.target_z(mapping[t.value], t.is_inverted_result_target)
+        elif t.is_qubit_target:
+            remapped = stim.GateTarget(
+                stim.target_inv(mapping[t.value])
+                if t.is_inverted_result_target
+                else mapping[t.value]
+            )
+        return remapped
+
+    def compact_qubits(
+        self, circuit: stim.Circuit, extra: Iterable[int] = ()
+    ) -> tuple[stim.Circuit, dict[int, int]]:
+        used = sorted(
+            {
+                t.value
+                for ins in circuit.flattened()
+                for t in ins.targets_copy()
+                if t.is_qubit_target or t.is_x_target or t.is_y_target or t.is_z_target
+            }
+            | set(extra)
+        )
+        mapping = {q: i for i, q in enumerate(used)}
+        compact = stim.Circuit()
+        for ins in circuit.flattened():
+            compact.append(
+                stim.CircuitInstruction(
+                    ins.name,
+                    [self._remap_target(t, mapping) for t in ins.targets_copy()],
+                    ins.gate_args_copy(),
+                    tag=ins.tag,
+                )
+            )
+        return compact, mapping
 
     def __str__(self):
         return (

@@ -297,7 +297,7 @@ class MagicStateCultivation:
 
         # Annotate the TELEPORTATION destructive detectors
         # The X_{0126ab} detector.
-        last = sdc_rounds - 1
+        last = tpt_rounds - 1
         circuitry.annotate_detector(
             *(f"STN:DST:{mx}" for mx in ["X0", "X1", "X2", "X6"]),
             "SRC:REC:X0",
@@ -317,7 +317,7 @@ class MagicStateCultivation:
 
         self.__junction.annotate_detectors(circuitry, rounds=tpt_rounds)
         self.source.annotate_detectors(
-            circuitry, rounds=tpt_rounds + 1, prepared=Pauli.X, prefix="SRC"
+            circuitry, rounds=tpt_rounds, prepared=Pauli.X, prefix="SRC"
         )
 
         for ql, (qx, qi) in self.source.qubits["X"].items():

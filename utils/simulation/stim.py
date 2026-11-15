@@ -20,7 +20,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import sinter
-import stim
 from matplotlib.container import BarContainer
 
 from library.circuitry import Circuitry
@@ -31,7 +30,7 @@ __all__ = ["simulate", "sample"]
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def simulate(
-    scenarios: dict[str, tuple[Circuitry, int, int]],
+    scenarios: dict[str, Circuitry],
     title: str = "Simulation results",
     label: str = "",
     postselection: bool = False,
@@ -45,19 +44,15 @@ def simulate(
 ):
     tasks = [
         sinter.Task(
-            circuit=circuitry.as_stim(
-                per=physical_error_rate,
-                noiseless_preparation_ticks=npt,
-                noiseless_measurement_ticks=nmt,
-            ),
+            circuit=circuitry.as_stim(per=physical_error_rate),
             postselection_mask=np.packbits(
-                np.array(circuitry.postselection_mask, dtype=bool)
+                np.array(circuitry.postselection_mask, dtype=bool), bitorder="little"
             )
             if postselection and isinstance(circuitry, Circuitry)
             else None,
             json_metadata={"scenario": scenario, "per": physical_error_rate},
         )
-        for (scenario, (circuitry, npt, nmt)), physical_error_rate in itertools.product(
+        for (scenario, circuitry), physical_error_rate in itertools.product(
             scenarios.items(), np.logspace(-1, minimal_noise, num=points)
         )
     ]
@@ -123,7 +118,7 @@ SEED = 42
 
 # Thanks, Claude.AI (September 2026)
 def sample(
-    scenarios: dict[str, tuple[Circuitry, int, int]],
+    scenarios: dict[str, Circuitry],
     correction: bool = True,
     title: str = "Sampling results",
     label: str = "Scenario",
@@ -133,12 +128,9 @@ def sample(
 ):
     dataframes: list[pd.DataFrame] = []
 
-    for scenario, (circuitry, _, _) in scenarios.items():
+    for scenario, circuitry in scenarios.items():
         # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
-        circuit = cast(
-            stim.Circuit,
-            circuitry.as_stim() if isinstance(circuitry, Circuitry) else circuitry,
-        )
+        circuit = circuitry.as_stim()
         if correction:
             sampler = circuit.compile_detector_sampler(seed=SEED)
             _, outcomes = sampler.sample(shots=int(shots), separate_observables=True)

@@ -23,6 +23,7 @@ import stim
 from library.circuitry import Circuitry
 from library.qubit_array import QubitArray
 from library.common import Pauli
+from simulation.noise import NOISELESS
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,8 @@ class SteaneCodePatch:
             "B": ["D0", "BD", "D6", "D2"],
         },
     }
+
+    Z_FLAG_COUNT: int = 2
 
     def __init__(
         self,
@@ -210,10 +213,10 @@ class SteaneCodePatch:
                 f"{prefix}:SDC{curr}:XB", f"{prefix}:SDC{prev}:XG", postselected=True
             )
 
-        # Annotate the CULTIVATION detectors
+        # Annotate the DOUBLE-CHECK detectors
         for label in ["CC", "RZ", "GZ", "D1", "BZ", "EX0", "EX1", "D4"]:
             circuitry.annotate_detector(f"{prefix}:CULT:{label}", postselected=True)
-        for number in range(3):
+        for number in range(SteaneCodePatch.Z_FLAG_COUNT):
             circuitry.annotate_detector(f"{prefix}:CULT:Z{number}", postselected=True)
 
         # Annotate the TELEPORTATION stabilized detectors
@@ -571,7 +574,7 @@ class SteaneCodePatch:
         if moment is None:
             for moment in self.NOISELESS_MEASUREMENT_MOMENTS:
                 self.__append_noiseless_compact_measurement(circuitry, moment, prefix)
-                circuitry.append_tick()
+                circuitry.append_tick(tag=NOISELESS)
         else:
             match moment:
                 case 0:
@@ -579,29 +582,42 @@ class SteaneCodePatch:
                         circuitry.append(
                             f"{self.__injection.name}",
                             self.__translate_qubit_ids("D0", "D4", "D6"),
+                            tag=NOISELESS,
                         )
                         circuitry.append(
                             f"{self.__injection.name}_DAG",
                             self.__translate_qubit_ids("D1", "D2", "D3", "D5"),
+                            tag=NOISELESS,
                         )
-                    circuitry.append("RX", self.__translate_qubit_ids("RZ", "GZ"))
+                    circuitry.append(
+                        "RX", self.__translate_qubit_ids("RZ", "GZ"), tag=NOISELESS
+                    )
                 case 1:
                     circuitry.append(
                         "CX",
                         self.__translate_qubit_ids(
                             "GZ", "D5", "D6", "D1", "D2", "D4", "RZ", "D3"
                         ),
+                        tag=NOISELESS,
                     )
                 case 2:
                     circuitry.append(
-                        "CX", self.__translate_qubit_ids("GZ", "D6", "RZ", "D0")
+                        "CX",
+                        self.__translate_qubit_ids("GZ", "D6", "RZ", "D0"),
+                        tag=NOISELESS,
                     )
                 case 3:
-                    circuitry.append("CX", self.__translate_qubit_ids("D2", "RZ"))
+                    circuitry.append(
+                        "CX", self.__translate_qubit_ids("D2", "RZ"), tag=NOISELESS
+                    )
                 case 4:
-                    circuitry.append("CX", self.__translate_qubit_ids("GZ", "D2"))
+                    circuitry.append(
+                        "CX", self.__translate_qubit_ids("GZ", "D2"), tag=NOISELESS
+                    )
                 case 5:
-                    circuitry.append("MX", self.__translate_qubit_ids("GZ"))
+                    circuitry.append(
+                        "MX", self.__translate_qubit_ids("GZ"), tag=NOISELESS
+                    )
                     self.__available_qubits.record_measurement(
                         f"{prefix}:CC", *self.__translate_qubit_ids("GZ")
                     )
@@ -615,7 +631,7 @@ class SteaneCodePatch:
         if moment is None:
             for moment in self.NOISELESS_MEASUREMENT_MOMENTS:
                 self.__append_noiseless_diffuse_measurement(circuitry, moment, prefix)
-                circuitry.append_tick()
+                circuitry.append_tick(tag=NOISELESS)
         else:
             match moment:
                 case 0:
@@ -623,13 +639,17 @@ class SteaneCodePatch:
                         circuitry.append(
                             f"{self.__injection.name}",
                             self.__translate_qubit_ids("D0", "d4", "D6"),
+                            tag=NOISELESS,
                         )
                         circuitry.append(
                             f"{self.__injection.name}_DAG",
                             self.__translate_qubit_ids("d1", "D2", "D3", "D5"),
+                            tag=NOISELESS,
                         )
                     circuitry.append(
-                        "RX", self.__translate_qubit_ids("RZ", "GZ", "D1", "D4")
+                        "RX",
+                        self.__translate_qubit_ids("RZ", "GZ", "D1", "D4"),
+                        tag=NOISELESS,
                     )
                 case 1:
                     circuitry.append(
@@ -637,20 +657,28 @@ class SteaneCodePatch:
                         self.__translate_qubit_ids(
                             "D1", "d1", "RZ", "D3", "D4", "d4", "GZ", "D5"
                         ),
+                        tag=NOISELESS,
                     )
                 case 2:
                     circuitry.append(
                         "CX",
                         self.__translate_qubit_ids("D6", "D1", "D2", "D4", "RZ", "D0"),
+                        tag=NOISELESS,
                     )
                 case 3:
                     circuitry.append(
-                        "CX", self.__translate_qubit_ids("GZ", "D6", "D2", "RZ")
+                        "CX",
+                        self.__translate_qubit_ids("GZ", "D6", "D2", "RZ"),
+                        tag=NOISELESS,
                     )
                 case 4:
-                    circuitry.append("CX", self.__translate_qubit_ids("GZ", "D2"))
+                    circuitry.append(
+                        "CX", self.__translate_qubit_ids("GZ", "D2"), tag=NOISELESS
+                    )
                 case 5:
-                    circuitry.append("MX", self.__translate_qubit_ids("GZ"))
+                    circuitry.append(
+                        "MX", self.__translate_qubit_ids("GZ"), tag=NOISELESS
+                    )
                     self.__available_qubits.record_measurement(
                         f"{prefix}:CC", *self.__translate_qubit_ids("GZ")
                     )
@@ -841,8 +869,11 @@ class SteaneCodePatch:
                 for index, qd in enumerate(measured_data_qubits):
                     self.__available_qubits.record_measurement(f"{prefix}:X{index}", qd)
 
-    def annotate_stabilizers(self, circuitry: Circuitry, style: str = "COMPACT"):
+    def annotate_stabilizers(
+        self, circuitry: Circuitry, style: str = "COMPACT", noiseless: bool = True
+    ):
+        tag = NOISELESS if noiseless else ""
         for stabilizer, pauli in self.pauli_stabilizers(style).items():
-            circuitry.append("MPP", stim.PauliString(pauli))
+            circuitry.append("MPP", stim.PauliString(pauli), tag=tag)
             self.__available_qubits.record_measurement(f"STN:{stabilizer}")
-            circuitry.append_tick()
+            circuitry.append_tick(tag=tag)

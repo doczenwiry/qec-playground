@@ -22,6 +22,7 @@ import stim
 from library.circuitry import Circuitry
 from library.common import Pauli
 from library.qubit_array import QubitArray
+from simulation.noise import NOISELESS
 
 logger = logging.getLogger(__name__)
 
@@ -183,9 +184,7 @@ class SurfaceCodePatch:
         qtype: str,
         inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
     ):
-        return iter(
-            (al, ai) for al, ai in self.qubits[qtype].items() if not inactive(al)
-        )
+        return ((al, ai) for al, ai in self.qubits[qtype].items() if not inactive(al))
 
     def get_qubit_index(self, qtype: str, qubit: int) -> int:
         for qb, qi in self.qubits[qtype].values():
@@ -235,6 +234,7 @@ class SurfaceCodePatch:
         prepared: Optional[Pauli] = None,
         measured: Optional[Pauli] = None,
         inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
+        postselected: bool = False,
     ):
         last = (rounds or self.distance) - 1
         for stabilizer in ["X", "Z"]:
@@ -243,11 +243,15 @@ class SurfaceCodePatch:
                     continue
 
                 if prepared is not None and prepared.name == stabilizer:
-                    circuitry.annotate_detector(f"{prefix}:R0:{stabilizer}{qi}")
+                    circuitry.annotate_detector(
+                        f"{prefix}:R0:{stabilizer}{qi}",
+                        postselected=postselected,
+                    )
                 for prev, curr in itertools.pairwise(range(rounds or self.distance)):
                     circuitry.annotate_detector(
                         f"{prefix}:R{curr}:{stabilizer}{qi}",
                         f"{prefix}:R{prev}:{stabilizer}{qi}",
+                        postselected=postselected,
                     )
                 if measured is not None and measured.name == stabilizer:
                     circuitry.annotate_detector(
@@ -256,6 +260,7 @@ class SurfaceCodePatch:
                             f"{prefix}:R{last}:D{self.get_qubit_index('D', qd)}"
                             for qd in self.get_polygon(*ql)
                         ],
+                        postselected=postselected,
                     )
 
     def append_memory(
@@ -415,23 +420,29 @@ class SurfaceCodePatch:
         self,
         circuitry: Circuitry,
         inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
+        noiseless: bool = True,
     ):
+        tag = NOISELESS if noiseless else ""
         stabilizer = "X"
         x_ancilla = list(self.__get_qubits(stabilizer, inactive))
         for location, (xq, xi) in filter(
             lambda xa: (xa[0][0] - 0.5) % 2.0 == 0.0, x_ancilla
         ):
             polygon = self.get_polygon(*location)
-            circuitry.append("MPP", stim.PauliString({q: stabilizer for q in polygon}))
+            circuitry.append(
+                "MPP", stim.PauliString({q: stabilizer for q in polygon}), tag=tag
+            )
             self.__physical_qubits.record_measurement(f"STB:{stabilizer}{xi}", xq)
-        circuitry.append_tick()
+        circuitry.append_tick(tag=tag)
         for location, (xq, xi) in filter(
             lambda xa: (xa[0][0] - 0.5) % 2.0 == 1.0, x_ancilla
         ):
             polygon = self.get_polygon(*location)
-            circuitry.append("MPP", stim.PauliString({q: stabilizer for q in polygon}))
+            circuitry.append(
+                "MPP", stim.PauliString({q: stabilizer for q in polygon}), tag=tag
+            )
             self.__physical_qubits.record_measurement(f"STB:{stabilizer}{xi}", xq)
-        circuitry.append_tick()
+        circuitry.append_tick(tag=tag)
 
         stabilizer = "Z"
         z_ancilla = list(self.__get_qubits(stabilizer, inactive))
@@ -439,13 +450,17 @@ class SurfaceCodePatch:
             lambda za: (za[0][1] - 0.5) % 2.0 == 0.0, z_ancilla
         ):
             polygon = self.get_polygon(*location)
-            circuitry.append("MPP", stim.PauliString({q: stabilizer for q in polygon}))
+            circuitry.append(
+                "MPP", stim.PauliString({q: stabilizer for q in polygon}), tag=tag
+            )
             self.__physical_qubits.record_measurement(f"STB:{stabilizer}{zi}", zq)
-        circuitry.append_tick()
+        circuitry.append_tick(tag=tag)
         for location, (zq, zi) in filter(
             lambda za: (za[0][1] - 0.5) % 2.0 == 1.0, z_ancilla
         ):
             polygon = self.get_polygon(*location)
-            circuitry.append("MPP", stim.PauliString({q: stabilizer for q in polygon}))
+            circuitry.append(
+                "MPP", stim.PauliString({q: stabilizer for q in polygon}), tag=tag
+            )
             self.__physical_qubits.record_measurement(f"STB:{stabilizer}{zi}", zq)
-        circuitry.append_tick()
+        circuitry.append_tick(tag=tag)

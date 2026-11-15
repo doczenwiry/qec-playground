@@ -58,12 +58,14 @@ class JunctionPatch:
             polygons.append(f"POLYGON(0,0,1,0.5) {' '.join(map(str, polygon))}")
         return polygons
 
-    def annotate_detectors(self, circuitry: Circuitry, rounds: int):
+    def annotate_detectors(
+        self, circuitry: Circuitry, rounds: int, postselected: bool = True
+    ):
         for zi, (prev, curr) in itertools.product(
             range(3), itertools.pairwise(range(rounds))
         ):
             circuitry.annotate_detector(
-                f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}", postselected=True
+                f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}", postselected=postselected
             )
 
     def append_syndrome(self, circuit: Circuitry, moment: int, prefix: str = ""):

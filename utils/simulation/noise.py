@@ -17,6 +17,9 @@ from tqec.utils import NoiseModel
 from tqec.utils.noise_model import NoiseRule
 
 
+NOISELESS: str = "ideal"
+
+
 def make_noisy(circuit: stim.Circuit, per: float = 0.01) -> stim.Circuit:
     return NoiseModel(
         idle_depolarization=per,
