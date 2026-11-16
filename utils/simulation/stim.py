@@ -13,8 +13,10 @@
 #   limitations under the License.
 
 import itertools
+from collections import defaultdict
+from datetime import datetime
 from typing import Optional, cast
-
+import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -31,17 +33,20 @@ __all__ = ["simulate", "sample"]
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
 def simulate(
     scenarios: dict[str, Circuitry],
-    title: str = "Simulation results",
-    label: str = "",
+    label: Optional[str] = None,
     postselection: bool = False,
     shots=1e6,
     minimal_noise=-6,
     points: int = 10,
     num_workers: int = 4,
     max_errors: int = 5000,
-    figsize: tuple[float, float] = (11, 5),
-    filename: Optional[str] = None,
-):
+    directory: str = "simulations",
+    filename: Optional[str] = "temporary",
+    exclude: Optional[list[str]] = None,
+) -> list[str]:
+    if exclude is None:
+        exclude = []
+
     tasks = [
         sinter.Task(
             circuit=circuitry.as_stim(per=physical_error_rate),
@@ -55,6 +60,7 @@ def simulate(
         for (scenario, circuitry), physical_error_rate in itertools.product(
             scenarios.items(), np.logspace(-1, minimal_noise, num=points)
         )
+        if scenario not in exclude
     ]
 
     collected_stats: list[sinter.TaskStats] = sinter.collect(
@@ -64,14 +70,57 @@ def simulate(
         max_shots=int(shots),
         max_errors=max_errors,
         print_progress=True,
-        save_resume_filepath=filename + ".results.csv" if filename else None,
+        save_resume_filepath=directory + "/" + filename + ".results.csv"
+        if filename
+        else None,
     )
 
+    filename_prefix = (
+        f"{directory}/simulation-results-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    )
+    groups: dict[str, list[sinter.TaskStats]] = defaultdict(list)
+    for stat in collected_stats:
+        groups[stat.json_metadata["scenario"]].append(stat)
+
+    paths = []
+    # Thanks, Claude.AI (November 2026)
+    shot_count = f".shots={re.sub(r'e\+?(-?)0*(\d)', r'e\1\2', f'{shots:.0e}')}"
+    postselected = ".postselected" if postselection else ""
+    for index, (scenario, group) in enumerate(groups.items()):
+        if scenario in exclude:
+            continue
+        scenario_label = (
+            f".{label.lower()}.{index}" if label is not None else ""
+        ) + f".{scenario.lower().replace(' ', '-')}"
+        path = f"{filename_prefix}{shot_count}{scenario_label}{postselected}.csv"
+        with open(path, "w", encoding="utf-8") as file:
+            file.write(sinter.CSV_HEADER + "\n")
+            file.writelines(stat.to_csv_line() + "\n" for stat in group)
+        paths.append(path)
+
+    return paths
+
+
+def plot(
+    filepaths: list[str],
+    title: str = "Simulation results",
+    minimal_noise: int = -6,
+    figsize: tuple[float, float] = (11, 5),
+    postselection: bool = False,
+    estimate_distance: bool = True,
+):
+    collected_stats = sinter.read_stats_from_csv_files(*filepaths)
+
+    labels = {}
+    for filepath in filepaths:
+        parts = filepath.split("/")
+        pieces = parts[-1].split(".")
+        label = pieces[2].capitalize()
+        index = str(pieces[3])
+        scenario = pieces[4].capitalize()
+        labels[scenario] = f"{label} {index} - {scenario}"
+
     fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)
-    labels = {
-        scenario: f"{label} {index} - {scenario}" if label != "" else scenario
-        for index, scenario in enumerate(scenarios)
-    }
     error_rates = axes[0] if postselection else axes
     sinter.plot_error_rate(
         ax=error_rates,
@@ -79,6 +128,28 @@ def simulate(
         x_func=lambda stats: stats.json_metadata["per"],
         group_func=lambda stats: labels.get(stats.json_metadata["scenario"]),
     )
+
+    if estimate_distance:
+        colors = {
+            line.get_label(): line.get_color() for line in error_rates.get_lines()
+        }
+        for scenario, (slope, error, (p0, r0), (p1, r1)) in estimate_slopes(
+            collected_stats
+        ).items():
+            text = (
+                rf"$\approx p^{slope:.1f}$"
+                if np.isnan(error)
+                else rf"$\approx p^{{{slope:.1f} \pm {error:.1f}}}$"
+            )
+            error_rates.annotate(
+                text,
+                xy=(np.sqrt(p0 * p1), np.sqrt(r0 * r1)),
+                xytext=(6, -10),
+                textcoords="offset points",
+                fontsize=8,
+                color=colors.get(labels[scenario], "black"),
+            )
+
     error_rates.set_ylim(1e-9, 1.5)
     error_rates.set_xlim(10**minimal_noise, 0.125)
     error_rates.loglog()
@@ -111,6 +182,34 @@ def simulate(
 
     fig.suptitle(title)
     plt.tight_layout()
+
+
+# Thanks, Claude.AI
+def estimate_slopes(
+    stats: list[sinter.TaskStats], min_errors: int = 50, max_rate: float = 0.1
+) -> dict[str, tuple[float, float, tuple[float, float], tuple[float, float]]]:
+    """Slope of log(p_L) vs log(p) from the two lowest-p points with enough statistics."""
+    points: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    for stat in stats:
+        kept = stat.shots - stat.discards
+        rate = stat.errors / kept if kept > 0 else 1.0
+        if stat.errors >= min_errors and rate < max_rate:
+            points[stat.json_metadata["scenario"]].append(
+                (stat.json_metadata["per"], rate)
+            )
+
+    slopes = {}
+    for scenario, pts in points.items():
+        pts.sort()
+        if len(pts) >= 2:
+            x, y = np.log10(np.array(pts).T)
+            if len(pts) >= 3:
+                coefficients, cov = np.polyfit(x, y, 1, cov=True)
+                error = float(np.sqrt(cov[0, 0]))
+            else:
+                coefficients, error = np.polyfit(x, y, 1), float("nan")
+            slopes[scenario] = (float(coefficients[0]), error, pts[0], pts[-1])
+    return slopes
 
 
 SEED = 42

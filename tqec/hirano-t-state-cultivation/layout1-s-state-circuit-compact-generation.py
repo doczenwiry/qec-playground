@@ -66,7 +66,7 @@ if __name__ == "__main__":
     padding = msc.append_expansion(circuitry)
 
     msc.annotate_detectors(
-        circuitry, sdc_rounds=1, tpt_rounds=TELEPORT_ROUNDS, padding=padding
+        circuitry, sdc_rounds=1, tpt_rounds=TELEPORT_ROUNDS, exp_rounds=padding
     )
 
     circuitry.append_observable(

@@ -52,7 +52,7 @@ class ExpansionSurgery:
         tx, ty = self.__target.anchor
         return not (px >= tx + self.__expansion and py >= ty + self.__expansion)
 
-    def append_expansion(self, circuit: Circuitry, padding: int = 0):
+    def append_expansion(self, circuit: Circuitry, rounds: int = 3):
         circuit.annotate_polygons(self.__target.get_polygons(opacity=0.125))
         circuit.annotate_polygons(self.__source.get_polygons(opacity=0.25))
 
@@ -70,7 +70,7 @@ class ExpansionSurgery:
         circuit.append("RX", rx_data_qubits)
         circuit.append("RZ", rz_data_qubits)
 
-        for rnd in range(self.__distance + padding):
+        for rnd in range(rounds):
             for mmt in range(7):
                 self.__target.append_round_7steps(
                     circuit, mmt, prefix=f"TGT:EXP:R{rnd}"

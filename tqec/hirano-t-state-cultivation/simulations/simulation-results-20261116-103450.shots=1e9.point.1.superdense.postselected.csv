@@ -1,0 +1,11 @@
+     shots,    errors,  discards, seconds,decoder,strong_id,json_metadata,custom_counts
+    831283,      6585,    818269,    1.91,pymatching,c23db366c82be029960baab9f3b6601a32ea72f1433734851462124be32de6e6,"{""per"":0.1,""scenario"":""Superdense""}",
+    308497,      5017,    291696,   0.210,pymatching,2185e6bfcb2c97ca81e8e2d37879143012f994fbe7e94027ed1bf294409f48a9,"{""per"":0.021544346900318846,""scenario"":""Superdense""}",
+    424209,      5010,    218495,   0.131,pymatching,6865c6ab93e542a8d8e15edf75662008f81faf2d80bea8fda9caf69d3b8fd4aa,"{""per"":0.004641588833612782,""scenario"":""Superdense""}",
+   1690449,      5002,    247956,   0.295,pymatching,f08c88b70731c9220d65dc7727ded593a690b0f05c1b8c2ced85e81c60a69239,"{""per"":0.001,""scenario"":""Superdense""}",
+   8069969,      5000,    271081,    1.01,pymatching,8245cd6a006c4a7fdcba134d0aad8ce6f846a3ff7bbb6f79553886b13b06041b,"{""per"":0.00021544346900318845,""scenario"":""Superdense""}",
+  37375825,      5000,    274699,    4.54,pymatching,6bed7068c6b6f2aceeee5419077eeb468b60f85a41d5734b72b7ce3443d78817,"{""per"":4.641588833612782e-05,""scenario"":""Superdense""}",
+ 177058641,      5000,    281158,    22.1,pymatching,517e2fd28e0cce12b009f12effd1e04eb7f70876d48f9c692a5e46feb0636123,"{""per"":1e-05,""scenario"":""Superdense""}",
+ 862217860,      5324,    296115,    99.0,pymatching,1c1f22f0b0fdad63a9d5e4e43e1b8d4640afaa567131805af04cdd6ef78311d7,"{""per"":2.1544346900318865e-06,""scenario"":""Superdense""}",
+1000000000,      1361,     73689,   109.3,pymatching,2a7ca28fea0fbbf8d7d5c81b6dafeb513b561509633ed3e416f9d8a84c7f1ee1,"{""per"":4.641588833612782e-07,""scenario"":""Superdense""}",
+1000000000,       327,     15913,   106.9,pymatching,a2900f97322d2af97940937d5ed0a22dcee701133aa103052cd9d9d4128a5ef4,"{""per"":1e-07,""scenario"":""Superdense""}",
