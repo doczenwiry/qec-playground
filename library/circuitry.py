@@ -82,6 +82,21 @@ class Circuitry:
 
         return stripped
 
+    def _strip_tag(circuit: stim.Circuit, tag: str) -> stim.Circuit:
+        """Remove one comma-separated part from every instruction's tag."""
+        stripped = stim.Circuit()
+        for instruction in circuit.flattened():
+            parts = [p for p in instruction.tag.split(",") if p.strip() != tag]
+            stripped.append(
+                stim.CircuitInstruction(
+                    instruction.name,
+                    instruction.targets_copy(),
+                    instruction.gate_args_copy(),
+                    tag=",".join(parts),
+                )
+            )
+        return stripped
+
     def as_text(
         self,
         per: Optional[float] = None,
@@ -90,7 +105,8 @@ class Circuitry:
     ) -> str:
         noisy, offsets = self._as_noisy_stim(per, keep_polygon_coords=keep_polygons)
         circuit, mapping = self.compact_qubits(
-            noisy, extra=self.__polygon_qubits if keep_polygons else {}
+            Circuitry._strip_tag(noisy, NOISELESS),
+            extra=self.__polygon_qubits if keep_polygons else {},
         )
 
         if proxy_replacements is None:
@@ -129,10 +145,14 @@ class Circuitry:
         proxy_replacements: dict[str, str],
         per: Optional[float] = None,
         deterministic: bool = False,
+        postselection: bool = False,
     ) -> clifft.Program:
+        mask = (
+            [int(flag) for flag in self.__postselection_mask] if postselection else None
+        )
         return clifft.compile(
             self.as_text(per, proxy_replacements, keep_polygons=False),
-            postselection_mask=[int(flag) for flag in self.__postselection_mask],
+            postselection_mask=mask,
             normalize_syndromes=deterministic,
         )
 
