@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from collections import defaultdict
-from typing import Union, Iterable, cast, Optional
+from typing import Union, Iterable, Optional
 import logging
 
 import clifft
@@ -28,11 +28,8 @@ class Circuitry:
     """A wrapper to easily move between Stim and Clifft when switching between Clifford and non-Clifford."""
 
     def __init__(self, qubits: QubitArray, clifford: bool = True, opacity: float = 0.0):
-        self.__clifford = clifford
         self.__physical_qubits = qubits
-        self.__circuit: Union[stim.Circuit, list[str]] = (
-            stim.Circuit() if clifford else []
-        )
+        self.__circuit: stim.Circuit = stim.Circuit()
         self.__used_qubits: set[int] = set()
         self.__polygon_qubits: set[int] = set()
         self.__num_cnots = 0
@@ -53,61 +50,65 @@ class Circuitry:
             self.append_tick()
 
     @property
-    def is_clifford(self):
-        return self.__clifford
-
-    @property
     def used_qubits(self):
         return self.__used_qubits
 
-    def as_stim_dropped_coords(
+    def _as_stim_dropped_coords(
         self, per: Optional[float] = None, keep_polygon_coords: bool = True
     ) -> tuple[stim.Circuit, list[int]]:
-        if not self.__clifford:
-            raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
-
         return make_noisy(
-            cast(stim.Circuit, self.__circuit),
+            self.__circuit,
             self.__used_qubits,
             self.__polygon_qubits,
             per,
             keep_polygon_coords,
         )
 
-    def as_stim(
-        self, per: Optional[float] = None, keep_polygons: bool = True
-    ) -> stim.Circuit:
-        return self.compact_qubits(
-            self.as_stim_dropped_coords(per, keep_polygon_coords=keep_polygons)[0],
+    def as_text(
+        self,
+        per: Optional[float] = None,
+        proxy_replacements: Optional[dict[str, str]] = None,
+        keep_polygons: bool = True,
+    ) -> str:
+        circuit = self.compact_qubits(
+            self._as_stim_dropped_coords(per, keep_polygon_coords=keep_polygons)[0],
             extra=self.__polygon_qubits if keep_polygons else {},
         )[0]
 
-    @property
-    def as_text(self) -> str:
-        if self.__clifford:
-            return str(self.__circuit)
-        else:
-            return "\n".join(
-                filter(
-                    lambda ln: not ln.startswith("POLYGON"),
-                    cast(Iterable, self.__circuit),
+        if proxy_replacements is None:
+            proxy_replacements = {}
+
+        text = []
+        for instruction in circuit.flattened():
+            line = str(
+                stim.CircuitInstruction(
+                    instruction.name,
+                    instruction.targets_copy(),
+                    instruction.gate_args_copy(),
                 )
             )
+            if instruction.tag in proxy_replacements:
+                line = (
+                    proxy_replacements[instruction.tag] + line[len(instruction.name) :]
+                )
+            text.append(line)
 
-    def as_clifft(self, deterministic: bool = False) -> clifft.Program:
-        if self.__clifford:
-            raise NotImplementedError(
-                "Conversion from stim.Circuit to clifft.Program not supported. Use Circuitry.as_stim."
-            )
+        return "\n".join(text)
 
-        text = "\n".join(
-            filter(
-                lambda ln: not ln.startswith("POLYGON"), cast(Iterable, self.__circuit)
-            )
-        )
+    def as_stim(
+        self, per: Optional[float] = None, keep_polygons: bool = True
+    ) -> stim.Circuit:
+        return stim.Circuit(self.as_text(per, keep_polygons=keep_polygons))
+
+    def as_clifft(
+        self,
+        proxy_replacements: dict[str, str],
+        per: Optional[float] = None,
+        deterministic: bool = False,
+    ) -> clifft.Program:
         return clifft.compile(
-            text,
-            postselection_mask=self.__postselection_mask,
+            self.as_text(per, proxy_replacements, keep_polygons=False),
+            postselection_mask=[int(flag) for flag in self.__postselection_mask],
             normalize_syndromes=deterministic,
         )
 
@@ -116,9 +117,6 @@ class Circuitry:
         return self.__postselection_mask
 
     def missing_detectors(self, unknown_input: bool = False) -> list:
-        if not self.__clifford:
-            raise ValueError("Circuit is non-Clifford and is not supported by STIM.")
-
         return self.as_stim().missing_detectors(unknown_input=unknown_input)
 
     @staticmethod
@@ -166,7 +164,7 @@ class Circuitry:
         return self.__num_detectors
 
     def __len__(self):
-        return len(self.__circuit) if self.__clifford else -1
+        return len(self.__circuit)
 
     def to_crumble_url(
         self,
@@ -175,14 +173,9 @@ class Circuitry:
         location: str = "https://algassert.com/crumble.html",
         marks: Optional[list[tuple[int, dict[int, str], int]]] = None,
     ):
-        if self.__clifford:
-            circuit, offsets = self.as_stim_dropped_coords()
-            compact, mapping = self.compact_qubits(circuit, extra=self.__polygon_qubits)
-            lines = str(compact).splitlines()
-        else:
-            lines = cast(list, self.__circuit)
-            offsets = list(range(len(lines) + 1))
-            mapping = {q: q for q in offsets}
+        circuit, offsets = self._as_stim_dropped_coords()
+        compact, mapping = self.compact_qubits(circuit, extra=self.__polygon_qubits)
+        lines = str(compact).splitlines()
 
         if marks:
             for op_idx, pauli, mk_idx in sorted(
@@ -207,16 +200,11 @@ class Circuitry:
         spacing: bool = False,
         per: Optional[float] = None,
     ):
-        filename += ".stim" if self.__clifford else ".clifft"
+        filename += ".stim"
 
-        if self.__clifford:
-            circuit, offsets = self.as_stim_dropped_coords(per=per)
-            compact, mapping = self.compact_qubits(circuit, extra=self.__polygon_qubits)
-            lines = str(compact).splitlines()
-        else:
-            lines = cast(list, self.__circuit)
-            offsets = list(range(len(lines) + 1))
-            mapping = {q: q for q in offsets}
+        circuit, offsets = self._as_stim_dropped_coords(per=per)
+        compact, mapping = self.compact_qubits(circuit, extra=self.__polygon_qubits)
+        lines = str(compact).splitlines()
 
         if polygons:
             lines = self.__insert_polygons(lines, offsets, mapping, spacing=spacing)
@@ -312,48 +300,7 @@ class Circuitry:
         targets = list(targets) if isinstance(targets, Iterable) else [targets]
 
         self.__update_internal_counters(name, targets)
-
-        if isinstance(self.__circuit, stim.Circuit):
-            self.__circuit.append(name, targets, arg, tag=tag)
-        else:
-            match name:
-                case "DETECTOR" | "OBSERVABLE_INCLUDE":
-                    targets = " ".join(
-                        map(
-                            lambda sr: f"rec[{cast(stim.GateTarget, sr).value}]",
-                            targets,
-                        )
-                    )
-                case "MPP":
-                    # TODO: clean this up
-                    pauli = cast(stim.PauliString, targets[0])
-                    sign = pauli.sign
-                    labels = "_XYZ"
-                    terms = [f"{labels[p]}{i}" for i, p in enumerate(pauli) if p != 0]
-                    targets = "*".join(terms) if terms else "I"
-                    if sign == -1:
-                        targets = "!" + targets
-                case _:
-                    targets_str = []
-                    for target in targets:
-                        if isinstance(target, int):
-                            targets_str.append(str(target))
-                        elif isinstance(target, stim.GateTarget):
-                            if target.is_measurement_record_target:
-                                targets_str.append(f"rec[{target.value}]")
-                    targets = " ".join(map(str, targets_str))
-
-            argument = ""
-            match name:
-                case "QUBIT_COORDS":
-                    if arg is None:
-                        raise ValueError("Argument is required.")
-                    args: Iterable[float] = arg if isinstance(arg, Iterable) else [arg]
-                    argument = str(tuple(map(float, args)))
-                case "OBSERVABLE_INCLUDE" | "R_Y":
-                    argument = f"({arg})"
-
-            self.__circuit.append(f"{name}{argument} {targets}")
+        self.__circuit.append(name, targets, arg, tag=tag)
 
     def detectors_report(self, open_boundaries: bool = False):
         print("Detector statistics : ")
@@ -424,8 +371,4 @@ class Circuitry:
         return compact, mapping
 
     def __str__(self):
-        return (
-            str(self.__circuit)
-            if self.__clifford
-            else str("\n".join(map(str, cast(list, self.__circuit))))
-        )
+        return str(self.__circuit)
