@@ -47,6 +47,7 @@ def simulate(
     if exclude is None:
         exclude = []
 
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     tasks = [
         sinter.Task(
             circuit=circuitry.as_stim(per=physical_error_rate),
@@ -70,14 +71,17 @@ def simulate(
         max_shots=int(shots),
         max_errors=max_errors,
         print_progress=True,
-        save_resume_filepath=directory + "/" + filename + ".results.csv"
+        save_resume_filepath=directory
+        + "/"
+        + filename
+        + "-"
+        + timestamp
+        + ".results.csv"
         if filename
         else None,
     )
 
-    filename_prefix = (
-        f"{directory}/simulation-results-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-    )
+    filename_prefix = f"{directory}/simulation-results-{timestamp}"
     groups: dict[str, list[sinter.TaskStats]] = defaultdict(list)
     for stat in collected_stats:
         groups[stat.json_metadata["scenario"]].append(stat)
@@ -109,16 +113,16 @@ def plot(
     postselection: bool = False,
     estimate_distance: bool = True,
 ):
-    collected_stats = sinter.read_stats_from_csv_files(*filepaths)
-
+    collected_stats = []
     labels = {}
     for filepath in filepaths:
-        parts = filepath.split("/")
-        pieces = parts[-1].split(".")
-        label = pieces[2].capitalize()
-        index = str(pieces[3])
-        scenario = pieces[4].capitalize()
-        labels[scenario] = f"{label} {index} - {scenario}"
+        stats = sinter.read_stats_from_csv_files(filepath)
+        pieces = filepath.split("/")[-1].split(".")
+        prefix = f"{pieces[2].capitalize()} {pieces[3]}"
+        for stat in stats:
+            scenario = stat.json_metadata["scenario"]
+            labels[scenario] = f"{prefix} - {scenario}"
+        collected_stats.extend(stats)
 
     fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)
     error_rates = axes[0] if postselection else axes
@@ -186,17 +190,18 @@ def plot(
 
 # Thanks, Claude.AI
 def estimate_slopes(
-    stats: list[sinter.TaskStats], min_errors: int = 50, max_rate: float = 0.1
+    stats: list[sinter.TaskStats],
+    min_errors: int = 50,
+    max_per: float = 1e-3,
 ) -> dict[str, tuple[float, float, tuple[float, float], tuple[float, float]]]:
-    """Slope of log(p_L) vs log(p) from the two lowest-p points with enough statistics."""
+    """Slope of log(p_L) vs log(p) over points with p <= max_per and enough statistics."""
     points: dict[str, list[tuple[float, float]]] = defaultdict(list)
     for stat in stats:
         kept = stat.shots - stat.discards
         rate = stat.errors / kept if kept > 0 else 1.0
-        if stat.errors >= min_errors and rate < max_rate:
-            points[stat.json_metadata["scenario"]].append(
-                (stat.json_metadata["per"], rate)
-            )
+        per = stat.json_metadata["per"]
+        if stat.errors >= min_errors and per <= max_per:
+            points[stat.json_metadata["scenario"]].append((per, rate))
 
     slopes = {}
     for scenario, pts in points.items():
