@@ -85,10 +85,12 @@ class SteaneCodePatch:
         self,
         qubits: QubitArray,
         anchor: tuple[int, int] = (0, 1),
-        injection: Optional[Injection] = Injection.S,
     ):
         self.__anchor = anchor
-        self.__injection = injection
+        self.__injection_gate = "S"
+        self.__injection_gate_tag = "T"
+        self.__inversion_gate = "S_DAG"
+        self.__inversion_gate_tag = "T_DAG"
         self.__available_qubits = qubits
         px, py = anchor
         self.__used_qubits = {
@@ -98,10 +100,6 @@ class SteaneCodePatch:
 
     def __translate_qubit_ids(self, *qubits: str) -> List[int]:
         return list(map(lambda q: self.__used_qubits[q], qubits))
-
-    @property
-    def injection(self):
-        return self.__injection
 
     def support(self, compact: bool = True) -> List[int]:
         if compact:
@@ -300,10 +298,11 @@ class SteaneCodePatch:
             case 7:
                 circuit.append("CX", self.__translate_qubit_ids("D1", "BD", "GZ", "D6"))
             case 8:
-                if self.__injection:
-                    circuit.append(
-                        self.__injection.name, self.__translate_qubit_ids("D6")
-                    )
+                circuit.append(
+                    self.__injection_gate,
+                    self.__translate_qubit_ids("D6"),
+                    tag=self.__injection_gate_tag,
+                )
                 circuit.append("CX", self.__translate_qubit_ids("GZ", "D5"))
             case 9:
                 circuit.append("CX", self.__translate_qubit_ids("GZ", "D6"))
@@ -423,15 +422,16 @@ class SteaneCodePatch:
 
         match moment:
             case 0:
-                if self.__injection:
-                    circuitry.append(
-                        f"{self.__injection.name}",
-                        self.__translate_qubit_ids("D0", "d4", "D6"),
-                    )
-                    circuitry.append(
-                        f"{self.__injection.name}_DAG",
-                        self.__translate_qubit_ids("d1", "D2", "D3", "D5"),
-                    )
+                circuitry.append(
+                    f"{self.__injection_gate}",
+                    self.__translate_qubit_ids("D0", "d4", "D6"),
+                    tag=self.__injection_gate_tag,
+                )
+                circuitry.append(
+                    f"{self.__inversion_gate}",
+                    self.__translate_qubit_ids("d1", "D2", "D3", "D5"),
+                    tag=self.__inversion_gate_tag,
+                )
                 circuitry.append(
                     "RX",
                     self.__translate_qubit_ids(
@@ -539,15 +539,16 @@ class SteaneCodePatch:
                 for index, za in enumerate(measured_ancilla):
                     self.__available_qubits.record_measurement(f"{prefix}:Z{index}", za)
 
-                if self.__injection:
-                    circuitry.append(
-                        f"{self.__injection.name}_DAG",
-                        self.__translate_qubit_ids("D0", "d4", "D6"),
-                    )
-                    circuitry.append(
-                        f"{self.__injection.name}",
-                        self.__translate_qubit_ids("d1", "D2", "D3", "D5"),
-                    )
+                circuitry.append(
+                    f"{self.__inversion_gate}",
+                    self.__translate_qubit_ids("D0", "d4", "D6"),
+                    tag=self.__inversion_gate_tag,
+                )
+                circuitry.append(
+                    f"{self.__injection_gate}",
+                    self.__translate_qubit_ids("d1", "D2", "D3", "D5"),
+                    tag=self.__injection_gate_tag,
+                )
             case _:
                 raise ValueError(f"Invalid moment requested [moment={moment}, max=19]")
 
@@ -576,19 +577,24 @@ class SteaneCodePatch:
                 self.__append_noiseless_compact_measurement(circuitry, moment, prefix)
                 circuitry.append_tick(tag=NOISELESS)
         else:
+            injection_tag = NOISELESS
+            if self.__injection_gate_tag != "":
+                injection_tag += "," + self.__injection_gate_tag
+            inversion_tag = NOISELESS
+            if self.__inversion_gate_tag != "":
+                inversion_tag += "," + self.__inversion_gate_tag
             match moment:
                 case 0:
-                    if self.__injection:
-                        circuitry.append(
-                            f"{self.__injection.name}",
-                            self.__translate_qubit_ids("D0", "D4", "D6"),
-                            tag=NOISELESS,
-                        )
-                        circuitry.append(
-                            f"{self.__injection.name}_DAG",
-                            self.__translate_qubit_ids("D1", "D2", "D3", "D5"),
-                            tag=NOISELESS,
-                        )
+                    circuitry.append(
+                        f"{self.__injection_gate}",
+                        self.__translate_qubit_ids("D0", "D4", "D6"),
+                        tag=injection_tag,
+                    )
+                    circuitry.append(
+                        f"{self.__inversion_gate}",
+                        self.__translate_qubit_ids("D1", "D2", "D3", "D5"),
+                        tag=inversion_tag,
+                    )
                     circuitry.append(
                         "RX", self.__translate_qubit_ids("RZ", "GZ"), tag=NOISELESS
                     )
@@ -633,19 +639,24 @@ class SteaneCodePatch:
                 self.__append_noiseless_diffuse_measurement(circuitry, moment, prefix)
                 circuitry.append_tick(tag=NOISELESS)
         else:
+            injection_tag = NOISELESS
+            if self.__injection_gate_tag != "":
+                injection_tag += "," + self.__injection_gate_tag
+            inversion_tag = NOISELESS
+            if self.__inversion_gate_tag != "":
+                inversion_tag += "," + self.__inversion_gate_tag
             match moment:
                 case 0:
-                    if self.__injection:
-                        circuitry.append(
-                            f"{self.__injection.name}",
-                            self.__translate_qubit_ids("D0", "d4", "D6"),
-                            tag=NOISELESS,
-                        )
-                        circuitry.append(
-                            f"{self.__injection.name}_DAG",
-                            self.__translate_qubit_ids("d1", "D2", "D3", "D5"),
-                            tag=NOISELESS,
-                        )
+                    circuitry.append(
+                        f"{self.__injection_gate}",
+                        self.__translate_qubit_ids("D0", "d4", "D6"),
+                        tag=injection_tag,
+                    )
+                    circuitry.append(
+                        f"{self.__inversion_gate}",
+                        self.__translate_qubit_ids("d1", "D2", "D3", "D5"),
+                        tag=inversion_tag,
+                    )
                     circuitry.append(
                         "RX",
                         self.__translate_qubit_ids("RZ", "GZ", "D1", "D4"),

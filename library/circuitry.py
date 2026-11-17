@@ -27,7 +27,7 @@ from simulation.noise import NOISELESS
 class Circuitry:
     """A wrapper to easily move between Stim and Clifft when switching between Clifford and non-Clifford."""
 
-    def __init__(self, qubits: QubitArray, clifford: bool = True, opacity: float = 0.0):
+    def __init__(self, qubits: QubitArray, opacity: float = 0.0):
         self.__physical_qubits = qubits
         self.__circuit: stim.Circuit = stim.Circuit()
         self.__used_qubits: set[int] = set()
@@ -53,8 +53,11 @@ class Circuitry:
     def used_qubits(self):
         return self.__used_qubits
 
-    def _as_stim_dropped_coords(
-        self, per: Optional[float] = None, keep_polygon_coords: bool = True
+    def _as_noisy_stim(
+        self,
+        per: Optional[float] = None,
+        strip_tags: bool = False,
+        keep_polygon_coords: bool = True,
     ) -> tuple[stim.Circuit, list[int]]:
         return make_noisy(
             self.__circuit,
@@ -64,16 +67,31 @@ class Circuitry:
             keep_polygon_coords,
         )
 
+    @staticmethod
+    def _as_stripped_stim(circuit: stim.Circuit) -> stim.Circuit:
+        stripped = stim.Circuit()
+
+        for instruction in circuit.flattened():
+            stripped.append(
+                stim.CircuitInstruction(
+                    instruction.name,
+                    instruction.targets_copy(),
+                    instruction.gate_args_copy(),
+                )
+            )
+
+        return stripped
+
     def as_text(
         self,
         per: Optional[float] = None,
         proxy_replacements: Optional[dict[str, str]] = None,
         keep_polygons: bool = True,
     ) -> str:
-        circuit = self.compact_qubits(
-            self._as_stim_dropped_coords(per, keep_polygon_coords=keep_polygons)[0],
-            extra=self.__polygon_qubits if keep_polygons else {},
-        )[0]
+        noisy, offsets = self._as_noisy_stim(per, keep_polygon_coords=keep_polygons)
+        circuit, mapping = self.compact_qubits(
+            noisy, extra=self.__polygon_qubits if keep_polygons else {}
+        )
 
         if proxy_replacements is None:
             proxy_replacements = {}
@@ -92,6 +110,12 @@ class Circuitry:
                     proxy_replacements[instruction.tag] + line[len(instruction.name) :]
                 )
             text.append(line)
+
+        if keep_polygons:
+            text = [
+                f"#!pragma {line}" if line.startswith("POLYGON") else line
+                for line in self.__insert_polygons(text, offsets, mapping)
+            ]
 
         return "\n".join(text)
 
@@ -173,9 +197,10 @@ class Circuitry:
         location: str = "https://algassert.com/crumble.html",
         marks: Optional[list[tuple[int, dict[int, str], int]]] = None,
     ):
-        circuit, offsets = self._as_stim_dropped_coords()
+        circuit, offsets = self._as_noisy_stim()
         compact, mapping = self.compact_qubits(circuit, extra=self.__polygon_qubits)
-        lines = str(compact).splitlines()
+        stripped = Circuitry._as_stripped_stim(compact)
+        lines = str(stripped).splitlines()
 
         if marks:
             for op_idx, pauli, mk_idx in sorted(
@@ -197,20 +222,14 @@ class Circuitry:
         self,
         filename: str,
         polygons: bool = True,
-        spacing: bool = False,
         per: Optional[float] = None,
+        proxy_replacements: Optional[dict[str, str]] = None,
     ):
-        filename += ".stim"
+        circuit_text = self.as_text(per, proxy_replacements, keep_polygons=polygons)
 
-        circuit, offsets = self._as_stim_dropped_coords(per=per)
-        compact, mapping = self.compact_qubits(circuit, extra=self.__polygon_qubits)
-        lines = str(compact).splitlines()
-
-        if polygons:
-            lines = self.__insert_polygons(lines, offsets, mapping, spacing=spacing)
-
+        filename += ".stim" if proxy_replacements is None else ".clifft"
         with open(filename, "w", encoding="utf-8") as file:
-            file.write("\n".join(lines).replace(f"[{NOISELESS}]", "") + "\n")
+            file.write(circuit_text)
 
     def annotate_polygons(self, polygons: list[str]):
         for polygon in polygons:

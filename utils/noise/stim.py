@@ -32,6 +32,7 @@ def make_noisy(
     offsets: list[int] = []
     for instruction in circuit.flattened():
         offsets.append(len(noisy))
+        instruction_tags = instruction.tag.split(",")
         if instruction.name == "QUBIT_COORDS":
             qubit = instruction.targets_copy()[0].value
             if qubit in used_qubits or (
@@ -60,7 +61,7 @@ def make_noisy(
         if gate.is_unitary:
             used_in_tick.update(map(lambda tgt: tgt.value, instruction.targets_copy()))
             noisy.append(instruction)
-            if instruction.tag == NOISELESS or per is None:
+            if NOISELESS in instruction_tags or per is None:
                 continue
 
             if gate.is_single_qubit_gate:
@@ -72,14 +73,14 @@ def make_noisy(
                 tgt.value for tgt in instruction.targets_copy() if not tgt.is_combiner
             )
             if gate.produces_measurements:
-                if instruction.tag == NOISELESS:
+                if NOISELESS in instruction_tags:
                     noisy.append(instruction)
                 else:
                     noisy.append(instruction.name, instruction.targets_copy(), arg=per)
             if gate.is_reset:
                 if not gate.produces_measurements:
                     noisy.append(instruction)
-                if instruction.tag == NOISELESS or per is None:
+                if NOISELESS in instruction_tags or per is None:
                     continue
                 match gate.name:
                     case "RX" | "MRX":
@@ -92,7 +93,11 @@ def make_noisy(
             noisy.append(instruction)
             idling = list(sorted(active_qubits - used_in_tick))
             used_in_tick.clear()
-            if instruction.tag != NOISELESS and per is not None and len(idling) > 0:
+            if (
+                NOISELESS not in instruction_tags
+                and per is not None
+                and len(idling) > 0
+            ):
                 try:
                     noisy.append("DEPOLARIZE1", idling, per)
                 except ValueError as ve:

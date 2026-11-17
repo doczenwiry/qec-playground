@@ -34,7 +34,6 @@ class MagicStateCultivation:
         self,
         qubits: QubitArray,
         target: SurfaceCodePatch,
-        injection: SteaneCodePatch.Injection,
         draw_neighbors: bool = False,
     ):
         if target.distance % 2 != 1:
@@ -49,9 +48,9 @@ class MagicStateCultivation:
         ax, ay = target.anchor
         self.qubits = qubits
 
-        # Generate circuit up to and including preparation with S-injection
+        # Generate circuit up to and including preparation with S/T-injection
         self.steane = SteaneCodePatch(
-            self.qubits, (ax + target.distance - 6, ay + target.distance - 8), injection
+            self.qubits, (ax + target.distance - 6, ay + target.distance - 8)
         )
         self.source = SurfaceCodePatch(
             self.qubits,
