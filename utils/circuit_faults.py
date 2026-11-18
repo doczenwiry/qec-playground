@@ -11,46 +11,27 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 from IPython.core.display import Markdown
 from IPython.core.display_functions import display
 from pysat.formula import WCNF
 from pysat.examples.rc2 import RC2
 
 import stim
-from tqec.utils.noise_model import NoiseModel, NoiseRule
 
 
-def __make_noisy_circuit(circuit: stim.Circuit, per: float = 0.01) -> stim.Circuit:
-    return NoiseModel(
-        idle_depolarization=0.01,
-        any_clifford_1q_rule=NoiseRule(after={"DEPOLARIZE1": per}),
-        any_clifford_2q_rule=NoiseRule(after={"DEPOLARIZE2": per}),
-        gate_rules={
-            "RX": NoiseRule(after={"Z_ERROR": per}),
-            "RY": NoiseRule(after={"X_ERROR": per}),
-            "R": NoiseRule(after={"X_ERROR": per}),
-            "MPP": NoiseRule(after={}),
-        },
-        measure_rules={
-            "X": NoiseRule(after={}, flip_result=per),
-            "Y": NoiseRule(after={}, flip_result=per),
-            "Z": NoiseRule(after={}, flip_result=per),
-        },
-    ).noisy_circuit(circuit)
-
-
-def analyse_heuristic(circuit: stim.Circuit, urls: bool = False, verbose: bool = False):
+def analyse_heuristic(circuit: stim.Circuit, label: str = "", urls: bool = False, verbose: bool = False):
     found = circuit.search_for_undetectable_logical_errors(
         dont_explore_detection_event_sets_with_size_above=4,
         dont_explore_edges_with_degree_above=4,
         dont_explore_edges_increasing_symptom_degree=False,
     )
 
-    print(f"Minimum weight undetectable logical error : {len(found)}")
+    # print(f"Minimum weight undetectable logical error : {len(found)}")
 
     display(
         Markdown(
-            f"[Open in Crumble (Undetected error weight : {len(found)})]({circuit.to_crumble_url(mark={1: found})})"
+            f"[Open in Crumble ({label} : weight-{len(found)} undetected error)]({circuit.to_crumble_url(mark={1: found})})"
         )
     )
 

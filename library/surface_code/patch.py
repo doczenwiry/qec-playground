@@ -22,7 +22,7 @@ import stim
 from library.circuitry import Circuitry
 from library.common import Pauli
 from library.qubit_array import QubitArray
-from simulation.noise import NOISELESS
+from utils.simulation.noise import NOISELESS
 
 logger = logging.getLogger(__name__)
 

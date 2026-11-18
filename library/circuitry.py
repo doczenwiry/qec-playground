@@ -20,8 +20,8 @@ import clifft
 import stim
 
 from library.qubit_array import QubitArray
-from noise.stim import make_noisy
-from simulation.noise import NOISELESS
+from utils.noise.stim import make_noisy
+from utils.simulation.noise import NOISELESS
 
 
 class Circuitry:
@@ -342,7 +342,7 @@ class Circuitry:
         self.__circuit.append(name, targets, arg, tag=tag)
 
     def detectors_report(self, open_boundaries: bool = False):
-        print("Detector statistics : ")
+        # print("Detector statistics : ")
         print(
             f"> Measurement records : {len(self.__physical_qubits.measurements_index)}"
         )
@@ -356,7 +356,7 @@ class Circuitry:
         except ValueError:
             gauge_found = True
         missing_detectors = self.missing_detectors(unknown_input=open_boundaries)
-        print(f"> Missing detectors : {len(missing_detectors)}")
+        print(f"> Missing detectors : {len(missing_detectors)} [Gauge:{'FOUND' if gauge_found else 'NONE'}]")
         for detector in missing_detectors:
             records = list(
                 map(
@@ -365,7 +365,6 @@ class Circuitry:
                 )
             )
             print(f">> Detector : {records}")
-        print(f"> Gauge detectors : {'FOUND' if gauge_found else 'NONE'}")
 
     @staticmethod
     def _remap_target(t: stim.GateTarget, mapping: dict[int, int]) -> stim.GateTarget:

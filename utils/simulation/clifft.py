@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 import os
 from datetime import datetime
 import hashlib
@@ -18,7 +19,6 @@ from typing import Union, cast, Optional
 import re
 
 import clifft
-import itertools
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -26,10 +26,10 @@ import seaborn as sns
 import sinter
 import time
 from matplotlib.container import BarContainer
-
-__all__ = ["sample"]
-
+from scipy.stats import binom
 from library.circuitry import Circuitry
+
+__all__ = ["sample", "simulate"]
 
 
 SEED = 42
@@ -37,34 +37,82 @@ SEED = 42
 
 def _stratified_mc_sampling(
     program: clifft.Program,
-    shots: int,
-    max_errors: int,
-    batch_shots: int,
+    max_shots: int, batch: int, target_errors: int,
     workers: int,
+    tolerance: float = 1e-12,
 ) -> tuple[int, int, int]:
     assert len(set(program.noise_site_probabilities)) == 1
+    number_of_noise_sites = len(program.noise_site_probabilities)
 
-    total, discards, errors = 0, 0, 0
+    per = float(program.noise_site_probabilities[0])
+    max_k = int(binom.isf(tolerance, number_of_noise_sites, per))
+    pmf = binom.pmf(np.arange(max_k + 1), number_of_noise_sites, per)
 
-    strata: list[float] = []
-    k: int
-    weight: float
-    for k, weight in itertools.product([], []):
-        result = clifft.sample_k(program, shots=shots, k=k, seed=SEED + k)
-        print(f"k={k} [w:{weight}] : {result.measurements[:, 0]}")
-        conditional_one_rate = result.measurements[:, 0].mean()
-        strata.append(weight * conditional_one_rate)
+    stratum_data: dict[int, tuple[int, int, int]] = {}
 
-        # Ensure that the sampling produced valid results.
-        assert result.total_shots is not None
-        assert result.discards is not None
-        assert result.logical_errors is not None
+    # Check that the circuit is deterministic.
+    check = clifft.sample_k_survivors(program, shots=100_000, k=0, seed=SEED)
+    assert check.discards == 0 and check.logical_errors == 0, "Noiseless circuit is not deterministic"
 
-        # Update the counters
-        total += result.total_shots
-        discards += result.discards
-        errors += result.logical_errors
-    return total, errors, discards
+    # Sample in each stratum. Ignore k=0 here since survival = 100.0% but max_shots would be performed
+    for k in range(1, max_k+1):
+        weight = pmf[k]
+
+        if weight < 1e-30:
+            continue
+
+        total: int = 0
+        errors: int = 0
+        passed: int = 0
+
+        batch_index: int = 0
+        # Perform batch sampling until a sufficient number of errors are found
+        while errors < target_errors and total < max_shots:
+            required_shots: int = min(batch, max_shots - total)
+            seed = SEED + 250204928 * k + batch_index
+            result = clifft.sample_k_survivors(program, shots=required_shots, k=k, seed=seed, threads=workers)
+
+            # Ensure that the sampling produced valid results.
+            assert result.total_shots is not None
+            assert result.passed_shots is not None
+            assert result.logical_errors is not None
+            assert result.discards is not None
+
+            total += result.total_shots
+            errors += result.logical_errors
+            passed += result.passed_shots
+
+            batch_index += 1
+
+        stratum_data[k] = total, errors, passed
+
+    total_shots = 0
+    weighted_errors = 0.0
+    weighted_survival = pmf[0]
+    weighted_variance = 0.0 # Improves confidence of the curves. Thanks, Claude.AI (November 2026)
+    for k, (total, errors, passed) in stratum_data.items():
+        weight = pmf[k]
+        ler = errors / total
+        total_shots += total
+        weighted_errors += weight * ler
+        weighted_survival += weight * passed / total
+        weighted_variance += weight ** 2 * ler * (1.0 - ler) / total
+
+    # Normalize all weighted accumulations to the total of the binomial PMF
+    normalization = pmf.sum()
+    weighted_errors /= normalization
+    weighted_survival /= normalization
+    weighted_variance /= normalization**2
+
+    shots = (
+        max(round(weighted_errors * (1.0 - weighted_errors) / weighted_variance), 1)
+        if weighted_variance > 0.0 else total_shots
+    )
+
+    discards = round(shots * (1.0 - weighted_survival))
+    logical_errors = round((shots - discards) * weighted_errors / weighted_survival)
+
+    return shots, discards, logical_errors
 
 
 # Based on Clifft's documentation about Importance Sampling
@@ -77,8 +125,6 @@ def simulate(
     shots=1e6,
     noise_levels: Optional[np.ndarray] = None,
     workers: Optional[int] = None,
-    max_errors: int = 5000,
-    batch_shots: int = 100_000,
     directory: str = "simulations",
     exclude: Optional[list[str]] = None,
     proxy_replacements: Optional[dict[str, str]] = None,
@@ -93,7 +139,7 @@ def simulate(
         workers = (os.process_cpu_count() or 2) - 1
 
     if noise_levels is None:
-        noise_levels = np.logspace(-6, -1, num=11)
+        noise_levels = np.logspace(-7, -2, num=11)
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     shot_count = f".shots={re.sub(r'e\+?(-?)0*(\d)', r'e\1\2', f'{shots:.0e}')}"
@@ -112,6 +158,7 @@ def simulate(
                 f"{timestamp}|{scenario}|{per}".encode()
             ).hexdigest()
 
+            # Compile the Clifft program
             program = circuitry.as_clifft(
                 proxy_replacements,
                 per=float(per),
@@ -121,17 +168,14 @@ def simulate(
 
             # Perform the Stratified Monte Carlo Sampling.
             start = time.monotonic()
-            total, errors, discards = _stratified_mc_sampling(
-                program,
-                int(shots),
-                max_errors,
-                batch_shots,
-                workers,
+            total, discards, errors = _stratified_mc_sampling(
+                program, max_shots=10**8, batch=10**6
+                , target_errors=200, workers=workers
             )
             final = time.monotonic()
 
             print(
-                f"{scenario} p={per:.2e}: {errors} errors, {discards}/{shots} discarded."
+                f"{scenario} p={per:.2e}: {errors} errors, {discards}/{total} discarded."
             )
 
             results.append(
