@@ -11,13 +11,14 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import os
 from datetime import datetime
 import hashlib
 from typing import Union, cast, Optional
 import re
 
 import clifft
+import itertools
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -31,114 +32,134 @@ __all__ = ["sample"]
 from library.circuitry import Circuitry
 
 
-def _collect(
+SEED = 42
+
+
+def _stratified_mc_sampling(
     program: clifft.Program,
-    json_metadata: dict,
-    strong_id: str,
     shots: int,
     max_errors: int,
     batch_shots: int,
-    num_workers: int,
-) -> sinter.TaskStats:
+    workers: int,
+) -> tuple[int, int, int]:
     assert len(set(program.noise_site_probabilities)) == 1
+
     total, discards, errors = 0, 0, 0
-    start = time.monotonic()
-    while total < shots and errors < max_errors:
-        # seed=None: fresh randomness per batch, a fixed seed would repeat shots
-        result = clifft.sample_survivors(
-            program, min(batch_shots, shots - total), threads=num_workers
-        )
+
+    strata: list[float] = []
+    k: int
+    weight: float
+    for k, weight in itertools.product([], []):
+        result = clifft.sample_k(program, shots=shots, k=k, seed=SEED + k)
+        print(f"k={k} [w:{weight}] : {result.measurements[:, 0]}")
+        conditional_one_rate = result.measurements[:, 0].mean()
+        strata.append(weight * conditional_one_rate)
+
+        # Ensure that the sampling produced valid results.
+        assert result.total_shots is not None
+        assert result.discards is not None
+        assert result.logical_errors is not None
+
+        # Update the counters
         total += result.total_shots
         discards += result.discards
         errors += result.logical_errors
-    return sinter.TaskStats(
-        strong_id=strong_id,
-        decoder="clifft-postselection",
-        json_metadata=json_metadata,
-        shots=total,
-        errors=errors,
-        discards=discards,
-        seconds=time.monotonic() - start,
-    )
+    return total, errors, discards
 
 
-# Thanks, Claude.AI (November 2026)
+# Based on Clifft's documentation about Importance Sampling
+# cfr. https://unitaryfoundation.github.io/clifft/stable/guide/importance-sampling/
+# cfr. https://unitaryfoundation.github.io/clifft/stable/guide/importance-sampling-tutorial/
 def simulate(
     scenarios: dict[str, Circuitry],
     label: Optional[str] = None,
     postselection: bool = False,
     shots=1e6,
-    minimal_noise=-6,
-    points: int = 10,
-    num_workers: int = 4,
+    noise_levels: Optional[np.ndarray] = None,
+    workers: Optional[int] = None,
     max_errors: int = 5000,
     batch_shots: int = 100_000,
     directory: str = "simulations",
     exclude: Optional[list[str]] = None,
     proxy_replacements: Optional[dict[str, str]] = None,
 ) -> list[str]:
-    """Same sweep and CSV layout as simulation.stim.simulate, so stim.plot reads the output.
-
-    Clifft has no decoder: shots failing a postselected detector are discarded and
-    every observable flip on a surviving shot counts as a logical error.
-    """
+    """Computes the PER/LER curves using Stratified Monte Carlo Sampling."""
     if exclude is None:
         exclude = []
     if proxy_replacements is None:
         proxy_replacements = {}
 
+    if workers is None:
+        workers = (os.process_cpu_count() or 2) - 1
+
+    if noise_levels is None:
+        noise_levels = np.logspace(-6, -1, num=11)
+
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     shot_count = f".shots={re.sub(r'e\+?(-?)0*(\d)', r'e\1\2', f'{shots:.0e}')}"
     filename_prefix = f"{directory}/simulation-results-{timestamp}"
 
-    paths = []
+    filepaths = []
     for index, (scenario, circuitry) in enumerate(scenarios.items()):
         if scenario in exclude:
             continue
-        group = []
-        for per in np.logspace(-1, minimal_noise, num=points):
+
+        # Collect the results across all noise levels
+        results = []
+        for per in noise_levels:
             json_metadata = {"scenario": scenario, "per": float(per)}
             strong_id = hashlib.sha256(
                 f"{timestamp}|{scenario}|{per}".encode()
             ).hexdigest()
-            stats = _collect(
-                circuitry.as_clifft(
-                    proxy_replacements,
-                    per=float(per),
-                    postselection=postselection,
-                    deterministic=True,
-                ),
-                json_metadata,
-                strong_id,
+
+            program = circuitry.as_clifft(
+                proxy_replacements,
+                per=float(per),
+                postselection=postselection,
+                deterministic=True,
+            )
+
+            # Perform the Stratified Monte Carlo Sampling.
+            start = time.monotonic()
+            total, errors, discards = _stratified_mc_sampling(
+                program,
                 int(shots),
                 max_errors,
                 batch_shots,
-                num_workers,
+                workers,
             )
-            print(
-                f"{scenario} p={per:.2e}: {stats.errors} errors, "
-                f"{stats.discards}/{stats.shots} discarded"
-            )
-            group.append(stats)
+            final = time.monotonic()
 
-        scenario_label = (
-            f".{label.lower()}.{index}" if label is not None else ""
-        ) + f".{scenario.lower().replace(' ', '-')}"
+            print(
+                f"{scenario} p={per:.2e}: {errors} errors, {discards}/{shots} discarded."
+            )
+
+            results.append(
+                sinter.TaskStats(
+                    strong_id=strong_id,
+                    decoder="clifft-postselection",
+                    json_metadata=json_metadata,
+                    shots=total,
+                    errors=errors,
+                    discards=discards,
+                    seconds=final - start,
+                )
+            )
+
+        scenario_label = f".{label.lower()}.{index}" if label is not None else ""
+        scenario_name = f".{scenario.lower().replace(' ', '-')}"
         postselected = (
             ".postselected"
             if postselection and any(circuitry.postselection_mask)
             else ""
         )
-        path = f"{filename_prefix}{shot_count}{scenario_label}{postselected}.csv"
+        path = f"{filename_prefix}{shot_count}{scenario_label}{scenario_name}{postselected}.csv"
         with open(path, "w", encoding="utf-8") as file:
             file.write(sinter.CSV_HEADER + "\n")
-            file.writelines(stat.to_csv_line() + "\n" for stat in group)
-        paths.append(path)
+            file.writelines(statistics.to_csv_line() + "\n" for statistics in results)
+        filepaths.append(path)
 
-    return paths
-
-
-SEED = 42
+    return filepaths
 
 
 # Thanks, Claude.AI (September 2026)
