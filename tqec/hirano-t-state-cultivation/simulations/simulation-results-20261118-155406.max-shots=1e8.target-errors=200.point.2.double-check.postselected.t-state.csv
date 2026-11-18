@@ -1,0 +1,12 @@
+     shots,    errors,  discards, seconds,decoder,strong_id,json_metadata,custom_counts
+ 200000000,         0,      8813,    34.2,clifft-postselection,08c2db1cd382cb262da7014b8e5c5e1879263a671d50959ca512414b145ae2e9,"{""per"":1e-07,""scenario"":""Double-check""}",
+ 200000000,         0,     27869,    34.0,clifft-postselection,7a315f1218836c67b5746e0fa70624fc1b149ad76b98c45539e018338117ffdd,"{""per"":3.162277660168379e-07,""scenario"":""Double-check""}",
+640978549042475776,       203,282398522393611,    36.9,clifft-postselection,a23e5228d3cfd9dd0defe63921853711cdfff5c5701b111279b53eafe6a1075b,"{""per"":1e-06,""scenario"":""Double-check""}",
+20293157614593180,       203,28259228555573,    37.1,clifft-postselection,449185e9fc9a6c57925b8189d320f1b44ca600b4db8e057abd99585fafa9c19b,"{""per"":3.162277660168379e-06,""scenario"":""Double-check""}",
+645181411049931,       204,2836827069522,    39.5,clifft-postselection,0e50a00c83acfd60395fa2885836894741c656638213a6d56204c186a0a42146,"{""per"":1e-05,""scenario"":""Double-check""}",
+20716655807507,       205,286673959036,    42.7,clifft-postselection,babdf49197fa904d7b38904b72667cbce75aa00267702cd3e48cc07816ad1b0c,"{""per"":3.1622776601683795e-05,""scenario"":""Double-check""}",
+687452650898,       210,29631079112,    46.8,clifft-postselection,dbc7baab59e78337fa1115728ad29e0841b603c2208574902babd71936a14e4e,"{""per"":0.0001,""scenario"":""Double-check""}",
+25276119280,       225,3286134313,    61.9,clifft-postselection,a2eab5e2591d6f9346813e1f6457dff68b9f7f654a5809388df9c65c84a27f2c,"{""per"":0.00031622776601683794,""scenario"":""Double-check""}",
+1267259774,       277, 450988782,   113.5,clifft-postselection,98266a03f93edda25e36f025e9484928d541000bcd4d4b3b2c13947deca7bcbf,"{""per"":0.001,""scenario"":""Double-check""}",
+ 148577827,       465, 111393357,   275.5,clifft-postselection,d1c3fc1e702e19fe5579622695e7883d593986916595797d7c3853206a14c9a0,"{""per"":0.0031622776601683794,""scenario"":""Double-check""}",
+ 119790803,      1078, 118188152,   668.6,clifft-postselection,9f8137dec683786a20168de0376078190170ba7efe05cca37c1d6253405e1aaa,"{""per"":0.01,""scenario"":""Double-check""}",

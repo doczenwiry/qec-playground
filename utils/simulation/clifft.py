@@ -37,7 +37,9 @@ SEED = 42
 
 def _stratified_mc_sampling(
     program: clifft.Program,
-    max_shots: int, batch: int, target_errors: int,
+    max_shots: int,
+    batch: int,
+    target_errors: int,
     workers: int,
     tolerance: float = 1e-12,
 ) -> tuple[int, int, int]:
@@ -52,10 +54,12 @@ def _stratified_mc_sampling(
 
     # Check that the circuit is deterministic.
     check = clifft.sample_k_survivors(program, shots=100_000, k=0, seed=SEED)
-    assert check.discards == 0 and check.logical_errors == 0, "Noiseless circuit is not deterministic"
+    assert check.discards == 0 and check.logical_errors == 0, (
+        "Noiseless circuit is not deterministic"
+    )
 
     # Sample in each stratum. Ignore k=0 here since survival = 100.0% but max_shots would be performed
-    for k in range(1, max_k+1):
+    for k in range(1, max_k + 1):
         weight = pmf[k]
 
         if weight < 1e-30:
@@ -70,7 +74,9 @@ def _stratified_mc_sampling(
         while errors < target_errors and total < max_shots:
             required_shots: int = min(batch, max_shots - total)
             seed = SEED + 250204928 * k + batch_index
-            result = clifft.sample_k_survivors(program, shots=required_shots, k=k, seed=seed, threads=workers)
+            result = clifft.sample_k_survivors(
+                program, shots=required_shots, k=k, seed=seed, threads=workers
+            )
 
             # Ensure that the sampling produced valid results.
             assert result.total_shots is not None
@@ -89,14 +95,16 @@ def _stratified_mc_sampling(
     total_shots = 0
     weighted_errors = 0.0
     weighted_survival = pmf[0]
-    weighted_variance = 0.0 # Improves confidence of the curves. Thanks, Claude.AI (November 2026)
+    weighted_variance = (
+        0.0  # Improves confidence of the curves. Thanks, Claude.AI (November 2026)
+    )
     for k, (total, errors, passed) in stratum_data.items():
         weight = pmf[k]
         ler = errors / total
         total_shots += total
         weighted_errors += weight * ler
         weighted_survival += weight * passed / total
-        weighted_variance += weight ** 2 * ler * (1.0 - ler) / total
+        weighted_variance += weight**2 * ler * (1.0 - ler) / total
 
     # Normalize all weighted accumulations to the total of the binomial PMF
     normalization = pmf.sum()
@@ -106,7 +114,8 @@ def _stratified_mc_sampling(
 
     shots = (
         max(round(weighted_errors * (1.0 - weighted_errors) / weighted_variance), 1)
-        if weighted_variance > 0.0 else total_shots
+        if weighted_variance > 0.0
+        else total_shots
     )
 
     discards = round(shots * (1.0 - weighted_survival))
@@ -122,7 +131,8 @@ def simulate(
     scenarios: dict[str, Circuitry],
     label: Optional[str] = None,
     postselection: bool = False,
-    shots=1e6,
+    max_shots=1e8,
+    target_errors: int = 200,
     noise_levels: Optional[np.ndarray] = None,
     workers: Optional[int] = None,
     directory: str = "simulations",
@@ -142,7 +152,6 @@ def simulate(
         noise_levels = np.logspace(-7, -2, num=11)
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    shot_count = f".shots={re.sub(r'e\+?(-?)0*(\d)', r'e\1\2', f'{shots:.0e}')}"
     filename_prefix = f"{directory}/simulation-results-{timestamp}"
 
     filepaths = []
@@ -169,8 +178,11 @@ def simulate(
             # Perform the Stratified Monte Carlo Sampling.
             start = time.monotonic()
             total, discards, errors = _stratified_mc_sampling(
-                program, max_shots=10**8, batch=10**6
-                , target_errors=200, workers=workers
+                program,
+                max_shots=int(max_shots),
+                batch=10**6,
+                target_errors=target_errors,
+                workers=workers,
             )
             final = time.monotonic()
 
@@ -192,12 +204,16 @@ def simulate(
 
         scenario_label = f".{label.lower()}.{index}" if label is not None else ""
         scenario_name = f".{scenario.lower().replace(' ', '-')}"
+        shot_count = (
+            f".max-shots={re.sub(r'e\+?(-?)0*(\d)', r'e\1\2', f'{max_shots:.0e}')}"
+        )
+        error_count = f".target-errors={target_errors:.0e}"
         postselected = (
             ".postselected"
             if postselection and any(circuitry.postselection_mask)
             else ""
         )
-        path = f"{filename_prefix}{shot_count}{scenario_label}{scenario_name}{postselected}.csv"
+        path = f"{filename_prefix}{shot_count}{error_count}{scenario_label}{scenario_name}{postselected}.t-state.csv"
         with open(path, "w", encoding="utf-8") as file:
             file.write(sinter.CSV_HEADER + "\n")
             file.writelines(statistics.to_csv_line() + "\n" for statistics in results)

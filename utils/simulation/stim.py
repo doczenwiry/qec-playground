@@ -96,7 +96,9 @@ def simulate(
         scenario_label = (
             f".{label.lower()}.{index}" if label is not None else ""
         ) + f".{scenario.lower().replace(' ', '-')}"
-        path = f"{filename_prefix}{shot_count}{scenario_label}{postselected}.csv"
+        path = (
+            f"{filename_prefix}{shot_count}{scenario_label}{postselected}.s-state.csv"
+        )
         with open(path, "w", encoding="utf-8") as file:
             file.write(sinter.CSV_HEADER + "\n")
             file.writelines(stat.to_csv_line() + "\n" for stat in group)

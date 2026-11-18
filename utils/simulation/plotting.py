@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 from collections import defaultdict
+from typing import Optional
 
 import numpy as np
 import sinter
@@ -23,10 +24,14 @@ def plot_results(
     filepaths: list[str],
     title: str = "Simulation results",
     minimal_noise: int = -6,
+    noise_levels: Optional[np.ndarray] = None,
     figsize: tuple[float, float] = (11, 5),
     postselection: bool = False,
     estimate_distance: bool = True,
 ):
+    if noise_levels is None:
+        noise_levels = np.logspace(-7, -2, num=11)
+
     collected_stats = []
     labels = {}
     for filepath in filepaths:
@@ -68,8 +73,8 @@ def plot_results(
                 color=colors.get(labels[scenario], "black"),
             )
 
-    error_rates.set_ylim(1e-9, 1.5)
-    error_rates.set_xlim(10**minimal_noise, 0.125)
+    error_rates.set_ylim(1e-12, 1.5)
+    error_rates.set_xlim(noise_levels.min(), 0.125)
     error_rates.loglog()
     error_rates.set_title("Error rates")
     error_rates.set_xlabel("Physical Error Rate")
