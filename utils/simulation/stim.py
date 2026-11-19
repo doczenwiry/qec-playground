@@ -16,7 +16,6 @@ import itertools
 from collections import defaultdict
 from datetime import datetime
 from typing import Optional, cast
-import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -56,10 +55,16 @@ def simulate(
             )
             if postselection and isinstance(circuitry, Circuitry)
             else None,
-            json_metadata={"scenario": scenario, "per": physical_error_rate},
+            json_metadata={
+                "scenario": scenario,
+                "per": physical_error_rate,
+                "shots": shots,
+                "label": f".{label.lower()}.{index}" if label is not None else "",
+                "postselection": postselection,
+            },
         )
-        for (scenario, circuitry), physical_error_rate in itertools.product(
-            scenarios.items(), np.logspace(-1, minimal_noise, num=points)
+        for (index, (scenario, circuitry)), physical_error_rate in itertools.product(
+            enumerate(scenarios.items()), np.logspace(-1, minimal_noise, num=points)
         )
         if scenario not in exclude
     ]
@@ -87,18 +92,15 @@ def simulate(
         groups[stat.json_metadata["scenario"]].append(stat)
 
     paths = []
-    # Thanks, Claude.AI (November 2026)
-    shot_count = f".shots={re.sub(r'e\+?(-?)0*(\d)', r'e\1\2', f'{shots:.0e}')}"
-    postselected = ".postselected" if postselection else ""
-    for index, (scenario, group) in enumerate(groups.items()):
+
+    for index, scenario in enumerate(scenarios):
         if scenario in exclude:
             continue
+        group = groups[scenario]
         scenario_label = (
             f".{label.lower()}.{index}" if label is not None else ""
         ) + f".{scenario.lower().replace(' ', '-')}"
-        path = (
-            f"{filename_prefix}{shot_count}{scenario_label}{postselected}.s-state.csv"
-        )
+        path = f"{filename_prefix}.s-state{scenario_label}.csv"
         with open(path, "w", encoding="utf-8") as file:
             file.write(sinter.CSV_HEADER + "\n")
             file.writelines(stat.to_csv_line() + "\n" for stat in group)

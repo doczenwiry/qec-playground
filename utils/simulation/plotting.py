@@ -20,7 +20,7 @@ import sinter
 from matplotlib import pyplot as plt
 
 
-def plot_results(
+def plot(
     filepaths: list[str],
     title: str = "Simulation results",
     minimal_noise: int = -6,
@@ -36,11 +36,10 @@ def plot_results(
     labels = {}
     for filepath in filepaths:
         stats = sinter.read_stats_from_csv_files(filepath)
-        pieces = filepath.split("/")[-1].split(".")
-        prefix = f"{pieces[2].capitalize()} {pieces[3]}"
         for stat in stats:
+            label = stat.json_metadata["label"]
             scenario = stat.json_metadata["scenario"]
-            labels[scenario] = f"{prefix} - {scenario}"
+            labels[scenario] = f"{label} - {scenario}" if label != "" else scenario
         collected_stats.extend(stats)
 
     fig, axes = plt.subplots(1, 2 if postselection else 1, figsize=figsize)

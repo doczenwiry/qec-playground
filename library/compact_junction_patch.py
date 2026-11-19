@@ -59,16 +59,22 @@ class JunctionPatch:
         return polygons
 
     def annotate_detectors(
-        self, circuitry: Circuitry, rounds: int, postselected: bool = True
+        self,
+        circuitry: Circuitry,
+        rounds: int,
+        prefix: str = "JCT:R",
+        postselected: bool = True,
     ):
         for zi, (prev, curr) in itertools.product(
             range(3), itertools.pairwise(range(rounds))
         ):
             circuitry.annotate_detector(
-                f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}", postselected=postselected
+                f"{prefix}{curr}:Z{zi}",
+                f"{prefix}{prev}:Z{zi}",
+                postselected=postselected,
             )
 
-    def append_syndrome(self, circuit: Circuitry, moment: int, prefix: str = ""):
+    def append_syndrome(self, circuit: Circuitry, moment: int, prefix: str = "JCT:R"):
         match moment:
             case 0:
                 circuit.append("RZ", self.z_ancilla.values())

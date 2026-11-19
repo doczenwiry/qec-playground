@@ -16,7 +16,6 @@ import os
 from datetime import datetime
 import hashlib
 from typing import Union, cast, Optional
-import re
 
 import clifft
 import matplotlib.pyplot as plt
@@ -162,7 +161,14 @@ def simulate(
         # Collect the results across all noise levels
         results = []
         for per in noise_levels:
-            json_metadata = {"scenario": scenario, "per": float(per)}
+            json_metadata = {
+                "scenario": scenario,
+                "per": float(per),
+                "max_shots": int(max_shots),
+                "target_errors": int(target_errors),
+                "label": f".{label.lower()}.{index}" if label is not None else "",
+                "postselection": postselection,
+            }
             strong_id = hashlib.sha256(
                 f"{timestamp}|{scenario}|{per}".encode()
             ).hexdigest()
@@ -204,16 +210,7 @@ def simulate(
 
         scenario_label = f".{label.lower()}.{index}" if label is not None else ""
         scenario_name = f".{scenario.lower().replace(' ', '-')}"
-        shot_count = (
-            f".max-shots={re.sub(r'e\+?(-?)0*(\d)', r'e\1\2', f'{max_shots:.0e}')}"
-        )
-        error_count = f".target-errors={target_errors:.0e}"
-        postselected = (
-            ".postselected"
-            if postselection and any(circuitry.postselection_mask)
-            else ""
-        )
-        path = f"{filename_prefix}{shot_count}{error_count}{scenario_label}{scenario_name}{postselected}.t-state.csv"
+        path = f"{filename_prefix}{scenario_label}{scenario_name}.t-state.csv"
         with open(path, "w", encoding="utf-8") as file:
             file.write(sinter.CSV_HEADER + "\n")
             file.writelines(statistics.to_csv_line() + "\n" for statistics in results)

@@ -236,13 +236,13 @@ class MagicStateCultivation:
 
                 if translated_mmt != -1:
                     self.__junction.append_syndrome(
-                        circuitry, moment=translated_mmt, prefix=f"JCT{rnd}"
+                        circuitry, moment=translated_mmt, prefix=f"JCT:TPT{rnd}"
                     )
                     self.source.append_round_6steps(
                         circuitry,
                         moment=translated_mmt,
                         prepare=Pauli.X if rnd == 0 else None,
-                        prefix=f"SRC:R{rnd}",
+                        prefix=f"SRC:TPT{rnd}",
                         inactive=self.__inactive_source,
                     )
                 circuitry.append_tick()
@@ -313,18 +313,20 @@ class MagicStateCultivation:
             *(f"STN:DST:{mx}" for mx in ["X0", "X2", "X3", "X4"]), postselected=True
         )
 
-        self.__junction.annotate_detectors(circuitry, rounds=tpt_rounds)
+        self.__junction.annotate_detectors(
+            circuitry, rounds=tpt_rounds, prefix="JCT:TPT"
+        )
         self.source.annotate_detectors(
-            circuitry, rounds=tpt_rounds, prepared=Pauli.X, prefix="SRC"
+            circuitry, rounds=tpt_rounds, prepared=Pauli.X, prefix="SRC:TPT"
         )
 
         for ql, (qx, qi) in self.source.qubits["X"].items():
-            if qi < 2:
+            if self.__inactive_source(ql):
                 continue
-            circuitry.annotate_detector(f"SRC:REC:X{qi}", f"SRC:R{last}:X{qi}")
+            circuitry.annotate_detector(f"SRC:REC:X{qi}", f"SRC:TPT{last}:X{qi}")
 
         for ql, (qz, qi) in self.source.qubits["Z"].items():
-            circuitry.annotate_detector(f"SRC:REC:Z{qi}", f"SRC:R{last}:Z{qi}")
+            circuitry.annotate_detector(f"SRC:REC:Z{qi}", f"SRC:TPT{last}:Z{qi}")
 
         tx, ty = self.target.anchor
 
@@ -347,5 +349,5 @@ class MagicStateCultivation:
                 circuitry.annotate_detector(f"TGT:EXP:R0:X{qti}", f"SRC:REC:X{qsi}")
 
         self.target.annotate_detectors(
-            circuitry, rounds=self.target.distance + exp_rounds, prefix="TGT:EXP"
+            circuitry, rounds=self.target.distance + exp_rounds, prefix="TGT:EXP:R"
         )

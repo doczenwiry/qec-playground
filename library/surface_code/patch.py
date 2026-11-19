@@ -262,20 +262,20 @@ class SurfaceCodePatch:
 
                 if prepared is not None and prepared.name == stabilizer:
                     circuitry.annotate_detector(
-                        f"{prefix}:R0:{stabilizer}{qi}",
+                        f"{prefix}0:{stabilizer}{qi}",
                         postselected=postselected,
                     )
                 for prev, curr in itertools.pairwise(range(rounds or self.distance)):
                     circuitry.annotate_detector(
-                        f"{prefix}:R{curr}:{stabilizer}{qi}",
-                        f"{prefix}:R{prev}:{stabilizer}{qi}",
+                        f"{prefix}{curr}:{stabilizer}{qi}",
+                        f"{prefix}{prev}:{stabilizer}{qi}",
                         postselected=postselected,
                     )
                 if measured is not None and measured.name == stabilizer:
                     circuitry.annotate_detector(
-                        f"{prefix}:R{last}:{stabilizer}{qi}",
+                        f"{prefix}{last}:{stabilizer}{qi}",
                         *[
-                            f"{prefix}:R{last}:D{self.get_qubit_index('D', qd)}"
+                            f"{prefix}{last}:D{self.get_qubit_index('D', qd)}"
                             for qd in self.get_polygon(*ql)
                         ],
                         postselected=postselected,
