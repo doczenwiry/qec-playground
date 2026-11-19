@@ -59,8 +59,8 @@ class SurfaceCodePatch:
 
         ax, ay = anchor
         data_qubits: dict[tuple[float, float], tuple[int, int]] = {
-            location: (qubits[location], index)
-            for index, location in enumerate(
+            (float(px), float(py)): (qubits[(px, py)], index)
+            for index, (px, py) in enumerate(
                 itertools.product(range(ax, ax + distance), range(ay, ay + distance))
             )
         }
@@ -68,20 +68,31 @@ class SurfaceCodePatch:
 
         ancilla_count = (distance**2 - 1) // 2
         width = 1 + (distance // 2)
-        ancilla0: dict[tuple[float, float], tuple[int, int]] = dict()
+        locations = []
         for q in range(ancilla_count):
             location = (
                 ax + 0.5 + 2 * (q % width) - ((q // width) % 2),
                 ay + 0.5 + (q // width),
             )
+            locations.append(location)
+        locations.sort()
+
+        ancilla0: dict[tuple[float, float], tuple[int, int]] = dict()
+        for location in locations:
             ancilla0[location] = (qubits[location], len(ancilla0))
+
         width = distance // 2
-        ancilla1: dict[tuple[float, float], tuple[int, int]] = dict()
+        locations.clear()
         for q in range(ancilla_count):
             location = (
                 ax + 0.5 + 2 * (q % width) + ((q // width) % 2),
                 ay - 0.5 + (q // width),
             )
+            locations.append(location)
+        locations.sort()
+
+        ancilla1: dict[tuple[float, float], tuple[int, int]] = dict()
+        for location in locations:
             ancilla1[location] = (qubits[location], len(ancilla1))
 
         self.qubits["X"] = ancilla1 if coloring else ancilla0
@@ -178,6 +189,13 @@ class SurfaceCodePatch:
                         self.__physical_qubits.qubits[(ax + offset, ay + i)]: "Z"
                         for i in range(self.__distance)
                     }
+
+    def get_qubits(
+        self,
+        qtype: str,
+        inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
+    ):
+        return self.__get_qubits(qtype, inactive)
 
     def __get_qubits(
         self,
@@ -420,20 +438,13 @@ class SurfaceCodePatch:
         self,
         circuitry: Circuitry,
         inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
+        prefix: str = "SFC:STB",
         noiseless: bool = True,
     ):
         tag = NOISELESS if noiseless else ""
         stabilizer = "X"
         x_ancilla = list(self.__get_qubits(stabilizer, inactive))
-        for location, (xq, xi) in filter(
-            lambda xa: (xa[0][0] - 0.5) % 2.0 == 0.0, x_ancilla
-        ):
-            polygon = self.get_polygon(*location)
-            circuitry.append(
-                "MPP", stim.PauliString({q: stabilizer for q in polygon}), tag=tag
-            )
-            self.__physical_qubits.record_measurement(f"STB:{stabilizer}{xi}", xq)
-        circuitry.append_tick(tag=tag)
+
         for location, (xq, xi) in filter(
             lambda xa: (xa[0][0] - 0.5) % 2.0 == 1.0, x_ancilla
         ):
@@ -441,20 +452,22 @@ class SurfaceCodePatch:
             circuitry.append(
                 "MPP", stim.PauliString({q: stabilizer for q in polygon}), tag=tag
             )
-            self.__physical_qubits.record_measurement(f"STB:{stabilizer}{xi}", xq)
+            self.__physical_qubits.record_measurement(f"{prefix}:{stabilizer}{xi}", xq)
         circuitry.append_tick(tag=tag)
 
-        stabilizer = "Z"
-        z_ancilla = list(self.__get_qubits(stabilizer, inactive))
-        for location, (zq, zi) in filter(
-            lambda za: (za[0][1] - 0.5) % 2.0 == 0.0, z_ancilla
+        for location, (xq, xi) in filter(
+            lambda xa: (xa[0][0] - 0.5) % 2.0 == 0.0, x_ancilla
         ):
             polygon = self.get_polygon(*location)
             circuitry.append(
                 "MPP", stim.PauliString({q: stabilizer for q in polygon}), tag=tag
             )
-            self.__physical_qubits.record_measurement(f"STB:{stabilizer}{zi}", zq)
+            self.__physical_qubits.record_measurement(f"{prefix}:{stabilizer}{xi}", xq)
         circuitry.append_tick(tag=tag)
+
+        stabilizer = "Z"
+        z_ancilla = list(self.__get_qubits(stabilizer, inactive))
+
         for location, (zq, zi) in filter(
             lambda za: (za[0][1] - 0.5) % 2.0 == 1.0, z_ancilla
         ):
@@ -462,5 +475,105 @@ class SurfaceCodePatch:
             circuitry.append(
                 "MPP", stim.PauliString({q: stabilizer for q in polygon}), tag=tag
             )
-            self.__physical_qubits.record_measurement(f"STB:{stabilizer}{zi}", zq)
+            self.__physical_qubits.record_measurement(f"{prefix}:{stabilizer}{zi}", zq)
         circuitry.append_tick(tag=tag)
+
+        for location, (zq, zi) in filter(
+            lambda za: (za[0][1] - 0.5) % 2.0 == 0.0, z_ancilla
+        ):
+            polygon = self.get_polygon(*location)
+            circuitry.append(
+                "MPP", stim.PauliString({q: stabilizer for q in polygon}), tag=tag
+            )
+            self.__physical_qubits.record_measurement(f"{prefix}:{stabilizer}{zi}", zq)
+        circuitry.append_tick(tag=tag)
+
+    def append_inject_preparation(
+        self,
+        circuitry: Circuitry,
+        moment: Optional[int] = None,
+        prefix: str = "SFC",
+        noiseless: bool = True,
+    ):
+        """Append a noiseless preparation of an S-phase (with T-phase tag) into this Surface Code."""
+        injecting_moments = self.distance + 4
+        if moment is None:
+            for moment in range(injecting_moments):
+                self.append_inject_preparation(circuitry, moment, prefix)
+                circuitry.append_tick(tag=NOISELESS)
+        else:
+            extra_x = self.__physical_qubits[self.anchor[0], self.anchor[1] - 1.0]
+            extra_z = self.__physical_qubits[self.anchor[0] - 1.0, self.anchor[1]]
+
+            preparation_tag = NOISELESS if noiseless else ""
+
+            if moment == 0:
+                circuitry.append("RX", extra_x, tag=preparation_tag)
+                circuitry.append("RZ", extra_z, tag=preparation_tag)
+            elif moment == 1:
+                inject_tag = f"{(NOISELESS + ',') if noiseless else ''}T"
+                circuitry.append("S", extra_x, tag=inject_tag)
+            elif moment == 2:
+                circuitry.append("CX", [extra_x, extra_z], tag=preparation_tag)
+            elif 2 < moment <= self.distance + 2:
+                layer = moment - 3
+                control_x = self.get_qubit_at_location(
+                    (self.anchor[0] + (self.distance - layer - 1), self.anchor[1])
+                )
+                target_z = self.get_qubit_at_location(
+                    (self.anchor[0], self.anchor[1] + layer)
+                )
+                circuitry.append(
+                    "CX", [control_x, extra_x, extra_z, target_z], tag=preparation_tag
+                )
+            elif moment == injecting_moments - 1:
+                circuitry.append("MX", extra_z, tag=preparation_tag)
+                self.__physical_qubits.record_measurement(f"{prefix}:Z", extra_z)
+                circuitry.append("MZ", extra_x, tag=preparation_tag)
+                self.__physical_qubits.record_measurement(f"{prefix}:X", extra_x)
+
+    def append_decode_measurement(
+        self,
+        circuitry: Circuitry,
+        moment: Optional[int] = None,
+        prefix: str = "SFC",
+        noiseless: bool = True,
+    ):
+        """Append a noiseless measurement of an S-phase (with T-phase tag) from this Surface Code."""
+        decoding_moments = self.distance + 4
+        if moment is None:
+            for moment in range(decoding_moments):
+                self.append_decode_measurement(circuitry, moment, prefix)
+                circuitry.append_tick(tag=NOISELESS)
+        else:
+            extra_x = self.__physical_qubits[self.anchor[0], self.anchor[1] - 1.0]
+            extra_z = self.__physical_qubits[self.anchor[0] - 1.0, self.anchor[1]]
+
+            measurement_tag = NOISELESS if noiseless else ""
+
+            if moment == 0:
+                circuitry.append("RX", extra_z, tag=measurement_tag)
+                circuitry.append("RZ", extra_x, tag=measurement_tag)
+            elif 1 <= moment <= self.distance:
+                layer = moment - 1
+                control_x = self.get_qubit_at_location(
+                    (self.anchor[0] + layer, self.anchor[1])
+                )
+                target_z = self.get_qubit_at_location(
+                    (self.anchor[0], self.anchor[1] + (self.distance - layer - 1))
+                )
+                circuitry.append(
+                    "CX", [control_x, extra_x, extra_z, target_z], tag=measurement_tag
+                )
+            elif moment == decoding_moments - 3:
+                circuitry.append("CX", [extra_x, extra_z], tag=measurement_tag)
+            elif moment == decoding_moments - 2:
+                decode_tag = f"{(NOISELESS + ',') if noiseless else ''}T_DAG"
+                circuitry.append("S_DAG", extra_x, tag=decode_tag)
+            elif moment == decoding_moments - 1:
+                circuitry.append("MX", extra_x, tag=measurement_tag)
+                self.__physical_qubits.record_measurement(f"{prefix}:X", extra_x)
+                circuitry.append("MZ", extra_z, tag=measurement_tag)
+                self.__physical_qubits.record_measurement(f"{prefix}:Z", extra_z)
+            else:
+                raise ValueError(f"Moment {moment} not recognized.")
