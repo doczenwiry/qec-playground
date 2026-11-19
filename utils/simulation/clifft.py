@@ -166,7 +166,7 @@ def simulate(
                 "per": float(per),
                 "max_shots": int(max_shots),
                 "target_errors": int(target_errors),
-                "label": f".{label.lower()}.{index}" if label is not None else "",
+                "label": f"{label} {index}" if label is not None else "",
                 "postselection": postselection,
             }
             strong_id = hashlib.sha256(

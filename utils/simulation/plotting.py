@@ -37,7 +37,7 @@ def plot(
     for filepath in filepaths:
         stats = sinter.read_stats_from_csv_files(filepath)
         for stat in stats:
-            label = stat.json_metadata["label"]
+            label = stat.json_metadata["label"] if "label" in stat.json_metadata else ""
             scenario = stat.json_metadata["scenario"]
             labels[scenario] = f"{label} - {scenario}" if label != "" else scenario
         collected_stats.extend(stats)
@@ -59,7 +59,7 @@ def plot(
             collected_stats
         ).items():
             text = (
-                rf"$\approx p^{slope:.1f}$"
+                rf"$\approx p^{{{slope:.1f}}}$"
                 if np.isnan(error)
                 else rf"$\approx p^{{{slope:.1f} \pm {error:.1f}}}$"
             )

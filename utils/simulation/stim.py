@@ -59,7 +59,7 @@ def simulate(
                 "scenario": scenario,
                 "per": physical_error_rate,
                 "shots": shots,
-                "label": f".{label.lower()}.{index}" if label is not None else "",
+                "label": f"{label} {index}" if label is not None else "",
                 "postselection": postselection,
             },
         )

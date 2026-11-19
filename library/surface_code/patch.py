@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import itertools
-from typing import Optional, Final, Callable
+from typing import Optional, Final, Callable, Iterable
 
 import logging
 
@@ -494,12 +494,15 @@ class SurfaceCodePatch:
         moment: Optional[int] = None,
         prefix: str = "SFC",
         noiseless: bool = True,
+        offset: int = 0,
     ):
         """Append a noiseless preparation of an S-phase (with T-phase tag) into this Surface Code."""
         injecting_moments = self.distance + 4
         if moment is None:
             for moment in range(injecting_moments):
-                self.append_inject_preparation(circuitry, moment, prefix)
+                self.append_inject_preparation(
+                    circuitry, moment, prefix, noiseless, offset
+                )
                 circuitry.append_tick(tag=NOISELESS)
         else:
             extra_x = self.__physical_qubits[self.anchor[0], self.anchor[1] - 1.0]
@@ -518,10 +521,13 @@ class SurfaceCodePatch:
             elif 2 < moment <= self.distance + 2:
                 layer = moment - 3
                 control_x = self.get_qubit_at_location(
-                    (self.anchor[0] + (self.distance - layer - 1), self.anchor[1])
+                    (
+                        self.anchor[0] + (self.distance - layer - 1),
+                        self.anchor[1] + offset,
+                    )
                 )
                 target_z = self.get_qubit_at_location(
-                    (self.anchor[0], self.anchor[1] + layer)
+                    (self.anchor[0] + offset, self.anchor[1] + layer)
                 )
                 circuitry.append(
                     "CX", [control_x, extra_x, extra_z, target_z], tag=preparation_tag
@@ -538,12 +544,16 @@ class SurfaceCodePatch:
         moment: Optional[int] = None,
         prefix: str = "SFC",
         noiseless: bool = True,
+        corrections: Iterable[str] = (),
+        offset: int = 0,
     ):
         """Append a noiseless measurement of an S-phase (with T-phase tag) from this Surface Code."""
         decoding_moments = self.distance + 4
         if moment is None:
             for moment in range(decoding_moments):
-                self.append_decode_measurement(circuitry, moment, prefix)
+                self.append_decode_measurement(
+                    circuitry, moment, prefix, noiseless, corrections, offset
+                )
                 circuitry.append_tick(tag=NOISELESS)
         else:
             extra_x = self.__physical_qubits[self.anchor[0], self.anchor[1] - 1.0]
@@ -557,16 +567,25 @@ class SurfaceCodePatch:
             elif 1 <= moment <= self.distance:
                 layer = moment - 1
                 control_x = self.get_qubit_at_location(
-                    (self.anchor[0] + layer, self.anchor[1])
+                    (self.anchor[0] + layer, self.anchor[1] + offset)
                 )
                 target_z = self.get_qubit_at_location(
-                    (self.anchor[0], self.anchor[1] + (self.distance - layer - 1))
+                    (
+                        self.anchor[0] + offset,
+                        self.anchor[1] + (self.distance - layer - 1),
+                    )
                 )
                 circuitry.append(
                     "CX", [control_x, extra_x, extra_z, target_z], tag=measurement_tag
                 )
             elif moment == decoding_moments - 3:
                 circuitry.append("CX", [extra_x, extra_z], tag=measurement_tag)
+                for label in corrections:
+                    circuitry.append(
+                        "CX",
+                        [self.__physical_qubits.retrieve_target_rec(label), extra_x],
+                        tag=measurement_tag,
+                    )
             elif moment == decoding_moments - 2:
                 decode_tag = f"{(NOISELESS + ',') if noiseless else ''}T_DAG"
                 circuitry.append("S_DAG", extra_x, tag=decode_tag)

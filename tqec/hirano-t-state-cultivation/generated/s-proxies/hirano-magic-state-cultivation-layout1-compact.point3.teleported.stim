@@ -729,6 +729,24 @@ DETECTOR rec[-28] rec[-8]
 DETECTOR rec[-27] rec[-7]
 DETECTOR rec[-26] rec[-2]
 DETECTOR rec[-25] rec[-1]
-MPP Y17*X18*X19*X20*X21*Z25*Z33*Z40*Z47
-OBSERVABLE_INCLUDE(0) rec[-1] rec[-143] rec[-142] rec[-141] rec[-55] rec[-51] rec[-50]
+RX 9
+R 16
 TICK
+CX 17 16 9 21
+TICK
+CX 25 16 9 20
+TICK
+CX 33 16 9 19
+TICK
+CX 40 16 9 18
+TICK
+CX 47 16 9 17
+TICK
+CX 16 9 rec[-80] 16 rec[-79] 16 rec[-78] 16
+TICK
+S_DAG 16
+TICK
+MX 16
+M 9
+TICK
+OBSERVABLE_INCLUDE(0) rec[-2] rec[-56] rec[-52] rec[-51]
