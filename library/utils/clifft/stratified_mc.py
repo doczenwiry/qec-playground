@@ -178,6 +178,7 @@ def compute_ler_curve(
 
         # Collect the results across all noise levels
         results = []
+        total_runtime: float = 0.0
         for per in noise_levels:
             json_metadata = {
                 "scenario": scenario,
@@ -210,6 +211,7 @@ def compute_ler_curve(
             )
             final = time.monotonic()
 
+            total_runtime += final - start
             print(
                 f"{scenario} p={per:.2e}: {errors} errors, {discards}/{total} discarded [runtime:{round(final - start, 2)}s]."
             )
@@ -225,6 +227,8 @@ def compute_ler_curve(
                     seconds=final - start,
                 )
             )
+
+        print(f"Total runtime [{scenario}] : {round(total_runtime, 2)}s")
 
         scenario_label = f".{label.lower()}.{index}" if label is not None else ""
         scenario_name = f".{scenario.lower().replace(' ', '-')}"
