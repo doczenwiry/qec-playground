@@ -30,15 +30,14 @@ __all__ = ["compute_ler_curve"]
 SEED = 42
 
 
-def _stratified_mc_sampling(
+def _compute_stratum_data(
     program: clifft.Program,
-    max_shots: int,
+    max_shots_per_stratum: int,
     batch: int,
     target_errors: int,
     workers: int,
     tolerance: float = 1e-12,
-) -> tuple[int, int, int]:
-    assert len(set(program.noise_site_probabilities)) == 1
+) -> dict[int, tuple[int, int, int]]:
     number_of_noise_sites = len(program.noise_site_probabilities)
 
     per = float(program.noise_site_probabilities[0])
@@ -55,9 +54,7 @@ def _stratified_mc_sampling(
 
     # Sample in each stratum. Ignore k=0 here since survival = 100.0% but max_shots would be performed
     for k in range(1, max_k + 1):
-        weight = pmf[k]
-
-        if weight < 1e-30:
+        if pmf[k] < 1e-30:
             continue
 
         total: int = 0
@@ -66,11 +63,14 @@ def _stratified_mc_sampling(
 
         batch_index: int = 0
         # Perform batch sampling until a sufficient number of errors are found
-        while errors < target_errors and total < max_shots:
-            required_shots: int = min(batch, max_shots - total)
+        while errors < target_errors and total < max_shots_per_stratum:
             seed = SEED + 250204928 * k + batch_index
             result = clifft.sample_k_survivors(
-                program, shots=required_shots, k=k, seed=seed, threads=workers
+                program,
+                shots=min(batch, max_shots_per_stratum - total),
+                k=k,
+                seed=seed,
+                threads=workers,
             )
 
             # Ensure that the sampling produced valid results.
@@ -86,6 +86,28 @@ def _stratified_mc_sampling(
             batch_index += 1
 
         stratum_data[k] = total, errors, passed
+
+    return stratum_data
+
+
+def _stratified_mc_sampling(
+    program: clifft.Program,
+    max_shots_per_stratum: int,
+    batch: int,
+    target_errors: int,
+    workers: int,
+    tolerance: float = 1e-12,
+) -> tuple[int, int, int]:
+    assert len(set(program.noise_site_probabilities)) == 1
+    number_of_noise_sites = len(program.noise_site_probabilities)
+
+    per = float(program.noise_site_probabilities[0])
+    max_k = int(binom.isf(tolerance, number_of_noise_sites, per))
+    pmf = binom.pmf(np.arange(max_k + 1), number_of_noise_sites, per)
+
+    stratum_data = _compute_stratum_data(
+        program, max_shots_per_stratum, batch, target_errors, workers, tolerance
+    )
 
     total_shots = 0
     weighted_errors = 0.0
@@ -181,7 +203,7 @@ def compute_ler_curve(
             start = time.monotonic()
             total, discards, errors = _stratified_mc_sampling(
                 program,
-                max_shots=int(max_shots),
+                max_shots_per_stratum=int(max_shots),
                 batch=10**6,
                 target_errors=target_errors,
                 workers=workers,
@@ -189,7 +211,7 @@ def compute_ler_curve(
             final = time.monotonic()
 
             print(
-                f"{scenario} p={per:.2e}: {errors} errors, {discards}/{total} discarded."
+                f"{scenario} p={per:.2e}: {errors} errors, {discards}/{total} discarded [runtime:{round(final - start, 2)}s]."
             )
 
             results.append(
