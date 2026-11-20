@@ -15,20 +15,16 @@
 import os
 from datetime import datetime
 import hashlib
-from typing import Union, cast, Optional
+from typing import Optional
 
 import clifft
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import seaborn as sns
 import sinter
 import time
-from matplotlib.container import BarContainer
 from scipy.stats import binom
 from library.circuitry import Circuitry
 
-__all__ = ["sample", "simulate"]
+__all__ = ["compute_ler_curve"]
 
 
 SEED = 42
@@ -126,7 +122,7 @@ def _stratified_mc_sampling(
 # Based on Clifft's documentation about Importance Sampling
 # cfr. https://unitaryfoundation.github.io/clifft/stable/guide/importance-sampling/
 # cfr. https://unitaryfoundation.github.io/clifft/stable/guide/importance-sampling-tutorial/
-def simulate(
+def compute_ler_curve(
     scenarios: dict[str, Circuitry],
     label: Optional[str] = None,
     postselection: bool = False,
@@ -217,71 +213,3 @@ def simulate(
         filepaths.append(path)
 
     return filepaths
-
-
-# Thanks, Claude.AI (September 2026)
-def sample(
-    scenarios: Union[Circuitry, dict[str, Circuitry]],
-    postselection: bool = False,
-    correction: bool = True,
-    title: str = "Sampling results",
-    label: str = "Scenario",
-    shots=1e6,
-    figsize: tuple[float, float] = (11, 5),
-    fontsize: int = 12,
-    proxy_replacements: Optional[dict[str, str]] = None,
-):
-    if isinstance(scenarios, Circuitry):
-        scenarios = {"circuit": scenarios}
-
-    if proxy_replacements is None:
-        proxy_replacements = {}
-
-    dataframes: list[pd.DataFrame] = []
-
-    for scenario, circuit in scenarios.items():
-        program = circuit.as_clifft(proxy_replacements)
-        if postselection:
-            results = clifft.sample_survivors(
-                program, keep_records=True, shots=int(shots), seed=SEED
-            )
-        else:
-            results = clifft.sample(program, shots=int(shots), seed=SEED)
-        outcomes = (
-            results.observables[:, 0] if correction else results.measurements[:, -1]
-        )
-
-        df = pd.DataFrame()
-        df["Measured"] = outcomes.flatten()
-        df[label] = scenario
-        dataframes.append(df)
-
-    dataframe = pd.concat(dataframes, ignore_index=True)
-    dataframe["Measured"] = pd.Categorical(dataframe["Measured"], categories=[0, 1])
-    n_categories = dataframe[label].nunique()
-
-    plt.figure(figsize=figsize)
-    ax = sns.histplot(
-        data=dataframe,
-        x=label,
-        hue="Measured",
-        hue_order=[0, 1],
-        discrete=True,
-        multiple="dodge",
-        shrink=0.9,
-        palette={1: "seagreen", 0: "indianred"},
-    )
-    ax.set_xlim(-0.5, n_categories - 0.5)
-    ax.tick_params(axis="x", labelsize=fontsize)
-    sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-
-    for container in ax.containers:
-        ax.bar_label(
-            cast(BarContainer, container),
-            fmt=lambda x: f"{float(100.0 * x / shots):.2f}%",
-            fontsize=fontsize,
-        )
-
-    plt.ylim(0, 1.075 * shots)
-    plt.suptitle(title)
-    plt.show()

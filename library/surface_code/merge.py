@@ -101,13 +101,13 @@ class MergeSurgery:
         prefix: str = "MRG",
     ):
         self.source.annotate_detectors(
-            circuitry, prefix=f"{prefix}:SRC", inactive=self.__source_inactive
+            circuitry, prefix=f"{prefix}:SRC:R", inactive=self.__source_inactive
         )
         self.target.annotate_detectors(
-            circuitry, prefix=f"{prefix}:TGT", inactive=self.__target_inactive
+            circuitry, prefix=f"{prefix}:TGT:R", inactive=self.__target_inactive
         )
         self.merger.annotate_detectors(
-            circuitry, prefix=f"{prefix}:JCT", inactive=self.__merger_inactive
+            circuitry, prefix=f"{prefix}:JCT:R", inactive=self.__merger_inactive
         )
 
         last = self.__distance - 1

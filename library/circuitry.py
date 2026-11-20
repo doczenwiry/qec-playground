@@ -20,8 +20,7 @@ import clifft
 import stim
 
 from library.qubit_array import QubitArray
-from utils.noise.stim import make_noisy
-from utils.simulation.noise import NOISELESS
+from utils.stim.noise import make_noisy, NOISELESS
 
 
 class Circuitry:
@@ -356,7 +355,9 @@ class Circuitry:
         except ValueError:
             gauge_found = True
         missing_detectors = self.missing_detectors(unknown_input=open_boundaries)
-        print(f"> Missing detectors : {len(missing_detectors)} [Gauge:{'FOUND' if gauge_found else 'NONE'}]")
+        print(
+            f"> Missing detectors : {len(missing_detectors)} [Gauge:{'FOUND' if gauge_found else 'NONE'}]"
+        )
         for detector in missing_detectors:
             records = list(
                 map(

@@ -15,22 +15,18 @@
 import itertools
 from collections import defaultdict
 from datetime import datetime
-from typing import Optional, cast
-import matplotlib.pyplot as plt
+from typing import Optional
 import numpy as np
-import pandas as pd
-import seaborn as sns
 import sinter
-from matplotlib.container import BarContainer
 
 from library.circuitry import Circuitry
 
-__all__ = ["simulate", "sample"]
+__all__ = ["compute_ler_curve"]
 
 
 # Based on stim's getting started notebook
 # cfr: https://github.com/quantumlib/Stim/blob/main/doc/getting_started.ipynb
-def simulate(
+def compute_ler_curve(
     scenarios: dict[str, Circuitry],
     label: Optional[str] = None,
     postselection: bool = False,
@@ -107,66 +103,3 @@ def simulate(
         paths.append(path)
 
     return paths
-
-
-SEED = 42
-
-
-# Thanks, Claude.AI (September 2026)
-def sample(
-    scenarios: dict[str, Circuitry],
-    correction: bool = True,
-    title: str = "Sampling results",
-    label: str = "Scenario",
-    shots=1e6,
-    figsize: tuple[float, float] = (11, 5),
-    fontsize: int = 12,
-):
-    dataframes: list[pd.DataFrame] = []
-
-    for scenario, circuitry in scenarios.items():
-        # Sample but only keep the final corrected measurement (i.e. OBSERVABLE)
-        circuit = circuitry.as_stim()
-        if correction:
-            sampler = circuit.compile_detector_sampler(seed=SEED)
-            _, outcomes = sampler.sample(shots=int(shots), separate_observables=True)
-            outcomes = outcomes.astype(int)[:, 0]
-        else:
-            outcomes = (
-                circuit.compile_sampler().sample(shots=int(shots)).astype(int)[:, -1]
-            )
-
-        df = pd.DataFrame()
-        df["Measured"] = outcomes.flatten()
-        df[label] = scenario
-        dataframes.append(df)
-
-    dataframe = pd.concat(dataframes, ignore_index=True)
-    dataframe["Measured"] = pd.Categorical(dataframe["Measured"], categories=[0, 1])
-    n_categories = dataframe[label].nunique()
-
-    plt.figure(figsize=figsize)
-    ax = sns.histplot(
-        data=dataframe,
-        x=label,
-        hue="Measured",
-        hue_order=[0, 1],
-        discrete=True,
-        multiple="dodge",
-        shrink=0.9,
-        palette={1: "seagreen", 0: "indianred"},
-    )
-    ax.set_xlim(-0.5, n_categories - 0.5)
-    ax.tick_params(axis="x", labelsize=fontsize)
-    sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-
-    for container in ax.containers:
-        ax.bar_label(
-            cast(BarContainer, container),
-            fmt=lambda x: f"{float(100.0 * x / shots):.2f}%",
-            fontsize=fontsize,
-        )
-
-    plt.ylim(0, 1.075 * shots)
-    plt.suptitle(title)
-    plt.show()

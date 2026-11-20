@@ -16,7 +16,7 @@ from typing import Optional
 
 import stim
 
-from utils.simulation.noise import NOISELESS
+NOISELESS: str = "ideal"
 
 
 def make_noisy(

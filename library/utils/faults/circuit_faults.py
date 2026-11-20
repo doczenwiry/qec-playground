@@ -20,7 +20,9 @@ from pysat.examples.rc2 import RC2
 import stim
 
 
-def analyse_heuristic(circuit: stim.Circuit, label: str = "", urls: bool = False, verbose: bool = False):
+def analyse_heuristic(
+    circuit: stim.Circuit, label: str = "", urls: bool = False, verbose: bool = False
+):
     found = circuit.search_for_undetectable_logical_errors(
         dont_explore_detection_event_sets_with_size_above=4,
         dont_explore_edges_with_degree_above=4,
