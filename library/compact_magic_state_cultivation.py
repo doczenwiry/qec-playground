@@ -30,6 +30,11 @@ class MagicStateCultivation:
     ]
     EXPANDED_OPACITY: float = 0.125
 
+    NON_CLIFFORD_PROXY_REPLACEMENTS: dict[str, str] = {
+        "proxy:T" : "T",
+        "proxy:T_DAG" : "T_DAG",
+    }
+
     def __init__(
         self,
         qubits: QubitArray,

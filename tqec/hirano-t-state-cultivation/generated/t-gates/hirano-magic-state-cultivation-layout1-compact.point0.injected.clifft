@@ -122,25 +122,25 @@ CX 51 15 16 53
 TICK
 CX 51 16 52 15
 TICK
-T 15
+T[proxy:T] 15
 CX 52 14
 TICK
 CX 52 15
 TICK
 CX 51 15 14 52
 TICK
-T 24 54 15
-T_DAG 51 23 31 14
-RX 55 52
-TICK
-CX 52 14 15 51 23 54 55 31
-TICK
-CX 52 15 55 24
-TICK
-CX 23 55
-TICK
-CX 52 23
-TICK
-MX 52
-TICK
+T[noiseless,proxy:T] 24 54 15
+T_DAG[noiseless,proxy:T_DAG] 51 23 31 14
+RX[noiseless] 55 52
+TICK[noiseless]
+CX[noiseless] 52 14 15 51 23 54 55 31
+TICK[noiseless]
+CX[noiseless] 52 15 55 24
+TICK[noiseless]
+CX[noiseless] 23 55
+TICK[noiseless]
+CX[noiseless] 52 23
+TICK[noiseless]
+MX[noiseless] 52
+TICK[noiseless]
 OBSERVABLE_INCLUDE(0) rec[-1]

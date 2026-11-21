@@ -88,9 +88,9 @@ class SteaneCodePatch:
     ):
         self.__anchor = anchor
         self.__injection_gate = "S"
-        self.__injection_gate_tag = "T"
+        self.__injection_gate_tag = "proxy:T"
         self.__inversion_gate = "S_DAG"
-        self.__inversion_gate_tag = "T_DAG"
+        self.__inversion_gate_tag = "proxy:T_DAG"
         self.__available_qubits = qubits
         px, py = anchor
         self.__used_qubits = {

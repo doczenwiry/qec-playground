@@ -55,7 +55,6 @@ class Circuitry:
     def _as_noisy_stim(
         self,
         per: Optional[float] = None,
-        strip_tags: bool = False,
         keep_polygon_coords: bool = True,
     ) -> tuple[stim.Circuit, list[int]]:
         return make_noisy(
@@ -81,31 +80,16 @@ class Circuitry:
 
         return stripped
 
-    def _strip_tag(circuit: stim.Circuit, tag: str) -> stim.Circuit:
-        """Remove one comma-separated part from every instruction's tag."""
-        stripped = stim.Circuit()
-        for instruction in circuit.flattened():
-            parts = [p for p in instruction.tag.split(",") if p.strip() != tag]
-            stripped.append(
-                stim.CircuitInstruction(
-                    instruction.name,
-                    instruction.targets_copy(),
-                    instruction.gate_args_copy(),
-                    tag=",".join(parts),
-                )
-            )
-        return stripped
-
     def as_text(
         self,
         per: Optional[float] = None,
         proxy_replacements: Optional[dict[str, str]] = None,
         keep_polygons: bool = True,
+        keep_tags: bool = True,
     ) -> str:
         noisy, offsets = self._as_noisy_stim(per, keep_polygon_coords=keep_polygons)
         circuit, mapping = self.compact_qubits(
-            Circuitry._strip_tag(noisy, NOISELESS),
-            extra=self.__polygon_qubits if keep_polygons else {},
+            noisy, extra=self.__polygon_qubits if keep_polygons else {},
         )
 
         if proxy_replacements is None:
@@ -118,12 +102,15 @@ class Circuitry:
                     instruction.name,
                     instruction.targets_copy(),
                     instruction.gate_args_copy(),
+                    tag=instruction.tag if keep_tags else "",
                 )
             )
-            if instruction.tag in proxy_replacements:
-                line = (
-                    proxy_replacements[instruction.tag] + line[len(instruction.name) :]
-                )
+            instruction_tags = instruction.tag.split(',')
+            tag = next(
+                (part for part in instruction_tags if part in proxy_replacements), None
+            )
+            if tag is not None:
+                line = proxy_replacements[tag] + line[len(instruction.name) :]
             text.append(line)
 
         if keep_polygons:
@@ -150,7 +137,7 @@ class Circuitry:
             [int(flag) for flag in self.__postselection_mask] if postselection else None
         )
         return clifft.compile(
-            self.as_text(per, proxy_replacements, keep_polygons=False),
+            self.as_text(per, proxy_replacements, keep_tags=False, keep_polygons=False),
             postselection_mask=mask,
             normalize_syndromes=deterministic,
         )
@@ -243,8 +230,9 @@ class Circuitry:
         polygons: bool = True,
         per: Optional[float] = None,
         proxy_replacements: Optional[dict[str, str]] = None,
+        keep_tags: bool = True,
     ):
-        circuit_text = self.as_text(per, proxy_replacements, keep_polygons=polygons)
+        circuit_text = self.as_text(per, proxy_replacements, keep_polygons=polygons, keep_tags=keep_tags)
 
         filename += ".stim" if proxy_replacements is None else ".clifft"
         with open(filename, "w", encoding="utf-8") as file:
@@ -259,7 +247,8 @@ class Circuitry:
     def annotate_detector(self, *labels: str, postselected: bool = False) -> bool:
         if all(self.__physical_qubits.has_record(label) for label in labels):
             self.append(
-                "DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels)
+                "DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels),
+                tag="postselected" if postselected else "",
             )
             self.__postselection_mask.append(postselected)
             return True

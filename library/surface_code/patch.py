@@ -514,7 +514,7 @@ class SurfaceCodePatch:
                 circuitry.append("RX", extra_x, tag=preparation_tag)
                 circuitry.append("RZ", extra_z, tag=preparation_tag)
             elif moment == 1:
-                inject_tag = f"{(NOISELESS + ',') if noiseless else ''}T"
+                inject_tag = f"{(NOISELESS + ',') if noiseless else ''}proxy:T"
                 circuitry.append("S", extra_x, tag=inject_tag)
             elif moment == 2:
                 circuitry.append("CX", [extra_x, extra_z], tag=preparation_tag)
@@ -587,7 +587,7 @@ class SurfaceCodePatch:
                         tag=measurement_tag,
                     )
             elif moment == decoding_moments - 2:
-                decode_tag = f"{(NOISELESS + ',') if noiseless else ''}T_DAG"
+                decode_tag = f"{(NOISELESS + ',') if noiseless else ''}proxy:T_DAG"
                 circuitry.append("S_DAG", extra_x, tag=decode_tag)
             elif moment == decoding_moments - 1:
                 circuitry.append("MX", extra_x, tag=measurement_tag)

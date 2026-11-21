@@ -126,7 +126,7 @@ CX 52 15 16 55
 TICK
 CX 52 16 54 15
 TICK
-T 15
+T[proxy:T] 15
 CX 54 14
 TICK
 CX 54 15
@@ -208,42 +208,42 @@ TICK
 MX 59 53 56
 M 58 54 55
 TICK
-DETECTOR rec[-6]
-DETECTOR rec[-3]
-DETECTOR rec[-5]
-DETECTOR rec[-2]
-DETECTOR rec[-4]
-DETECTOR rec[-1]
-MPP X23*X24*X30*X32
-TICK
-MPP X14*X15*X23*X30
-TICK
-MPP X8*X15*X23*X24
-TICK
-MPP Z23*Z24*Z30*Z32
-TICK
-MPP Z14*Z15*Z23*Z30
-TICK
-MPP Z8*Z15*Z23*Z24
-TICK
-DETECTOR rec[-6]
-DETECTOR rec[-5]
-DETECTOR rec[-4]
-DETECTOR rec[-3]
-DETECTOR rec[-2]
-DETECTOR rec[-1]
-T 24 30 15
-T_DAG 8 23 32 14
-RX 58 54 52 57
-TICK
-CX 52 8 58 32 57 30 54 14
-TICK
-CX 15 52 23 57 58 24
-TICK
-CX 54 15 23 58
-TICK
-CX 54 23
-TICK
-MX 54
-TICK
+DETECTOR[postselected] rec[-6]
+DETECTOR[postselected] rec[-3]
+DETECTOR[postselected] rec[-5]
+DETECTOR[postselected] rec[-2]
+DETECTOR[postselected] rec[-4]
+DETECTOR[postselected] rec[-1]
+MPP[noiseless] X23*X24*X30*X32
+TICK[noiseless]
+MPP[noiseless] X14*X15*X23*X30
+TICK[noiseless]
+MPP[noiseless] X8*X15*X23*X24
+TICK[noiseless]
+MPP[noiseless] Z23*Z24*Z30*Z32
+TICK[noiseless]
+MPP[noiseless] Z14*Z15*Z23*Z30
+TICK[noiseless]
+MPP[noiseless] Z8*Z15*Z23*Z24
+TICK[noiseless]
+DETECTOR[postselected] rec[-6]
+DETECTOR[postselected] rec[-5]
+DETECTOR[postselected] rec[-4]
+DETECTOR[postselected] rec[-3]
+DETECTOR[postselected] rec[-2]
+DETECTOR[postselected] rec[-1]
+T[noiseless,proxy:T] 24 30 15
+T_DAG[noiseless,proxy:T_DAG] 8 23 32 14
+RX[noiseless] 58 54 52 57
+TICK[noiseless]
+CX[noiseless] 52 8 58 32 57 30 54 14
+TICK[noiseless]
+CX[noiseless] 15 52 23 57 58 24
+TICK[noiseless]
+CX[noiseless] 54 15 23 58
+TICK[noiseless]
+CX[noiseless] 54 23
+TICK[noiseless]
+MX[noiseless] 54
+TICK[noiseless]
 OBSERVABLE_INCLUDE(0) rec[-1]

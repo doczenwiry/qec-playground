@@ -16,7 +16,7 @@ from typing import Optional
 
 import stim
 
-NOISELESS: str = "ideal"
+NOISELESS: str = "noiseless"
 
 
 def make_noisy(

@@ -171,7 +171,7 @@ CX 65 17 18 74
 TICK
 CX 65 18 73 17
 TICK
-S 17
+S[proxy:T] 17
 CX 73 16
 TICK
 CX 73 17
@@ -304,8 +304,8 @@ TICK
 #!pragma POLYGON(1,0,0,0.5) 26 25 32 34
 #!pragma POLYGON(0,1,0,0.5) 25 17 16 32
 #!pragma POLYGON(0,0,1,0.5) 26 10 17 25
-S 26 32 17
-S_DAG 10 25 34 16
+S[proxy:T] 26 32 17
+S_DAG[proxy:T_DAG] 10 25 34 16
 RX 33 18 81 73 65 74 80 64 66
 R 89 75
 TICK
@@ -339,8 +339,8 @@ CX 65 10 74 25 81 34 80 32 73 16 64 17 66 18 26 75 33 89
 TICK
 MX 81 73 65 74 80 64 66
 M 89 75
-S_DAG 26 32 17
-S 10 25 34 16
+S_DAG[proxy:T_DAG] 26 32 17
+S[proxy:T] 10 25 34 16
 TICK
 #!pragma POLYGON(1,0,0,0.125) 9 2
 #!pragma POLYGON(1,0,0,0.125) 3 10 11 4
@@ -814,49 +814,49 @@ TICK
 #!pragma POLYGON(0,0,1,0.25) 47 48
 #!pragma POLYGON(0,0,1,0.25) 49 50
 #!pragma POLYGON(0,0,1,0.25) 51 52
-DETECTOR rec[-284]
-DETECTOR rec[-281]
-DETECTOR rec[-283]
-DETECTOR rec[-280]
-DETECTOR rec[-282]
-DETECTOR rec[-279]
-DETECTOR rec[-278]
-DETECTOR rec[-277]
-DETECTOR rec[-276]
-DETECTOR rec[-275]
-DETECTOR rec[-274]
-DETECTOR rec[-272]
-DETECTOR rec[-271]
-DETECTOR rec[-273]
-DETECTOR rec[-270]
-DETECTOR rec[-269]
-DETECTOR rec[-265] rec[-281]
-DETECTOR rec[-234] rec[-265]
-DETECTOR rec[-203] rec[-234]
-DETECTOR rec[-264] rec[-280]
-DETECTOR rec[-233] rec[-264]
-DETECTOR rec[-202] rec[-233]
-DETECTOR rec[-263] rec[-279]
-DETECTOR rec[-232] rec[-263]
-DETECTOR rec[-201] rec[-232]
-DETECTOR rec[-268] rec[-283]
-DETECTOR rec[-267] rec[-284]
-DETECTOR rec[-266]
-DETECTOR rec[-235]
-DETECTOR rec[-204]
-DETECTOR rec[-237] rec[-267]
-DETECTOR rec[-236] rec[-268]
-DETECTOR rec[-206] rec[-236]
-DETECTOR rec[-205] rec[-237]
-DETECTOR rec[-175] rec[-174] rec[-173] rec[-169] rec[-168]
-DETECTOR rec[-173] rec[-171] rec[-170] rec[-169]
-DETECTOR rec[-175] rec[-173] rec[-172] rec[-171]
-DETECTOR rec[-231] rec[-262]
-DETECTOR rec[-200] rec[-231]
-DETECTOR rec[-230] rec[-261]
-DETECTOR rec[-199] rec[-230]
-DETECTOR rec[-229] rec[-260]
-DETECTOR rec[-198] rec[-229]
+DETECTOR[postselected] rec[-284]
+DETECTOR[postselected] rec[-281]
+DETECTOR[postselected] rec[-283]
+DETECTOR[postselected] rec[-280]
+DETECTOR[postselected] rec[-282]
+DETECTOR[postselected] rec[-279]
+DETECTOR[postselected] rec[-278]
+DETECTOR[postselected] rec[-277]
+DETECTOR[postselected] rec[-276]
+DETECTOR[postselected] rec[-275]
+DETECTOR[postselected] rec[-274]
+DETECTOR[postselected] rec[-272]
+DETECTOR[postselected] rec[-271]
+DETECTOR[postselected] rec[-273]
+DETECTOR[postselected] rec[-270]
+DETECTOR[postselected] rec[-269]
+DETECTOR[postselected] rec[-265] rec[-281]
+DETECTOR[postselected] rec[-234] rec[-265]
+DETECTOR[postselected] rec[-203] rec[-234]
+DETECTOR[postselected] rec[-264] rec[-280]
+DETECTOR[postselected] rec[-233] rec[-264]
+DETECTOR[postselected] rec[-202] rec[-233]
+DETECTOR[postselected] rec[-263] rec[-279]
+DETECTOR[postselected] rec[-232] rec[-263]
+DETECTOR[postselected] rec[-201] rec[-232]
+DETECTOR[postselected] rec[-268] rec[-283]
+DETECTOR[postselected] rec[-267] rec[-284]
+DETECTOR[postselected] rec[-266]
+DETECTOR[postselected] rec[-235]
+DETECTOR[postselected] rec[-204]
+DETECTOR[postselected] rec[-237] rec[-267]
+DETECTOR[postselected] rec[-236] rec[-268]
+DETECTOR[postselected] rec[-206] rec[-236]
+DETECTOR[postselected] rec[-205] rec[-237]
+DETECTOR[postselected] rec[-175] rec[-174] rec[-173] rec[-169] rec[-168]
+DETECTOR[postselected] rec[-173] rec[-171] rec[-170] rec[-169]
+DETECTOR[postselected] rec[-175] rec[-173] rec[-172] rec[-171]
+DETECTOR[postselected] rec[-231] rec[-262]
+DETECTOR[postselected] rec[-200] rec[-231]
+DETECTOR[postselected] rec[-230] rec[-261]
+DETECTOR[postselected] rec[-199] rec[-230]
+DETECTOR[postselected] rec[-229] rec[-260]
+DETECTOR[postselected] rec[-198] rec[-229]
 DETECTOR rec[-259]
 DETECTOR rec[-228] rec[-259]
 DETECTOR rec[-197] rec[-228]
@@ -1064,14 +1064,14 @@ DETECTOR rec[-50] rec[-98]
 DETECTOR rec[-2] rec[-50]
 DETECTOR rec[-49] rec[-97]
 DETECTOR rec[-1] rec[-49]
-MPP X9*X10*X17*X18 X11*X12*X19*X20 X13*X14*X21*X22 X15*X23 X25*X26*X33*X34 X27*X28*X35*X36 X29*X30*X37*X38 X31*X39 X40*X41*X47*X48 X42*X43*X49*X50 X44*X45*X51*X52 X46*X53
-TICK
-MPP X2*X9 X3*X4*X10*X11 X5*X6*X12*X13 X7*X8*X14*X15 X17*X25 X18*X19*X26*X27 X20*X21*X28*X29 X22*X23*X30*X31 X33*X40 X34*X35*X41*X42 X36*X37*X43*X44 X38*X39*X45*X46
-TICK
-MPP Z3*Z4 Z5*Z6 Z7*Z8 Z10*Z11*Z18*Z19 Z12*Z13*Z20*Z21 Z14*Z15*Z22*Z23 Z26*Z27*Z34*Z35 Z28*Z29*Z36*Z37 Z30*Z31*Z38*Z39 Z41*Z42*Z48*Z49 Z43*Z44*Z50*Z51 Z45*Z46*Z52*Z53
-TICK
-MPP Z2*Z3*Z9*Z10 Z4*Z5*Z11*Z12 Z6*Z7*Z13*Z14 Z17*Z18*Z25*Z26 Z19*Z20*Z27*Z28 Z21*Z22*Z29*Z30 Z33*Z34*Z40*Z41 Z35*Z36*Z42*Z43 Z37*Z38*Z44*Z45 Z47*Z48 Z49*Z50 Z51*Z52
-TICK
+MPP[noiseless] X9*X10*X17*X18 X11*X12*X19*X20 X13*X14*X21*X22 X15*X23 X25*X26*X33*X34 X27*X28*X35*X36 X29*X30*X37*X38 X31*X39 X40*X41*X47*X48 X42*X43*X49*X50 X44*X45*X51*X52 X46*X53
+TICK[noiseless]
+MPP[noiseless] X2*X9 X3*X4*X10*X11 X5*X6*X12*X13 X7*X8*X14*X15 X17*X25 X18*X19*X26*X27 X20*X21*X28*X29 X22*X23*X30*X31 X33*X40 X34*X35*X41*X42 X36*X37*X43*X44 X38*X39*X45*X46
+TICK[noiseless]
+MPP[noiseless] Z3*Z4 Z5*Z6 Z7*Z8 Z10*Z11*Z18*Z19 Z12*Z13*Z20*Z21 Z14*Z15*Z22*Z23 Z26*Z27*Z34*Z35 Z28*Z29*Z36*Z37 Z30*Z31*Z38*Z39 Z41*Z42*Z48*Z49 Z43*Z44*Z50*Z51 Z45*Z46*Z52*Z53
+TICK[noiseless]
+MPP[noiseless] Z2*Z3*Z9*Z10 Z4*Z5*Z11*Z12 Z6*Z7*Z13*Z14 Z17*Z18*Z25*Z26 Z19*Z20*Z27*Z28 Z21*Z22*Z29*Z30 Z33*Z34*Z40*Z41 Z35*Z36*Z42*Z43 Z37*Z38*Z44*Z45 Z47*Z48 Z49*Z50 Z51*Z52
+TICK[noiseless]
 DETECTOR rec[-96] rec[-36]
 DETECTOR rec[-95] rec[-35]
 DETECTOR rec[-94] rec[-34]
@@ -1120,28 +1120,28 @@ DETECTOR rec[-52] rec[-13]
 DETECTOR rec[-51] rec[-3]
 DETECTOR rec[-50] rec[-2]
 DETECTOR rec[-49] rec[-1]
-RX 0
-R 1
-TICK
-CX 4 1 0 23
-TICK
-CX 11 1 0 22
-TICK
-CX 19 1 0 21
-TICK
-CX 27 1 0 20
-TICK
-CX 35 1 0 19
-TICK
-CX 42 1 0 18
-TICK
-CX 49 1 0 17
-TICK
-CX 1 0 rec[-248] 1 rec[-247] 1 rec[-246] 1
-TICK
-S_DAG 1
-TICK
-MX 1
-M 0
-TICK
+RX[noiseless] 0
+R[noiseless] 1
+TICK[noiseless]
+CX[noiseless] 4 1 0 23
+TICK[noiseless]
+CX[noiseless] 11 1 0 22
+TICK[noiseless]
+CX[noiseless] 19 1 0 21
+TICK[noiseless]
+CX[noiseless] 27 1 0 20
+TICK[noiseless]
+CX[noiseless] 35 1 0 19
+TICK[noiseless]
+CX[noiseless] 42 1 0 18
+TICK[noiseless]
+CX[noiseless] 49 1 0 17
+TICK[noiseless]
+CX[noiseless] 1 0 rec[-248] 1 rec[-247] 1 rec[-246] 1
+TICK[noiseless]
+S_DAG[noiseless,proxy:T_DAG] 1
+TICK[noiseless]
+MX[noiseless] 1
+M[noiseless] 0
+TICK[noiseless]
 OBSERVABLE_INCLUDE(0) rec[-2] rec[-224] rec[-220] rec[-219]
