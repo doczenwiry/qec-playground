@@ -53,6 +53,7 @@ def compute_ler_curve(
             else None,
             json_metadata={
                 "scenario": scenario,
+                "strategy": "stim-mc",
                 "per": physical_error_rate,
                 "shots": shots,
                 "label": f"{label} {index}" if label is not None else "",
@@ -82,7 +83,7 @@ def compute_ler_curve(
         else None,
     )
 
-    filename_prefix = f"{directory}/simulation-results-{timestamp}"
+    filename_prefix = f"{directory}/simulation-results-s-state-{timestamp}"
     groups: dict[str, list[sinter.TaskStats]] = defaultdict(list)
     for stat in collected_stats:
         groups[stat.json_metadata["scenario"]].append(stat)
@@ -96,7 +97,7 @@ def compute_ler_curve(
         scenario_label = (
             f".{label.lower()}.{index}" if label is not None else ""
         ) + f".{scenario.lower().replace(' ', '-')}"
-        path = f"{filename_prefix}.s-state{scenario_label}.csv"
+        path = f"{filename_prefix}{scenario_label}.csv"
         with open(path, "w", encoding="utf-8") as file:
             file.write(sinter.CSV_HEADER + "\n")
             file.writelines(stat.to_csv_line() + "\n" for stat in group)

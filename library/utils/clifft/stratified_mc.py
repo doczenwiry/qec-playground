@@ -146,6 +146,7 @@ def _stratified_mc_sampling(
 # cfr. https://unitaryfoundation.github.io/clifft/stable/guide/importance-sampling-tutorial/
 def compute_ler_curve(
     scenarios: dict[str, Circuitry],
+    state: str = "",
     label: Optional[str] = None,
     postselection: bool = False,
     max_shots_per_stratum=1e8,
@@ -169,7 +170,6 @@ def compute_ler_curve(
         noise_levels = np.logspace(-7, -2, num=11)
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    filename_prefix = f"{directory}/simulation-results-{timestamp}"
 
     filepaths = []
     for index, (scenario, circuitry) in enumerate(scenarios.items()):
@@ -183,6 +183,7 @@ def compute_ler_curve(
             json_metadata = {
                 "scenario": scenario,
                 "per": float(per),
+                "strategy" : "clifft-stratified-mc",
                 "max_shots_per_stratum": int(max_shots_per_stratum),
                 "target_errors": int(target_errors),
                 "label": f"{label} {index}" if label is not None else "",
@@ -230,9 +231,11 @@ def compute_ler_curve(
 
         print(f"Total runtime [{scenario}] : {round(total_runtime, 2)}s")
 
+        filename_prefix = f"{directory}/simulation-results-{state}-{timestamp}"
+
         scenario_label = f".{label.lower()}.{index}" if label is not None else ""
         scenario_name = f".{scenario.lower().replace(' ', '-')}"
-        path = f"{filename_prefix}{scenario_label}{scenario_name}.t-state.csv"
+        path = f"{filename_prefix}{scenario_label}{scenario_name}.csv"
         with open(path, "w", encoding="utf-8") as file:
             file.write(sinter.CSV_HEADER + "\n")
             file.writelines(statistics.to_csv_line() + "\n" for statistics in results)
