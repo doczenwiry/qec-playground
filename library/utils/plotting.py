@@ -105,7 +105,7 @@ def plot_ler_curve(
                 color=colors.get(labels[scenario], "black"),
             )
 
-    error_rates.set_xlim(noise_levels.min(), 0.125)
+    error_rates.set_xlim(noise_levels.min(), noise_levels.max() + 0.125)
     error_rates.set_ylim(1e-12, 1.5)
     error_rates.loglog()
 

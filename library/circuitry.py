@@ -20,7 +20,7 @@ import clifft
 import stim
 
 from library.qubit_array import QubitArray
-from utils.stim.noise import make_noisy, NOISELESS
+from library.utils.stim.noise import make_noisy, NOISELESS
 
 
 class Circuitry:

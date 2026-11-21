@@ -314,7 +314,7 @@ class MagicStateCultivation:
         )
 
         self.__junction.annotate_detectors(
-            circuitry, rounds=tpt_rounds, prefix="JCT:TPT"
+            circuitry, rounds=tpt_rounds, prefix="JCT:TPT", postselected=True
         )
         self.source.annotate_detectors(
             circuitry, rounds=tpt_rounds, prepared=Pauli.X, prefix="SRC:TPT"
