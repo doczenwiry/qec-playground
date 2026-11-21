@@ -148,7 +148,7 @@ def compute_ler_curve(
     scenarios: dict[str, Circuitry],
     label: Optional[str] = None,
     postselection: bool = False,
-    max_shots=1e8,
+    max_shots_per_stratum=1e8,
     target_errors: int = 200,
     noise_levels: Optional[np.ndarray] = None,
     workers: Optional[int] = None,
@@ -183,7 +183,7 @@ def compute_ler_curve(
             json_metadata = {
                 "scenario": scenario,
                 "per": float(per),
-                "max_shots": int(max_shots),
+                "max_shots_per_stratum": int(max_shots_per_stratum),
                 "target_errors": int(target_errors),
                 "label": f"{label} {index}" if label is not None else "",
                 "postselection": postselection,
@@ -204,7 +204,7 @@ def compute_ler_curve(
             start = time.monotonic()
             total, discards, errors = _stratified_mc_sampling(
                 program,
-                max_shots_per_stratum=int(max_shots),
+                max_shots_per_stratum=int(max_shots_per_stratum),
                 batch=10**6,
                 target_errors=target_errors,
                 workers=workers,
