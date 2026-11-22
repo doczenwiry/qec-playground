@@ -26,7 +26,6 @@ from library.circuitry import Circuitry
 
 __all__ = ["compute_ler_curve"]
 
-
 SEED = 42
 
 
@@ -105,29 +104,30 @@ def _stratified_mc_sampling(
     max_k = int(binom.isf(tolerance, number_of_noise_sites, per))
     pmf = binom.pmf(np.arange(max_k + 1), number_of_noise_sites, per)
 
-    stratum_data = _compute_stratum_data(
+    strata = _compute_stratum_data(
         program, max_shots_per_stratum, batch, target_errors, workers, tolerance
     )
 
     total_shots = 0
     weighted_errors = 0.0
     weighted_survival = pmf[0]
-    weighted_variance = (
-        0.0  # Improves confidence of the curves. Thanks, Claude.AI (November 2026)
-    )
-    for k, (total, errors, passed) in stratum_data.items():
+
+    # Improves confidence of the curves. Thanks, Claude.AI (November 2026)
+    weighted_variance = 0.0
+
+    for k, (total, errors, passed) in strata.items():
         weight = pmf[k]
         ler = errors / total
         total_shots += total
         weighted_errors += weight * ler
         weighted_survival += weight * passed / total
-        weighted_variance += weight**2 * ler * (1.0 - ler) / total
+        weighted_variance += weight ** 2 * ler * (1.0 - ler) / total
 
     # Normalize all weighted accumulations to the total of the binomial PMF
     normalization = pmf.sum()
     weighted_errors /= normalization
     weighted_survival /= normalization
-    weighted_variance /= normalization**2
+    weighted_variance /= normalization ** 2
 
     shots = (
         max(round(weighted_errors * (1.0 - weighted_errors) / weighted_variance), 1)
@@ -183,7 +183,7 @@ def compute_ler_curve(
             json_metadata = {
                 "scenario": scenario,
                 "per": float(per),
-                "strategy" : "clifft-stratified-mc",
+                "strategy": "clifft-stratified-mc",
                 "max_shots_per_stratum": int(max_shots_per_stratum),
                 "target_errors": int(target_errors),
                 "label": f"{label} {index}" if label is not None else "",
@@ -206,7 +206,7 @@ def compute_ler_curve(
             total, discards, errors = _stratified_mc_sampling(
                 program,
                 max_shots_per_stratum=int(max_shots_per_stratum),
-                batch=10**6,
+                batch=10 ** 6,
                 target_errors=target_errors,
                 workers=workers,
             )

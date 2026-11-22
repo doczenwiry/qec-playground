@@ -64,6 +64,8 @@ def _compute_per_stratum_data(
         errors: int = 0
         passed: int = 0
 
+        raise NotImplementedError("Reweighting of Conditional Error Rate not implemented yet.")
+
         batch_index: int = 0
         # Perform batch sampling until a sufficient number of errors are found
         while errors < target_errors and total < max_shots_per_stratum:
