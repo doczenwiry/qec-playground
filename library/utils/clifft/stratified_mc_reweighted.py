@@ -32,9 +32,11 @@ SEED = 42
 
 def _compute_stratum_data(
     program: clifft.Program,
+    workers: int,
     strata_count: int,
     shots_per_stratum: float,
-    workers: int,
+    batch_count: Optional[int] = None,
+    max_errors: Optional[int] = None,
 ) -> pandas.DataFrame:
     strata = pandas.DataFrame(
         {
@@ -62,31 +64,47 @@ def _compute_stratum_data(
     if not np.allclose(np.asarray(program.noise_site_probabilities), program.noise_site_probabilities[0]):
         raise ValueError("Noise sites have non-uniform probabilities.")
 
+    batch_count = batch_count or 20
+    batch_size = int(shots_per_stratum / batch_count)
     for k in range(strata_count + 1):
-        seed = SEED + 250204928 * k
-        result = clifft.sample_k_survivors(
-            program,
-            shots=int(shots_per_stratum), k=k,
-            seed=seed, threads=workers,
-        )
+        total_shots = 0.0
+        discarded_shots = 0.0
+        surviving_shots = 0.0
+        logical_errors = 0.0
 
-        # Ensure that the sampling produced valid results.
-        assert result.total_shots is not None
-        assert result.passed_shots is not None
-        assert result.logical_errors is not None
+        batch = 0
+        while total_shots < shots_per_stratum and (max_errors is None or logical_errors < max_errors):
+            seed = SEED + 250204928 * k + batch
+            result = clifft.sample_k_survivors(
+                program, seed=seed, threads=workers,
+                shots=int(batch_size), k=k,
+            )
 
-        if result.total_shots > 0:
-            logical_error_rate = result.logical_errors / result.total_shots
-            logical_error_rate_wald_ci = 1.96 * np.sqrt(logical_error_rate * (1 - logical_error_rate) / result.total_shots)
+            # Ensure that the sampling produced valid results.
+            assert result.total_shots is not None
+            assert result.logical_errors is not None
+            assert result.passed_shots is not None
+            assert result.discards is not None
+
+            total_shots += result.total_shots
+            discarded_shots += result.discards
+            surviving_shots += result.passed_shots
+            logical_errors += result.logical_errors
+
+            batch += 1
+
+        if total_shots > 0:
+            logical_error_rate = logical_errors / total_shots
+            logical_error_rate_wald_ci = 1.96 * np.sqrt(logical_error_rate * (1 - logical_error_rate) / total_shots)
         else:
             logical_error_rate = np.nan
             logical_error_rate_wald_ci = np.nan
 
         strata.loc[k] = pandas.Series({
-            "total_shots": result.total_shots,
-            "discarded_shots": result.discards,
-            "surviving_shots": result.passed_shots,
-            "logical_errors": result.logical_errors,
+            "total_shots": total_shots,
+            "discarded_shots": discarded_shots,
+            "surviving_shots": surviving_shots,
+            "logical_errors": logical_errors,
             "logical_error_rate": logical_error_rate,
             "logical_error_rate_wald_ci": logical_error_rate_wald_ci,
         })
@@ -101,7 +119,9 @@ def compute_ler_curves(
     scenarios: dict[str, Circuitry],
     label: Optional[str] = None,
     postselection: bool = False,
-    shots_per_stratum= 1e6,
+    shots_per_stratum: float= 1e6,
+    batch_count: Optional[int] = None,
+    max_errors: Optional[int] = None,
     strata_count: int = 16,
     noise_levels: Optional[np.ndarray] = None,
     workers: Optional[int] = None,
@@ -137,7 +157,9 @@ def compute_ler_curves(
         start = time.monotonic()
         print(f"Computing Conditional Error Rates for {scenario} ...")
         strata = _compute_stratum_data(
-            program, strata_count=strata_count, shots_per_stratum=shots_per_stratum, workers=workers
+            program, workers=workers,
+            strata_count=strata_count, shots_per_stratum=shots_per_stratum,
+            max_errors=max_errors, batch_count=batch_count,
         )
         final = time.monotonic()
         print(f"> {round(final - start, 2)}s")

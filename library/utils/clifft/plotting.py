@@ -11,7 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-from collections import defaultdict
+
 from typing import Optional, cast
 
 import matplotlib.pyplot as plt
@@ -30,7 +30,12 @@ def plot_logical_error_rates(
 
     fig, ler_ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 5.5))
 
-    for index, (scenario, ler) in enumerate(results_ler.items()):
+    scenario_indices = {
+        scenario: index for index, scenario in enumerate(results_ler.keys())
+    }
+
+    for scenario, ler in results_ler.items():
+        index = scenario_indices[scenario]
         color = f"C{index}"
         identifier = (f"{label} {index} - " if label is not None else "") + scenario
         ler_ax.plot(
@@ -53,6 +58,7 @@ def plot_logical_error_rates(
             line.get_label(): line.get_color() for line in ler_ax.get_lines()
         }
         for scenario, (slope, error, (p0, r0), (p1, r1)) in _estimate_slopes(results_ler, results_cer).items():
+            index = scenario_indices[scenario]
             text = (
                 rf"$\approx p^{{{slope:.1f}}}$" if np.isnan(error)
                 else rf"$\approx p^{{{slope:.1f} \pm {error:.1f}}}$"
@@ -82,11 +88,13 @@ def plot_logical_error_rates(
     fig.tight_layout()
     plt.show(fig)
 
-def plot_conditional_error_rates(
+def plot_stratum_data(
     results: dict[str, pandas.DataFrame],
     label: Optional[str] = None,
 ):
     fig, axes = plt.subplots(nrows=1, ncols=len(results), figsize=(14, 5.5))
+    if len(results) == 1:
+        axes = [axes]
 
     for index, (scenario, cer) in enumerate(results.items()):
         cer_ax = axes[index]
@@ -104,6 +112,14 @@ def plot_conditional_error_rates(
         identifier = (f"{label} {index} - " if label is not None else "") + scenario
         cer_ax.set_title(identifier)
         cer_ax.grid(axis="y", alpha=0.3)
+
+        counts = cer["logical_errors"]
+        cnt_ax = cer_ax.twinx()
+        cnt_ax.bar(cer.index, counts.where(counts > 0), color=color, alpha=0.1, width=0.666)
+        cnt_ax.axhline(1e2, color="red", linestyle="--", alpha=0.4)
+        cnt_ax.set_yscale("log")
+        cnt_ax.set_ylabel("Logical errors witnessed")
+        cnt_ax.set_ylim(bottom = 0.8, top = max(1.2 * counts.max(), 1e3))
 
     fig.suptitle("Conditional Error Rates")
     fig.tight_layout()
