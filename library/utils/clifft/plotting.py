@@ -19,16 +19,18 @@ import numpy as np
 import pandas
 
 def plot_logical_error_rates(
-    results: dict[str, pandas.DataFrame],
+    results_ler: dict[str, pandas.DataFrame],
+    results_cer: dict[str, pandas.DataFrame],
     label: Optional[str] = None,
     noise_levels: Optional[np.ndarray] = None,
+    estimate_distance: bool = True,
 ):
     if noise_levels is None:
         noise_levels = np.logspace(-7, -2, num=11)
 
     fig, ler_ax = plt.subplots(nrows=1, ncols=1, figsize=(14, 5.5))
 
-    for index, (scenario, ler) in enumerate(results.items()):
+    for index, (scenario, ler) in enumerate(results_ler.items()):
         color = f"C{index}"
         identifier = (f"{label} {index} - " if label is not None else "") + scenario
         ler_ax.plot(
@@ -45,6 +47,25 @@ def plot_logical_error_rates(
             ler["physical_error_rate"], minimum, maximum,
             color=color, zorder=2, alpha=0.2
         )
+
+    if estimate_distance:
+        colors = {
+            line.get_label(): line.get_color() for line in ler_ax.get_lines()
+        }
+        for scenario, (slope, error, (p0, r0), (p1, r1)) in _estimate_slopes(results_ler, results_cer).items():
+            text = (
+                rf"$\approx p^{{{slope:.1f}}}$" if np.isnan(error)
+                else rf"$\approx p^{{{slope:.1f} \pm {error:.1f}}}$"
+            )
+            identifier = (f"{label} {index} - " if label is not None else "") + scenario
+            ler_ax.annotate(
+                text,
+                xy=(np.sqrt(p0 * p1), np.sqrt(r0 * r1)),
+                xytext=(6, -10),
+                textcoords="offset points",
+                fontsize=8,
+                color=colors.get(identifier, "black"),
+            )
 
     ler_ax.set_xlim(noise_levels.min(), noise_levels.max() + 0.125)
     ler_ax.set_ylim(1e-19, 1.5)
@@ -63,6 +84,7 @@ def plot_logical_error_rates(
 
 def plot_conditional_error_rates(
     results: dict[str, pandas.DataFrame],
+    label: Optional[str] = None,
 ):
     fig, axes = plt.subplots(nrows=1, ncols=len(results), figsize=(14, 5.5))
 
@@ -79,8 +101,47 @@ def plot_conditional_error_rates(
         cer_ax.set_ylabel("Logical error rate")
         cer_ax.tick_params(axis="y")
 
-        cer_ax.set_title(f"{scenario} - Conditional Error Rate")
+        identifier = (f"{label} {index} - " if label is not None else "") + scenario
+        cer_ax.set_title(identifier)
         cer_ax.grid(axis="y", alpha=0.3)
 
+    fig.suptitle("Conditional Error Rates")
     fig.tight_layout()
     plt.show(fig)
+
+def _estimate_slopes(
+    ler_curves: dict[str, pandas.DataFrame],
+    cer_distributions: dict[str, pandas.DataFrame],
+    min_errors: int = 50,
+    max_per: float = 1e-3,
+) -> dict[str, tuple[float, float, tuple[float, float], tuple[float, float]]]:
+    """Slope of log(LER) vs log(PER) over points with PER <= max_per and enough logical errors found."""
+    slopes: dict[str, tuple[float, float, tuple[float, float], tuple[float, float]]] = {}
+
+    for scenario, ler in ler_curves.items():
+        if cer_distributions[scenario]["logical_errors"].sum() < min_errors:
+            continue
+
+        physical_error_rates = ler["physical_error_rate"]
+        points = physical_error_rates <= max_per
+        count = points.sum()
+
+        if count < 2:
+            continue
+
+        x = np.log10(ler.loc[points, "physical_error_rate"])
+        y = np.log10(ler.loc[points, "logical_error_rate"])
+        if count >= 3:
+            coefficients, covariance = np.polyfit(x, y, 1, cov=True)
+            error = float(np.sqrt(covariance[0, 0]))
+        else:
+            coefficients, error = np.polyfit(x, y, 1), float("nan")
+
+        # Thanks, Claude.AI (November 2026)
+        slope, intercept = float(coefficients[0]), float(coefficients[1])
+        start = (10**float(x.iloc[0]), 10 ** (intercept + slope * float(x.iloc[0])))
+        final = (10 ** float(y.iloc[-1]), 10 ** (intercept + slope * float(y.iloc[-1])))
+
+        slopes[scenario] = slope, error, start, final
+
+    return slopes
