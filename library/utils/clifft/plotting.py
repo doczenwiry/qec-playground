@@ -12,7 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from typing import Optional, cast
+from math import ceil
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,10 +35,18 @@ def plot_logical_error_rates(
         scenario: index for index, scenario in enumerate(results_ler.keys())
     }
 
+    slopes = _compute_slope_estimate(results_ler, results_cer) if estimate_distance else {}
+
     for scenario, ler in results_ler.items():
         index = scenario_indices[scenario]
         color = f"C{index}"
         identifier = (f"{label} {index} - " if label is not None else "") + scenario
+
+        if scenario in slopes:
+            slope, error = slopes[scenario]
+            uncertainty = rf" \pm {error:.2f}" if np.isfinite(error) else ""
+            identifier += rf" ($\approx p^{{{slope:.1f}{uncertainty}}}$)"
+
         ler_ax.plot(
             ler["physical_error_rate"], ler["logical_error_rate"],
             label=identifier, color=color, zorder=3, marker="o"
@@ -52,26 +61,6 @@ def plot_logical_error_rates(
             ler["physical_error_rate"], minimum, maximum,
             color=color, zorder=2, alpha=0.2
         )
-
-    if estimate_distance:
-        colors = {
-            line.get_label(): line.get_color() for line in ler_ax.get_lines()
-        }
-        for scenario, (slope, error, (p0, r0), (p1, r1)) in _estimate_slopes(results_ler, results_cer).items():
-            index = scenario_indices[scenario]
-            text = (
-                rf"$\approx p^{{{slope:.1f}}}$" if np.isnan(error)
-                else rf"$\approx p^{{{slope:.1f} \pm {error:.1f}}}$"
-            )
-            identifier = (f"{label} {index} - " if label is not None else "") + scenario
-            ler_ax.annotate(
-                text,
-                xy=(np.sqrt(p0 * p1), np.sqrt(r0 * r1)),
-                xytext=(6, -10),
-                textcoords="offset points",
-                fontsize=8,
-                color=colors.get(identifier, "black"),
-            )
 
     ler_ax.set_xlim(noise_levels.min(), noise_levels.max() + 0.125)
     ler_ax.set_ylim(1e-19, 1.5)
@@ -91,8 +80,9 @@ def plot_logical_error_rates(
 def plot_stratum_data(
     results: dict[str, pandas.DataFrame],
     label: Optional[str] = None,
+    figsize: tuple[float, float] = (14, 7)
 ):
-    fig, axes = plt.subplots(nrows=1, ncols=len(results), figsize=(14, 5.5))
+    fig, axes = plt.subplots(nrows=len(results), ncols=1, figsize=figsize)
     if len(results) == 1:
         axes = [axes]
 
@@ -118,21 +108,21 @@ def plot_stratum_data(
         cnt_ax.bar(cer.index, counts.where(counts > 0), color=color, alpha=0.1, width=0.666)
         cnt_ax.axhline(1e2, color="red", linestyle="--", alpha=0.4)
         cnt_ax.set_yscale("log")
-        cnt_ax.set_ylabel("Logical errors witnessed")
+        cnt_ax.set_ylabel("Logical errors")
         cnt_ax.set_ylim(bottom = 0.8, top = max(1.2 * counts.max(), 1e3))
 
     fig.suptitle("Conditional Error Rates")
     fig.tight_layout()
     plt.show(fig)
 
-def _estimate_slopes(
+def _compute_slope_estimate(
     ler_curves: dict[str, pandas.DataFrame],
     cer_distributions: dict[str, pandas.DataFrame],
     min_errors: int = 50,
     max_per: float = 1e-3,
-) -> dict[str, tuple[float, float, tuple[float, float], tuple[float, float]]]:
+) -> dict[str, tuple[float, float]]:
     """Slope of log(LER) vs log(PER) over points with PER <= max_per and enough logical errors found."""
-    slopes: dict[str, tuple[float, float, tuple[float, float], tuple[float, float]]] = {}
+    slopes: dict[str, tuple[float, float]] = {}
 
     for scenario, ler in ler_curves.items():
         if cer_distributions[scenario]["logical_errors"].sum() < min_errors:
@@ -155,9 +145,7 @@ def _estimate_slopes(
 
         # Thanks, Claude.AI (November 2026)
         slope, intercept = float(coefficients[0]), float(coefficients[1])
-        start = (10**float(x.iloc[0]), 10 ** (intercept + slope * float(x.iloc[0])))
-        final = (10 ** float(y.iloc[-1]), 10 ** (intercept + slope * float(y.iloc[-1])))
 
-        slopes[scenario] = slope, error, start, final
+        slopes[scenario] = slope, error
 
     return slopes
