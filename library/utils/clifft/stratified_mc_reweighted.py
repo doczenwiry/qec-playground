@@ -25,6 +25,7 @@ from scipy.stats import binom
 
 from library.circuitry import Circuitry
 from library.utils.clifft.decoding import Decoder
+from library.utils.clifft.complementary_gap import ComplementaryGapDecoder
 
 __all__ = ["compute_ler_curves"]
 
@@ -38,7 +39,7 @@ def _compute_stratum_data(
     shots_per_stratum: float,
     batch_count: Optional[int] = None,
     max_errors: Optional[int] = None,
-    decoder: Optional[Decoder] = None,
+    decoder: Optional[ComplementaryGapDecoder] = None,
 ) -> pandas.DataFrame:
     strata = pandas.DataFrame(
         {
@@ -94,8 +95,12 @@ def _compute_stratum_data(
             surviving_shots += result.passed_shots
 
             if decoder is not None:
-                predictions = decoder.matching.decode_batch(result.detectors[:, decoder.detectors])
-                logical_errors += int(np.any(predictions != result.observables, axis=1).sum())
+                predictions, accepted = decoder.decode(result.detectors)
+                failed = np.any(predictions != result.observables, axis=1)
+                logical_errors += int((failed & accepted).sum())
+                rejected = int((~accepted).sum())
+                surviving_shots -= rejected
+                discarded_shots += rejected
             else:
                 logical_errors += result.logical_errors
 
@@ -126,12 +131,11 @@ def _compute_stratum_data(
 def compute_ler_curves(
     scenarios: dict[str, Circuitry],
     label: Optional[str] = None,
-    postselection: bool = False,
-    decoding: bool = False,
     shots_per_stratum: float= 1e6,
     batch_count: Optional[int] = None,
     max_errors: Optional[int] = None,
     strata_count: int = 16,
+    gap_threshold: float = 0.0,
     noise_levels: Optional[np.ndarray] = None,
     workers: Optional[int] = None,
     exclude: Optional[list[str]] = None,
@@ -165,7 +169,7 @@ def compute_ler_curves(
         start = time.monotonic()
         print(f"Computing Conditional Error Rates for {scenario} ...")
         strata = _compute_stratum_data(
-            program, workers=workers, decoder=Decoder.build(circuitry),
+            program, workers=workers, decoder=ComplementaryGapDecoder.build(circuitry, threshold=gap_threshold),
             strata_count=strata_count, shots_per_stratum=shots_per_stratum,
             max_errors=max_errors, batch_count=batch_count,
         )
