@@ -3,10 +3,10 @@ revision = 5
 requires-python = ">=3.14"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version < '3.15' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version < '3.15' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.15' and sys_platform == 'win32'",
+    "python_full_version < '3.15' and sys_platform == 'emscripten'",
     "python_full_version < '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -1170,6 +1170,7 @@ dependencies = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "pandas-stubs" },
+    { name = "pymatching" },
     { name = "scipy" },
     { name = "scipy-stubs" },
     { name = "seaborn" },
@@ -1188,6 +1189,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pandas-stubs", specifier = "~=2.3.3" },
+    { name = "pymatching", specifier = ">=2.4.0" },
     { name = "scipy", specifier = ">=1.18.0" },
     { name = "scipy-stubs", specifier = "~=1.18.0" },
     { name = "seaborn", specifier = ">=0.13.2" },

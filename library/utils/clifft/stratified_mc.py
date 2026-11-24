@@ -148,7 +148,6 @@ def compute_ler_curve(
     scenarios: dict[str, Circuitry],
     state: str = "",
     label: Optional[str] = None,
-    postselection: bool = False,
     max_shots_per_stratum=1e8,
     target_errors: int = 200,
     noise_levels: Optional[np.ndarray] = None,
@@ -187,7 +186,6 @@ def compute_ler_curve(
                 "max_shots_per_stratum": int(max_shots_per_stratum),
                 "target_errors": int(target_errors),
                 "label": f"{label} {index}" if label is not None else "",
-                "postselection": postselection,
             }
             strong_id = hashlib.sha256(
                 f"{timestamp}|{scenario}|{per}".encode()
@@ -197,7 +195,6 @@ def compute_ler_curve(
             program = circuitry.as_clifft(
                 proxy_replacements,
                 per=float(per),
-                postselection=postselection,
                 deterministic=True,
             )
 

@@ -24,6 +24,7 @@ import time
 from scipy.stats import binom
 
 from library.circuitry import Circuitry
+from library.utils.clifft.decoding import Decoder
 
 __all__ = ["compute_ler_curves"]
 
@@ -37,6 +38,7 @@ def _compute_stratum_data(
     shots_per_stratum: float,
     batch_count: Optional[int] = None,
     max_errors: Optional[int] = None,
+    decoder: Optional[Decoder] = None,
 ) -> pandas.DataFrame:
     strata = pandas.DataFrame(
         {
@@ -78,6 +80,7 @@ def _compute_stratum_data(
             result = clifft.sample_k_survivors(
                 program, seed=seed, threads=workers,
                 shots=int(batch_size), k=k,
+                keep_records=decoder is not None,
             )
 
             # Ensure that the sampling produced valid results.
@@ -89,7 +92,12 @@ def _compute_stratum_data(
             total_shots += result.total_shots
             discarded_shots += result.discards
             surviving_shots += result.passed_shots
-            logical_errors += result.logical_errors
+
+            if decoder is not None:
+                predictions = decoder.matching.decode_batch(result.detectors[:, decoder.detectors])
+                logical_errors += int(np.any(predictions != result.observables, axis=1).sum())
+            else:
+                logical_errors += result.logical_errors
 
             batch += 1
 
@@ -119,6 +127,7 @@ def compute_ler_curves(
     scenarios: dict[str, Circuitry],
     label: Optional[str] = None,
     postselection: bool = False,
+    decoding: bool = False,
     shots_per_stratum: float= 1e6,
     batch_count: Optional[int] = None,
     max_errors: Optional[int] = None,
@@ -150,14 +159,13 @@ def compute_ler_curves(
         program = circuitry.as_clifft(
             proxy_replacements,
             per=float(0.001),
-            postselection=postselection,
             deterministic=True,
         )
 
         start = time.monotonic()
         print(f"Computing Conditional Error Rates for {scenario} ...")
         strata = _compute_stratum_data(
-            program, workers=workers,
+            program, workers=workers, decoder=Decoder.build(circuitry),
             strata_count=strata_count, shots_per_stratum=shots_per_stratum,
             max_errors=max_errors, batch_count=batch_count,
         )
@@ -169,7 +177,7 @@ def compute_ler_curves(
                 "physical_error_rate": pandas.Series(dtype=float),
                 "logical_error_rate": pandas.Series(dtype=float),
                 "logical_error_rate_wald_ci": pandas.Series(dtype=float),
-                "discard_rate": pandas.Series(dtype=float),
+                "discarded_shots_rate": pandas.Series(dtype=float),
             }
         )
 

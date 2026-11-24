@@ -131,14 +131,10 @@ class Circuitry:
         proxy_replacements: dict[str, str],
         per: Optional[float] = None,
         deterministic: bool = False,
-        postselection: bool = False,
     ) -> clifft.Program:
-        mask = (
-            [int(flag) for flag in self.__postselection_mask] if postselection else None
-        )
         return clifft.compile(
             self.as_text(per, proxy_replacements, keep_tags=False, keep_polygons=False),
-            postselection_mask=mask,
+            postselection_mask=[int(flag) for flag in self.__postselection_mask],
             normalize_syndromes=deterministic,
         )
 
