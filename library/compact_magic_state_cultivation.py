@@ -291,6 +291,11 @@ class MagicStateCultivation:
 
         return rounds
 
+    def critical_on_seam(self, stabilizer: str, location: tuple[float, float]) -> bool:
+        sx, sy = self.source.anchor
+        j, i = location[0] - sx - 0.5, location[1] - sy - 0.5
+        return stabilizer == "X" and i >= 0 and j >= 0 and i+j <= self.source.distance // 2 and (i+j) % 2 == 1
+
     def annotate_detectors(
         self, circuitry: Circuitry, sdc_rounds: int, tpt_rounds: int, exp_rounds: int
     ):
@@ -322,13 +327,17 @@ class MagicStateCultivation:
             circuitry, rounds=tpt_rounds, prefix="JCT:TPT", postselected=True
         )
         self.source.annotate_detectors(
-            circuitry, rounds=tpt_rounds, prepared=Pauli.X, prefix="SRC:TPT"
+            circuitry, rounds=tpt_rounds, prepared=Pauli.X, prefix="SRC:TPT",
+            postselected_stabilizer=self.critical_on_seam
         )
 
         for ql, (qx, qi) in self.source.qubits["X"].items():
             if self.__inactive_source(ql):
                 continue
-            circuitry.annotate_detector(f"SRC:REC:X{qi}", f"SRC:TPT{last}:X{qi}")
+            circuitry.annotate_detector(
+                f"SRC:REC:X{qi}", f"SRC:TPT{last}:X{qi}",
+                postselected=self.critical_on_seam("X", ql)
+            )
 
         for ql, (qz, qi) in self.source.qubits["Z"].items():
             circuitry.annotate_detector(f"SRC:REC:Z{qi}", f"SRC:TPT{last}:Z{qi}")

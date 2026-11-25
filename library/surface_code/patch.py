@@ -253,6 +253,7 @@ class SurfaceCodePatch:
         measured: Optional[Pauli] = None,
         inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
         postselected: bool = False,
+        postselected_stabilizer: Callable[[str, tuple[float,float]], bool] = lambda *_: False,
     ):
         last = (rounds or self.distance) - 1
         for stabilizer in ["X", "Z"]:
@@ -260,16 +261,17 @@ class SurfaceCodePatch:
                 if inactive(ql):
                     continue
 
+                selected = postselected or postselected_stabilizer(stabilizer, ql)
                 if prepared is not None and prepared.name == stabilizer:
                     circuitry.annotate_detector(
                         f"{prefix}0:{stabilizer}{qi}",
-                        postselected=postselected,
+                        postselected=selected,
                     )
                 for prev, curr in itertools.pairwise(range(rounds or self.distance)):
                     circuitry.annotate_detector(
                         f"{prefix}{curr}:{stabilizer}{qi}",
                         f"{prefix}{prev}:{stabilizer}{qi}",
-                        postselected=postselected,
+                        postselected=selected,
                     )
                 if measured is not None and measured.name == stabilizer:
                     circuitry.annotate_detector(
@@ -278,7 +280,7 @@ class SurfaceCodePatch:
                             f"{prefix}{last}:D{self.get_qubit_index('D', qd)}"
                             for qd in self.get_polygon(*ql)
                         ],
-                        postselected=postselected,
+                        postselected=selected,
                     )
 
     def append_memory(
