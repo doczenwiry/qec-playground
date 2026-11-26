@@ -35,6 +35,7 @@ class Circuitry:
         self.__num_measurements = 0
         self.__num_detectors = 0
         self.__postselection_mask: list[bool] = []
+        self.__detector_labels: list[str] = []
         self.__polygons: dict[int, list[str]] = defaultdict(list)
 
         for location, qubit in self.__physical_qubits.qubits.items():
@@ -51,6 +52,10 @@ class Circuitry:
     @property
     def used_qubits(self):
         return self.__used_qubits
+
+    @property
+    def detector_labels(self):
+        return self.__detector_labels
 
     def _as_noisy_stim(
         self,
@@ -247,6 +252,7 @@ class Circuitry:
                 tag="postselected" if postselected else "",
             )
             self.__postselection_mask.append(postselected)
+            self.__detector_labels.append(labels[0])
             return True
         logging.warning(f"Requested some unrecorded measurement [request:{labels}]")
         for label in labels:

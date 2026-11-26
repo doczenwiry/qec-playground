@@ -31,10 +31,12 @@ class ComplementaryGapDecoder:
     threshold: float
 
     @staticmethod
-    def build(circuitry: Circuitry, threshold: float) -> Optional[ComplementaryGapDecoder]:
+    def build(circuitry: Circuitry,threshold: float) -> Optional[ComplementaryGapDecoder]:
         # Isolate the detectors that participate in the decoding (i.e. excl. postselected ones).
         postselected = np.asarray(circuitry.postselection_mask, dtype=bool)
-        decoding_detectors = np.flatnonzero(~postselected)
+        steane = np.array([label.startswith("STN:") for label in circuitry.detector_labels], dtype=bool)
+        excluded = postselected & steane
+        decoding_detectors = np.flatnonzero(~excluded)
 
         decoder: Optional[ComplementaryGapDecoder] = None
         if len(decoding_detectors) > 0:
@@ -56,9 +58,9 @@ class ComplementaryGapDecoder:
                     probability = instruction.args_copy()[0]
                     components = _split_components(instruction.targets_copy())
 
-                    # Ignore any error that involves a postselected detector.
+                    # Ignore any error that involves an excluded (post-selected Steane) detector.
                     if any(
-                        postselected[d] for component_detectors, _ in components for d in component_detectors
+                        excluded[d] for component_detectors, _ in components for d in component_detectors
                     ):
                         continue
 

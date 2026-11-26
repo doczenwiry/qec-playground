@@ -830,14 +830,14 @@ class SteaneCodePatch:
                     circuitry.append(
                         "XCZ",
                         self.__translate_qubit_ids(
-                            "BZ", "D0", "BD", "D1", "GZ", "D2", "RZ", "D3", "RD", "D4"
+                            "BZ", "D0", "BD", "D1", "GZ", "D5", "RZ", "D2", "RD", "D4"
                         ),
                     )
                 case 4:
                     circuitry.append(
                         "XCZ",
                         self.__translate_qubit_ids(
-                            "RZ", "D2", "GD", "D4", "GZ", "D5", "BZ", "D6", "D1", "d1"
+                            "RZ", "D3", "GD", "D4", "GZ", "D2", "BZ", "D6", "D1", "d1"
                         ),
                     )
                 case 5:
@@ -894,12 +894,12 @@ class SteaneCodePatch:
         match moment:
             case 0:
                 circuit.append(
-                    "R",
+                    "RZ",
                     self.__translate_qubit_ids(
                         "BZ", "D1", "GZ", "RZ", "D4", "GX", "EX0"
                     ),
                 )
-            case 3:
+            case 2:
                 circuit.append(
                     "ZCX",
                     self.__translate_qubit_ids(
