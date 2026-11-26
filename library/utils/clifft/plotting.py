@@ -149,3 +149,46 @@ def _compute_slope_estimate(
         slopes[scenario] = slope, error
 
     return slopes
+
+def plot_overhead_curves(
+    ler_curves: dict[str, pandas.DataFrame],
+    label: Optional[str] = None,
+):
+    fig, overheads = plt.subplots(nrows=1, ncols=1, figsize=(14, 5.5))
+
+    scenario_indices = {
+        scenario: index for index, scenario in enumerate(ler_curves.keys())
+    }
+
+    for scenario, ler in ler_curves.items():
+        index = scenario_indices[scenario]
+        color = f"C{index}"
+        identifier = (f"{label} {index} - " if label is not None else "") + scenario
+
+        attempts = 1.0 / ler["surviving_shots_rate"]
+        overheads.plot(
+            attempts, ler["logical_error_rate"],
+            label=identifier, color=color, zorder=3, marker="o"
+        )
+        for x, y, per in zip(attempts, ler["logical_error_rate"], ler["physical_error_rate"]):
+            overheads.annotate(
+                rf"$10^{{{np.log10(per):.1f}}}$",
+                xy=(x, y), xytext=(4, 4), textcoords="offset points",
+                fontsize=7, color=color,
+            )
+
+
+    overheads.loglog()
+    overheads.set_xlim(1, 1e2)
+    overheads.set_ylim(1e-19, 1.5)
+
+    overheads.grid(which="major", color="#000000", alpha=0.3)
+    overheads.grid(which="minor", color="#DDDDDD", alpha=0.5)
+    overheads.set_xlabel("Expected attempts per kept shots")
+    overheads.set_ylabel("Logical error rate per kept shots")
+    overheads.legend(loc="lower right")
+    overheads.set_title(f"Overhead of cultivation")
+
+    fig.set_dpi(120)
+    fig.tight_layout()
+    plt.show(fig)

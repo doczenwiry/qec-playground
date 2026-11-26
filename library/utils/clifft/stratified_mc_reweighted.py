@@ -182,6 +182,7 @@ def compute_ler_curves(
                 "logical_error_rate": pandas.Series(dtype=float),
                 "logical_error_rate_wald_ci": pandas.Series(dtype=float),
                 "discarded_shots_rate": pandas.Series(dtype=float),
+                "surviving_shots_rate": pandas.Series(dtype=float),
             }
         )
 
@@ -205,6 +206,7 @@ def compute_ler_curves(
                     "logical_error_rate": weighted_logical_error_rate / weighted_surviving_rate,
                     "logical_error_rate_wald_ci": 1.96 * np.sqrt(variance) / weighted_surviving_rate,
                     "discarded_shots_rate": 1.0 - weighted_surviving_rate / sum(pmf),
+                    "surviving_shots_rate": weighted_surviving_rate / sum(pmf),
                 }
             )
 
