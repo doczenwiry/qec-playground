@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from library.circuitry import Circuitry
+from library.circuitry import Circuitry, DetectorTag
 from library.common import Pauli
 from library.compact_junction_patch import JunctionPatch
 from library.qubit_array import QubitArray
@@ -31,8 +31,8 @@ class MagicStateCultivation:
     EXPANDED_OPACITY: float = 0.125
 
     NON_CLIFFORD_PROXY_REPLACEMENTS: dict[str, str] = {
-        "proxy:T" : "T",
-        "proxy:T_DAG" : "T_DAG",
+        "proxy:T": "T",
+        "proxy:T_DAG": "T_DAG",
     }
 
     def __init__(
@@ -224,7 +224,9 @@ class MagicStateCultivation:
             )
 
         for mmt in self.steane.TELEPORTATION_ROUND_ONE_MOMENTS:
-            self.steane.append_teleportation_round_one(circuitry, moment=mmt, prefix=f"STN:TPT0")
+            self.steane.append_teleportation_round_one(
+                circuitry, moment=mmt, prefix="STN:TPT0"
+            )
             if 0 <= mmt <= 4:
                 translated_mmt = mmt
             elif mmt == self.steane.TELEPORTATION_ROUND_ONE_MOMENTS[-1]:
@@ -233,18 +235,22 @@ class MagicStateCultivation:
                 translated_mmt = -1
 
             if translated_mmt != -1:
-                self.__junction.append_syndrome(circuitry, moment=translated_mmt, prefix=f"JCT:TPT0")
+                self.__junction.append_syndrome(
+                    circuitry, moment=translated_mmt, prefix="JCT:TPT0"
+                )
                 self.source.append_round_6steps(
                     circuitry,
                     moment=translated_mmt,
                     prepare=Pauli.X,
-                    prefix=f"SRC:TPT0",
+                    prefix="SRC:TPT0",
                     inactive=self.__inactive_source,
                 )
             circuitry.append_tick()
 
         for mmt in self.steane.TELEPORTATION_ROUND_TWO_MOMENTS:
-            self.steane.append_teleportation_round_two(circuitry, moment=mmt, prefix=f"STN:TPT1")
+            self.steane.append_teleportation_round_two(
+                circuitry, moment=mmt, prefix="STN:TPT1"
+            )
             if 0 <= mmt <= 4:
                 translated_mmt = mmt
             elif mmt == self.steane.TELEPORTATION_ROUND_TWO_MOMENTS[-1]:
@@ -253,11 +259,13 @@ class MagicStateCultivation:
                 translated_mmt = -1
 
             if translated_mmt != -1:
-                self.__junction.append_syndrome(circuitry, moment=translated_mmt, prefix=f"JCT:TPT1")
+                self.__junction.append_syndrome(
+                    circuitry, moment=translated_mmt, prefix="JCT:TPT1"
+                )
                 self.source.append_round_6steps(
                     circuitry,
                     moment=translated_mmt,
-                    prefix=f"SRC:TPT1",
+                    prefix="SRC:TPT1",
                     inactive=self.__inactive_source,
                 )
             circuitry.append_tick()
@@ -266,7 +274,9 @@ class MagicStateCultivation:
             self.target.get_polygons(opacity=MagicStateCultivation.EXPANDED_OPACITY)
         )
         circuitry.annotate_polygons(self.steane.get_polygons(compact=False))
-        circuitry.annotate_polygons(self.__junction.get_polygons(recovered_stabilizers=True))
+        circuitry.annotate_polygons(
+            self.__junction.get_polygons(recovered_stabilizers=True)
+        )
         circuitry.annotate_polygons(self.source.get_polygons(self.__inactive_source))
         if self.__draw_neighbors:
             circuitry.annotate_polygons(
@@ -276,8 +286,15 @@ class MagicStateCultivation:
         # Append the third round of teleportation
         for mmt in self.steane.DESTRUCTION_MOMENTS:
             self.steane.append_destruction(circuitry, moment=mmt, prefix="STN:TPT2")
-            self.__junction.append_syndrome(circuitry, moment=mmt, prefix=f"JCT:TPT2", recovered_stabilizers=True)
-            self.source.append_round_6steps(circuitry, moment=mmt, prefix="SRC:TPT2", inactive=self.__inactive_source)
+            self.__junction.append_syndrome(
+                circuitry, moment=mmt, prefix="JCT:TPT2", recovered_stabilizers=True
+            )
+            self.source.append_round_6steps(
+                circuitry,
+                moment=mmt,
+                prefix="SRC:TPT2",
+                inactive=self.__inactive_source,
+            )
             circuitry.append_tick()
 
     def append_expansion(self, circuitry: Circuitry):
@@ -303,40 +320,48 @@ class MagicStateCultivation:
     def critical_on_seam(self, stabilizer: str, location: tuple[float, float]) -> bool:
         sx, sy = self.source.anchor
         j, i = location[0] - sx - 0.5, location[1] - sy - 0.5
-        return stabilizer == "X" and i >= 0 and j >= 0 and i+j <= self.source.distance // 2 and (i+j) % 2 == 1
+        return (
+            stabilizer == "X"
+            and i >= 0
+            and j >= 0
+            and i + j <= self.source.distance // 2
+            and (i + j) % 2 == 1
+        )
 
     def annotate_detectors(
         self, circuitry: Circuitry, sdc_rounds: int, exp_rounds: int
     ):
-        self.steane.annotate_detectors(
-            circuitry, sdc_rounds=sdc_rounds
-        )
+        self.steane.annotate_detectors(circuitry, sdc_rounds=sdc_rounds)
 
         # Annotate the TELEPORTATION destructive detectors
         # The X_{0126ab} detector.
         circuitry.annotate_detector(
             *(f"STN:TPT2:X{mx}" for mx in [0, 1, 2, 6]),
-            f"JCT:TPT2:X0",
-            postselected=True,
+            "JCT:TPT2:X0",
+            tags=DetectorTag.POSTSELECTED,
         )
 
         # The X_{2456} detector
         circuitry.annotate_detector(
             *(f"STN:TPT2:X{mx}" for mx in [2, 4, 5, 6]),
-            postselected=True,
+            tags=DetectorTag.POSTSELECTED,
         )
 
         # The X_{0234} detector
         circuitry.annotate_detector(
-            *(f"STN:TPT2:X{mx}" for mx in [0, 2, 3, 4]), postselected=True
+            *(f"STN:TPT2:X{mx}" for mx in [0, 2, 3, 4]),
+            tags=DetectorTag.POSTSELECTED,
         )
 
         self.__junction.annotate_detectors(
             circuitry, rounds=3, prefix="JCT:TPT", postselected=True
         )
         self.source.annotate_detectors(
-            circuitry, rounds=3, prepared=Pauli.X, prefix="SRC:TPT",
-            postselected_stabilizer=self.critical_on_seam
+            circuitry,
+            rounds=3,
+            prepared=Pauli.X,
+            prefix="SRC:TPT",
+            postselected_stabilizer=self.critical_on_seam,
         )
 
         if exp_rounds > 0:
@@ -347,23 +372,41 @@ class MagicStateCultivation:
                 if qsi == -1:
                     px, py = ql
                     if px - tx < py - ty:
-                        circuitry.annotate_detector(f"TGT:EXP:R0:Z{qti}")
+                        circuitry.annotate_detector(
+                            f"TGT:EXP:R0:Z{qti}", tags=DetectorTag.COMPLEMENTARY_GAP
+                        )
                 else:
-                    circuitry.annotate_detector(f"TGT:EXP:R0:Z{qti}", f"SRC:TPT2:Z{qsi}")
+                    circuitry.annotate_detector(
+                        f"TGT:EXP:R0:Z{qti}",
+                        f"SRC:TPT2:Z{qsi}",
+                        tags=DetectorTag.COMPLEMENTARY_GAP,
+                    )
 
             for ql, (qx, qti) in self.target.qubits["X"].items():
                 qsi = self.source.get_qubit_index("X", qx)
                 if qsi == -1:
                     px, py = ql
                     if px - tx > py - ty:
-                        circuitry.annotate_detector(f"TGT:EXP:R0:X{qti}")
-                else:
+                        circuitry.annotate_detector(
+                            f"TGT:EXP:R0:X{qti}", tags=DetectorTag.COMPLEMENTARY_GAP
+                        )
+                elif ql in self.__junction.x_ancilla:
                     circuitry.annotate_detector(
-                        f"TGT:EXP:R0:X{qti}", f"SRC:TPT2:X{qsi}",
-                        postselected=self.critical_on_seam("X", ql)
+                        f"TGT:EXP:R0:X{qti}",
+                        "JCT:TPT2:X0",
+                        tags=DetectorTag.COMPLEMENTARY_GAP,
+                    )
+                elif not self.__inactive_source(ql):
+                    tags = DetectorTag.COMPLEMENTARY_GAP
+                    if self.critical_on_seam("X", ql):
+                        tags |= DetectorTag.POSTSELECTED
+                    circuitry.annotate_detector(
+                        f"TGT:EXP:R0:X{qti}", f"SRC:TPT2:X{qsi}", tags=tags
                     )
 
             self.target.annotate_detectors(
-                circuitry, rounds=self.target.distance + exp_rounds, prefix="TGT:EXP:R",
-                postselected_stabilizer=self.critical_on_seam
+                circuitry,
+                rounds=exp_rounds,
+                prefix="TGT:EXP:R",
+                postselected_stabilizer=self.critical_on_seam,
             )

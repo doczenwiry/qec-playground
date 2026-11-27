@@ -13,14 +13,29 @@
 #   limitations under the License.
 
 from collections import defaultdict
+from enum import auto, Flag
 from typing import Union, Iterable, Optional
 import logging
 
+import numpy as np
 import clifft
 import stim
 
 from library.qubit_array import QubitArray
 from library.utils.stim.noise import make_noisy, NOISELESS
+
+
+class DetectorTag(Flag):
+    DEFAULT = 0
+    DECODED = auto()
+    POSTSELECTED = auto()
+    COMPLEMENTARY_GAP = auto()
+
+    @property
+    def text(self) -> str:
+        return ",".join(
+            (member.name or "").lower().replace("_", "-") for member in self
+        )
 
 
 class Circuitry:
@@ -34,8 +49,7 @@ class Circuitry:
         self.__num_cnots = 0
         self.__num_measurements = 0
         self.__num_detectors = 0
-        self.__postselection_mask: list[bool] = []
-        self.__detector_labels: list[str] = []
+        self.__detector_tags: list[DetectorTag] = list()
         self.__polygons: dict[int, list[str]] = defaultdict(list)
 
         for location, qubit in self.__physical_qubits.qubits.items():
@@ -52,10 +66,6 @@ class Circuitry:
     @property
     def used_qubits(self):
         return self.__used_qubits
-
-    @property
-    def detector_labels(self):
-        return self.__detector_labels
 
     def _as_noisy_stim(
         self,
@@ -94,7 +104,8 @@ class Circuitry:
     ) -> str:
         noisy, offsets = self._as_noisy_stim(per, keep_polygon_coords=keep_polygons)
         circuit, mapping = self.compact_qubits(
-            noisy, extra=self.__polygon_qubits if keep_polygons else {},
+            noisy,
+            extra=self.__polygon_qubits if keep_polygons else {},
         )
 
         if proxy_replacements is None:
@@ -110,7 +121,7 @@ class Circuitry:
                     tag=instruction.tag if keep_tags else "",
                 )
             )
-            instruction_tags = instruction.tag.split(',')
+            instruction_tags = instruction.tag.split(",")
             tag = next(
                 (part for part in instruction_tags if part in proxy_replacements), None
             )
@@ -139,13 +150,37 @@ class Circuitry:
     ) -> clifft.Program:
         return clifft.compile(
             self.as_text(per, proxy_replacements, keep_tags=False, keep_polygons=False),
-            postselection_mask=[int(flag) for flag in self.__postselection_mask],
+            postselection_mask=[int(flag) for flag in self.postselection_mask],
             normalize_syndromes=deterministic,
         )
 
     @property
     def postselection_mask(self):
-        return self.__postselection_mask
+        return [DetectorTag.POSTSELECTED in tags for tags in self.__detector_tags]
+
+    @property
+    def decoded_detectors(self):
+        return np.flatnonzero(
+            np.asarray(
+                [
+                    DetectorTag.COMPLEMENTARY_GAP in tags
+                    for tags in self.__detector_tags
+                ],
+                dtype=bool,
+            )
+        )
+
+    @property
+    def complementary_gap_detectors(self):
+        return np.flatnonzero(
+            np.asarray(
+                [
+                    DetectorTag.COMPLEMENTARY_GAP in tags
+                    for tags in self.__detector_tags
+                ],
+                dtype=bool,
+            )
+        )
 
     def missing_detectors(self, unknown_input: bool = False) -> list:
         return self.as_stim().missing_detectors(unknown_input=unknown_input)
@@ -233,7 +268,9 @@ class Circuitry:
         proxy_replacements: Optional[dict[str, str]] = None,
         keep_tags: bool = True,
     ):
-        circuit_text = self.as_text(per, proxy_replacements, keep_polygons=polygons, keep_tags=keep_tags)
+        circuit_text = self.as_text(
+            per, proxy_replacements, keep_polygons=polygons, keep_tags=keep_tags
+        )
 
         filename += ".stim" if proxy_replacements is None else ".clifft"
         with open(filename, "w", encoding="utf-8") as file:
@@ -245,14 +282,16 @@ class Circuitry:
                 self.__polygon_qubits.add(int(qb))
         self.__polygons[len(self.__circuit)].extend(polygons)
 
-    def annotate_detector(self, *labels: str, postselected: bool = False) -> bool:
+    def annotate_detector(
+        self, *labels: str, tags: DetectorTag = DetectorTag.DEFAULT
+    ) -> bool:
         if all(self.__physical_qubits.has_record(label) for label in labels):
             self.append(
-                "DETECTOR", map(self.__physical_qubits.retrieve_target_rec, labels),
-                tag="postselected" if postselected else "",
+                "DETECTOR",
+                map(self.__physical_qubits.retrieve_target_rec, labels),
+                tag=tags.text,
             )
-            self.__postselection_mask.append(postselected)
-            self.__detector_labels.append(labels[0])
+            self.__detector_tags.append(tags)
             return True
         logging.warning(f"Requested some unrecorded measurement [request:{labels}]")
         for label in labels:
@@ -337,7 +376,7 @@ class Circuitry:
             f"> Measurement records : {len(self.__physical_qubits.measurements_index)}"
         )
         print(
-            f"> Number of detectors : {self.num_detectors} [postselected:{sum(int(ps) for ps in self.__postselection_mask)}]"
+            f"> Number of detectors : {self.num_detectors} [postselected:{sum(int(ps) for ps in self.postselection_mask)}]"
         )
 
         gauge_found = False

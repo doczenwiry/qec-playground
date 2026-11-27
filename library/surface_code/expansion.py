@@ -16,7 +16,7 @@ from typing import Optional
 
 import itertools
 
-from library.circuitry import Circuitry
+from library.circuitry import Circuitry, DetectorTag
 from library.qubit_array import QubitArray
 from library.surface_code.patch import SurfaceCodePatch
 
@@ -92,18 +92,19 @@ class ExpansionSurgery:
                 if self.__qubit_in_expansion(px, py):
                     if stabilizer == "X" and px - tx > py - ty:
                         if py - ty < self.__expansion - 1:
-                            circuitry.annotate_detector(f"{prefix}:R0:{stabilizer}{qi}")
-                        # elif py - ty == self.__expansion - 0.5:
-                        #     qti = self.__target.get_qubit_index(stabilizer, qa)
-                        #     print(f"QTI: {prefix}:R0:{stabilizer}{qi} -> {qti}")
+                            circuitry.annotate_detector(
+                                f"{prefix}:R0:{stabilizer}{qi}",
+                                tags=DetectorTag.COMPLEMENTARY_GAP,
+                            )
                     elif stabilizer == "Z" and px - tx < py - ty:
                         if px - tx < self.__expansion - 1:
-                            circuitry.annotate_detector(f"{prefix}:R0:{stabilizer}{qi}")
-                        # elif px - tx == self.__expansion - 0.5:
-                        #     qti = self.__target.get_qubit_index(stabilizer, qa)
-                        #     print(f"QSI: {prefix}:R0:{stabilizer}{qi} -> {qti}")
+                            circuitry.annotate_detector(
+                                f"{prefix}:R0:{stabilizer}{qi}",
+                                tags=DetectorTag.COMPLEMENTARY_GAP,
+                            )
                 for prev, curr in itertools.pairwise(range(self.__distance)):
                     circuitry.annotate_detector(
                         f"{prefix}:R{curr}:{stabilizer}{qi}",
                         f"{prefix}:R{prev}:{stabilizer}{qi}",
+                        tags=DetectorTag.COMPLEMENTARY_GAP,
                     )

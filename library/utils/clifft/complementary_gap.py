@@ -24,6 +24,7 @@ from library.circuitry import Circuitry
 
 __all__ = ["ComplementaryGapDecoder"]
 
+
 @dataclass(frozen=True)
 class ComplementaryGapDecoder:
     matching: pymatching.Matching
@@ -31,16 +32,17 @@ class ComplementaryGapDecoder:
     threshold: float
 
     @staticmethod
-    def build(circuitry: Circuitry,threshold: float) -> Optional[ComplementaryGapDecoder]:
-        # Isolate the detectors that participate in the decoding (i.e. excl. postselected ones).
-        postselected = np.asarray(circuitry.postselection_mask, dtype=bool)
-        steane = np.array([label.startswith("STN:") for label in circuitry.detector_labels], dtype=bool)
-        excluded = postselected & steane
-        decoding_detectors = np.flatnonzero(~excluded)
+    def build(
+        circuitry: Circuitry, threshold: float
+    ) -> Optional[ComplementaryGapDecoder]:
+        # Only keep the detectors that contribute to the ComplementaryGap computation.
+        gap_detectors = circuitry.complementary_gap_detectors
+        in_gap = np.zeros(circuitry.num_detectors, dtype=bool)
+        in_gap[gap_detectors] = True
 
         decoder: Optional[ComplementaryGapDecoder] = None
-        if len(decoding_detectors) > 0:
-            mapping = {int(old) : new for new, old in enumerate(decoding_detectors)}
+        if len(gap_detectors) > 0:
+            mapping = {int(old): new for new, old in enumerate(gap_detectors)}
 
             # We can use the DEM for the S-proxy circuit for matching purposes.
             dem = circuitry.as_stim(per=1e-3, keep_polygons=False).detector_error_model(
@@ -48,58 +50,77 @@ class ComplementaryGapDecoder:
             )
 
             if dem.num_observables != 1:
-                raise ValueError("Complementary Gap decoding supports exactly one observable.")
+                raise ValueError(
+                    "Complementary Gap decoding supports exactly one observable."
+                )
 
             matching = pymatching.Matching()
-            observable_node = len(decoding_detectors)
+            observable_node = len(gap_detectors)
             undetectable_probability = 0.0
             for instruction in dem.flattened():
                 if instruction.type == "error":
                     probability = instruction.args_copy()[0]
                     components = _split_components(instruction.targets_copy())
 
-                    # Ignore any error that involves an excluded (post-selected Steane) detector.
+                    # Ignore any error involving a detector outside the complementary gap computation.
                     if any(
-                        excluded[d] for component_detectors, _ in components for d in component_detectors
+                        not in_gap[d]
+                        for component_detectors, _ in components
+                        for d in component_detectors
                     ):
                         continue
 
                     for detectors, observables in components:
                         if _add_component(
-                            matching, [mapping[d] for d in detectors], observables, probability, observable_node
+                            matching,
+                            [mapping[d] for d in detectors],
+                            observables,
+                            probability,
+                            observable_node,
                         ):
                             undetectable_probability += probability
 
             if undetectable_probability > 0:
                 logging.warning(
                     "Observable flipped by undetectable mechanisms (total probability %.2e at p=1e-3): "
-                    "this sets a floor on the logical error rate.", undetectable_probability,
+                    "this sets a floor on the logical error rate.",
+                    undetectable_probability,
                 )
 
             if not any(observable_node in (a, b) for a, b, _ in matching.edges()):
-                raise ValueError("No error mechanism flips the observable: the gap is undefined.")
+                raise ValueError(
+                    "No error mechanism flips the observable: the gap is undefined."
+                )
 
             if matching.num_detectors < observable_node + 1:
-                matching.add_boundary_edge(observable_node, weight = 1e9)
+                matching.add_boundary_edge(observable_node, weight=1e9)
 
-            decoder = ComplementaryGapDecoder(matching, decoding_detectors, threshold)
+            decoder = ComplementaryGapDecoder(matching, gap_detectors, threshold)
 
         return decoder
 
     DECIBELS_PER_NEPER = 10 / np.log(10)
+
     def decode(self, detection_events: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         syndromes = detection_events[:, self.detectors]
         observable = np.zeros((syndromes.shape[0], 1), dtype=syndromes.dtype)
-        _, weights_0 = self.matching.decode_batch(np.hstack([syndromes, observable]), return_weights=True)
-        _, weights_1 = self.matching.decode_batch(np.hstack([syndromes, 1 - observable]), return_weights=True)
+        _, weights_0 = self.matching.decode_batch(
+            np.hstack([syndromes, observable]), return_weights=True
+        )
+        _, weights_1 = self.matching.decode_batch(
+            np.hstack([syndromes, 1 - observable]), return_weights=True
+        )
 
         predictions = (weights_1 < weights_0).astype(np.uint8)[:, None]
-        gaps = np.abs(weights_1 - weights_0) * ComplementaryGapDecoder.DECIBELS_PER_NEPER
+        gaps = (
+            np.abs(weights_1 - weights_0) * ComplementaryGapDecoder.DECIBELS_PER_NEPER
+        )
         accepted = gaps >= self.threshold
         return predictions, accepted
 
+
 def _split_components(
-    targets: list[stim.DemTarget]
+    targets: list[stim.DemTarget],
 ) -> list[tuple[list[int], set[int]]]:
     components: list[tuple[list[int], set[int]]] = [([], set())]
     for target in targets:
@@ -110,6 +131,7 @@ def _split_components(
         elif target.is_logical_observable_id():
             components[-1][1].add(target.val)
     return components
+
 
 def _add_component(
     matching: pymatching.Matching,
@@ -130,17 +152,25 @@ def _add_component(
 
     if flips_observable and len(detectors) == 1:
         matching.add_edge(
-            detectors[0], observable_node,
-            weight=weight, error_probability=probability, merge_strategy="independent",
+            detectors[0],
+            observable_node,
+            weight=weight,
+            error_probability=probability,
+            merge_strategy="independent",
         )
     elif not flips_observable and len(detectors) == 2:
         matching.add_edge(
-            detectors[0], detectors[1],
-            weight=weight, error_probability=probability, merge_strategy="independent",
+            detectors[0],
+            detectors[1],
+            weight=weight,
+            error_probability=probability,
+            merge_strategy="independent",
         )
     elif not flips_observable and len(detectors) == 1:
         matching.add_boundary_edge(
             detectors[0],
-            weight=weight, error_probability=probability, merge_strategy="independent",
+            weight=weight,
+            error_probability=probability,
+            merge_strategy="independent",
         )
     return flips_observable and len(detectors) == 0

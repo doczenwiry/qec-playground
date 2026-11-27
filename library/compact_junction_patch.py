@@ -14,7 +14,7 @@
 
 import itertools
 
-from library.circuitry import Circuitry
+from library.circuitry import Circuitry, DetectorTag
 from library.surface_code.patch import SurfaceCodePatch
 from library.qubit_array import QubitArray
 
@@ -26,18 +26,15 @@ logger = logging.getLogger(__name__)
 class JunctionPatch:
     MOMENTS = range(6)
 
-    QUBITS = {
-        "X": [(1.5, 0.5)],
-        "Z": [(0.5, 0.5), (2.5, 0.5), (4.5, 0.5)]
-    }
+    QUBITS = {"X": [(1.5, 0.5)], "Z": [(0.5, 0.5), (2.5, 0.5), (4.5, 0.5)]}
     STABILIZERS = {
         "X": [
             [(-0.5, +0.5), (+0.5, +0.5)],
         ],
-        "Z" : [
+        "Z": [
             [(-0.5, -0.5), (+0.5, +0.5)],
             [(-0.5, -0.5), (+0.5, -0.5), (+0.5, +0.5), (-0.5, +0.5)],
-            [(-0.5, +0.5), (+0.5, +0.5)]
+            [(-0.5, +0.5), (+0.5, +0.5)],
         ],
     }
 
@@ -91,17 +88,24 @@ class JunctionPatch:
         prefix: str = "JCT:R",
         postselected: bool = True,
     ):
+        tags = DetectorTag.COMPLEMENTARY_GAP | (
+            DetectorTag.POSTSELECTED if postselected else DetectorTag.DEFAULT
+        )
         for zi, (prev, curr) in itertools.product(
             range(3), itertools.pairwise(range(rounds))
         ):
             circuitry.annotate_detector(
                 f"{prefix}{curr}:Z{zi}",
                 f"{prefix}{prev}:Z{zi}",
-                postselected=postselected,
+                tags=tags,
             )
 
     def append_syndrome(
-        self, circuit: Circuitry, moment: int, prefix: str = "JCT:R", recovered_stabilizers: bool = False
+        self,
+        circuit: Circuitry,
+        moment: int,
+        prefix: str = "JCT:R",
+        recovered_stabilizers: bool = False,
     ):
         match moment:
             case 0:
@@ -112,10 +116,15 @@ class JunctionPatch:
                 cx_targets = []
                 for zi, ((px, py), za) in enumerate(self.z_ancilla.items()):
                     if zi != 0:
-                        interaction = SurfaceCodePatch.SCHEDULE["6_STEPS"]["Z"][moment - 1]
+                        interaction = SurfaceCodePatch.SCHEDULE["6_STEPS"]["Z"][
+                            moment - 1
+                        ]
                     else:
                         interaction = JunctionPatch.LEFT_STABILIZER_SCHEDULE[moment - 1]
-                    if interaction is None or interaction not in JunctionPatch.STABILIZERS["Z"][zi]:
+                    if (
+                        interaction is None
+                        or interaction not in JunctionPatch.STABILIZERS["Z"][zi]
+                    ):
                         continue
                     dx, dy = interaction
                     qd = self.__physical_qubits.qubits[px + dx, py + dy]
@@ -123,8 +132,13 @@ class JunctionPatch:
                     cx_targets.append(za)
                 if recovered_stabilizers:
                     for xi, ((px, py), xa) in enumerate(self.x_ancilla.items()):
-                        interaction = JunctionPatch.RECOVERED_STABILIZER_SCHEDULE[moment - 1]
-                        if interaction is None or interaction not in JunctionPatch.STABILIZERS["X"][xi]:
+                        interaction = JunctionPatch.RECOVERED_STABILIZER_SCHEDULE[
+                            moment - 1
+                        ]
+                        if (
+                            interaction is None
+                            or interaction not in JunctionPatch.STABILIZERS["X"][xi]
+                        ):
                             continue
                         dx, dy = interaction
                         qd = self.__physical_qubits.qubits[px + dx, py + dy]

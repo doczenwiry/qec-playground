@@ -20,7 +20,7 @@ from typing import List, Optional
 
 import stim
 
-from library.circuitry import Circuitry
+from library.circuitry import Circuitry, DetectorTag
 from library.qubit_array import QubitArray
 from library.common import Pauli
 from library.utils.stim.noise import NOISELESS
@@ -186,35 +186,43 @@ class SteaneCodePatch:
         for color in self.stabilizers().keys():
             if sdc_rounds >= 1:
                 circuitry.annotate_detector(
-                    f"{prefix}:SDC0:X{color}", postselected=True
+                    f"{prefix}:SDC0:X{color}", tags=DetectorTag.POSTSELECTED
                 )
                 circuitry.annotate_detector(
-                    f"{prefix}:SDC0:Z{color}", postselected=True
+                    f"{prefix}:SDC0:Z{color}", tags=DetectorTag.POSTSELECTED
                 )
             for prev, curr in itertools.pairwise(range(sdc_rounds)):
                 circuitry.annotate_detector(
                     f"{prefix}:SDC{curr}:Z{color}",
                     f"{prefix}:SDC{prev}:Z{color}",
-                    postselected=True,
+                    tags=DetectorTag.POSTSELECTED,
                 )
 
         for prev, curr in itertools.pairwise(range(sdc_rounds)):
-            circuitry.annotate_detector(f"{prefix}:SDC{curr}:XR", postselected=True)
+            circuitry.annotate_detector(
+                f"{prefix}:SDC{curr}:XR", tags=DetectorTag.POSTSELECTED
+            )
             circuitry.annotate_detector(
                 f"{prefix}:SDC{curr}:XG",
                 f"{prefix}:SDC{prev}:XR",
                 f"{prefix}:SDC{prev}:XG",
-                postselected=True,
+                tags=DetectorTag.POSTSELECTED,
             )
             circuitry.annotate_detector(
-                f"{prefix}:SDC{curr}:XB", f"{prefix}:SDC{prev}:XG", postselected=True
+                f"{prefix}:SDC{curr}:XB",
+                f"{prefix}:SDC{prev}:XG",
+                tags=DetectorTag.POSTSELECTED,
             )
 
         # Annotate the DOUBLE-CHECK detectors
         for label in ["CC", "RZ", "GZ", "D1", "BZ", "EX0", "EX1", "D4"]:
-            circuitry.annotate_detector(f"{prefix}:CULT:{label}", postselected=True)
+            circuitry.annotate_detector(
+                f"{prefix}:CULT:{label}", tags=DetectorTag.POSTSELECTED
+            )
         for number in range(SteaneCodePatch.Z_FLAG_COUNT):
-            circuitry.annotate_detector(f"{prefix}:CULT:Z{number}", postselected=True)
+            circuitry.annotate_detector(
+                f"{prefix}:CULT:Z{number}", tags=DetectorTag.POSTSELECTED
+            )
 
         # Annotate the TELEPORTATION stabilized detectors
         last = sdc_rounds - 1
@@ -222,25 +230,27 @@ class SteaneCodePatch:
             circuitry.annotate_detector(
                 f"{prefix}:TPT0:Z{color}",
                 f"{prefix}:SDC{last}:Z{color}",
-                postselected=True,
+                tags=DetectorTag.POSTSELECTED,
             )
             for prev, curr in itertools.pairwise(range(2)):
                 circuitry.annotate_detector(
                     f"{prefix}:TPT{curr}:Z{color}",
                     f"{prefix}:TPT{prev}:Z{color}",
-                    postselected=True,
+                    tags=DetectorTag.POSTSELECTED,
                 )
 
         circuitry.annotate_detector(
-            f"{prefix}:TPT0:XR", f"{prefix}:SDC{last}:XG", postselected=True
+            f"{prefix}:TPT0:XR", f"{prefix}:SDC{last}:XG", tags=DetectorTag.POSTSELECTED
         )
         circuitry.annotate_detector(
-            f"{prefix}:TPT0:XG", f"{prefix}:SDC{last}:XR", postselected=True
+            f"{prefix}:TPT0:XG", f"{prefix}:SDC{last}:XR", tags=DetectorTag.POSTSELECTED
         )
-        circuitry.annotate_detector(f"{prefix}:TPT0:XB", postselected=True)
+        circuitry.annotate_detector(f"{prefix}:TPT0:XB", tags=DetectorTag.POSTSELECTED)
 
         for color in self.stabilizers().keys():
-            circuitry.annotate_detector(f"{prefix}:TPT1:X{color}", postselected=True)
+            circuitry.annotate_detector(
+                f"{prefix}:TPT1:X{color}", tags=DetectorTag.POSTSELECTED
+            )
 
     PREPARATION_MOMENTS = range(11)
 
@@ -688,6 +698,7 @@ class SteaneCodePatch:
                     )
 
     TELEPORTATION_ROUND_ONE_MOMENTS = range(11)
+
     def append_teleportation_round_one(
         self,
         circuitry: Circuitry,
@@ -789,6 +800,7 @@ class SteaneCodePatch:
                     logger.warning(f"Nothing to do at requested moment [{moment}]")
 
     TELEPORTATION_ROUND_TWO_MOMENTS = range(9)
+
     def append_teleportation_round_two(
         self,
         circuitry: Circuitry,
@@ -821,11 +833,10 @@ class SteaneCodePatch:
                 # Perform extractions
                 case 2:
                     circuitry.append(
-                        "ZCX", self.__translate_qubit_ids("d1", "D1"),
+                        "ZCX",
+                        self.__translate_qubit_ids("d1", "D1"),
                     )
-                    circuitry.append(
-                        "CX", self.__translate_qubit_ids("D4", "d4")
-                    )
+                    circuitry.append("CX", self.__translate_qubit_ids("D4", "d4"))
                 case 3:
                     circuitry.append(
                         "XCZ",
@@ -843,7 +854,9 @@ class SteaneCodePatch:
                 case 5:
                     circuitry.append(
                         "ZCX",
-                        self.__translate_qubit_ids("D0", "RZ", "D2", "BZ", "D6", "GZ", "BD", "D1"),
+                        self.__translate_qubit_ids(
+                            "D0", "RZ", "D2", "BZ", "D6", "GZ", "BD", "D1"
+                        ),
                     )
                     circuitry.append(
                         "CX",

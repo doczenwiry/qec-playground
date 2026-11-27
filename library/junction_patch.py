@@ -14,7 +14,7 @@
 
 import itertools
 
-from library.circuitry import Circuitry
+from library.circuitry import Circuitry, DetectorTag
 from library.surface_code.patch import SurfaceCodePatch
 from library.qubit_array import QubitArray
 
@@ -63,7 +63,7 @@ class JunctionPatch:
             range(3), itertools.pairwise(range(rounds))
         ):
             circuitry.annotate_detector(
-                f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}", postselected=True
+                f"JCT{curr}:Z{zi}", f"JCT{prev}:Z{zi}", tags=DetectorTag.POSTSELECTED
             )
 
     def append_syndrome(self, circuit: Circuitry, moment: int, prefix: str = ""):

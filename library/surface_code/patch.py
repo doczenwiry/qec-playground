@@ -19,7 +19,7 @@ import logging
 
 import stim  # type: ignore[import-untyped]
 
-from library.circuitry import Circuitry
+from library.circuitry import Circuitry, DetectorTag
 from library.common import Pauli
 from library.qubit_array import QubitArray
 from library.utils.stim.noise import NOISELESS
@@ -253,7 +253,9 @@ class SurfaceCodePatch:
         measured: Optional[Pauli] = None,
         inactive: Callable[[tuple[float, float]], bool] = lambda _: False,
         postselected: bool = False,
-        postselected_stabilizer: Callable[[str, tuple[float,float]], bool] = lambda *_: False,
+        postselected_stabilizer: Callable[
+            [str, tuple[float, float]], bool
+        ] = lambda *_: False,
     ):
         last = (rounds or self.distance) - 1
         for stabilizer in ["X", "Z"]:
@@ -262,16 +264,19 @@ class SurfaceCodePatch:
                     continue
 
                 selected = postselected or postselected_stabilizer(stabilizer, ql)
+                tags = DetectorTag.COMPLEMENTARY_GAP | (
+                    DetectorTag.POSTSELECTED if selected else DetectorTag.DEFAULT
+                )
                 if prepared is not None and prepared.name == stabilizer:
                     circuitry.annotate_detector(
                         f"{prefix}0:{stabilizer}{qi}",
-                        postselected=selected,
+                        tags=tags,
                     )
                 for prev, curr in itertools.pairwise(range(rounds or self.distance)):
                     circuitry.annotate_detector(
                         f"{prefix}{curr}:{stabilizer}{qi}",
                         f"{prefix}{prev}:{stabilizer}{qi}",
-                        postselected=selected,
+                        tags=tags,
                     )
                 if measured is not None and measured.name == stabilizer:
                     circuitry.annotate_detector(
@@ -280,7 +285,7 @@ class SurfaceCodePatch:
                             f"{prefix}{last}:D{self.get_qubit_index('D', qd)}"
                             for qd in self.get_polygon(*ql)
                         ],
-                        postselected=selected,
+                        tags=tags,
                     )
 
     def append_memory(
