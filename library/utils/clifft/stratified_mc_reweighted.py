@@ -18,13 +18,11 @@ from typing import Optional
 import clifft
 import numpy as np
 import pandas
-import sinter  # type: ignore[import-untyped]
 import time
 
 from scipy.stats import binom
 
 from library.circuitry import Circuitry
-from library.utils.clifft.decoding import Decoder
 from library.utils.clifft.complementary_gap import ComplementaryGapDecoder
 
 __all__ = ["compute_ler_curves"]
@@ -49,9 +47,8 @@ def _compute_stratum_data(
             "logical_errors": pandas.Series(dtype=float),
             "logical_error_rate": pandas.Series(dtype=float),
             "logical_error_rate_wald_ci": pandas.Series(dtype=float),
-
         },
-        index=pandas.Index([], dtype=int, name="k")
+        index=pandas.Index([], dtype=int, name="k"),
     )
 
     # Check that the circuit is deterministic.
@@ -64,7 +61,10 @@ def _compute_stratum_data(
         raise ValueError("Circuit doesn't contain any noise sites.")
 
     # Check that the noise probability is uniform across all noise sites.
-    if not np.allclose(np.asarray(program.noise_site_probabilities), program.noise_site_probabilities[0]):
+    if not np.allclose(
+        np.asarray(program.noise_site_probabilities),
+        program.noise_site_probabilities[0],
+    ):
         raise ValueError("Noise sites have non-uniform probabilities.")
 
     batch_count = batch_count or 20
@@ -76,11 +76,16 @@ def _compute_stratum_data(
         logical_errors = 0.0
 
         batch = 0
-        while total_shots < shots_per_stratum and (max_errors is None or logical_errors < max_errors):
+        while total_shots < shots_per_stratum and (
+            max_errors is None or logical_errors < max_errors
+        ):
             seed = SEED + 250204928 * k + batch
             result = clifft.sample_k_survivors(
-                program, seed=seed, threads=workers,
-                shots=int(batch_size), k=k,
+                program,
+                seed=seed,
+                threads=workers,
+                shots=int(batch_size),
+                k=k,
                 keep_records=decoder is not None,
             )
 
@@ -95,10 +100,10 @@ def _compute_stratum_data(
             surviving_shots += result.passed_shots
 
             if decoder is not None:
-                predictions, accepted = decoder.decode(result.detectors)
-                failed = np.any(predictions != result.observables, axis=1)
-                logical_errors += int((failed & accepted).sum())
-                rejected = int((~accepted).sum())
+                predictions, survived = decoder.decode(result.detectors)
+                errors = np.any(predictions != result.observables, axis=1)
+                logical_errors += int((errors & survived).sum())
+                rejected = int((~survived).sum())
                 surviving_shots -= rejected
                 discarded_shots += rejected
             else:
@@ -108,19 +113,23 @@ def _compute_stratum_data(
 
         if total_shots > 0:
             logical_error_rate = logical_errors / total_shots
-            logical_error_rate_wald_ci = 1.96 * np.sqrt(logical_error_rate * (1 - logical_error_rate) / total_shots)
+            logical_error_rate_wald_ci = 1.96 * np.sqrt(
+                logical_error_rate * (1 - logical_error_rate) / total_shots
+            )
         else:
             logical_error_rate = np.nan
             logical_error_rate_wald_ci = np.nan
 
-        strata.loc[k] = pandas.Series({
-            "total_shots": total_shots,
-            "discarded_shots": discarded_shots,
-            "surviving_shots": surviving_shots,
-            "logical_errors": logical_errors,
-            "logical_error_rate": logical_error_rate,
-            "logical_error_rate_wald_ci": logical_error_rate_wald_ci,
-        })
+        strata.loc[k] = pandas.Series(
+            {
+                "total_shots": total_shots,
+                "discarded_shots": discarded_shots,
+                "surviving_shots": surviving_shots,
+                "logical_errors": logical_errors,
+                "logical_error_rate": logical_error_rate,
+                "logical_error_rate_wald_ci": logical_error_rate_wald_ci,
+            }
+        )
 
     return strata
 
@@ -131,7 +140,7 @@ def _compute_stratum_data(
 def compute_ler_curves(
     scenarios: dict[str, Circuitry],
     label: Optional[str] = None,
-    shots_per_stratum: float= 1e6,
+    shots_per_stratum: float = 1e6,
     batch_count: Optional[int] = None,
     max_errors: Optional[int] = None,
     strata_count: int = 16,
@@ -169,9 +178,13 @@ def compute_ler_curves(
         start = time.monotonic()
         print(f"Computing Conditional Error Rates for {scenario} ...")
         strata = _compute_stratum_data(
-            program, workers=workers, decoder=ComplementaryGapDecoder.build(circuitry, threshold=gap_threshold),
-            strata_count=strata_count, shots_per_stratum=shots_per_stratum,
-            max_errors=max_errors, batch_count=batch_count,
+            program,
+            workers=workers,
+            decoder=ComplementaryGapDecoder.build(circuitry, threshold=gap_threshold),
+            strata_count=strata_count,
+            shots_per_stratum=shots_per_stratum,
+            max_errors=max_errors,
+            batch_count=batch_count,
         )
         final = time.monotonic()
         print(f"> {round(final - start, 2)}s")
@@ -189,22 +202,35 @@ def compute_ler_curves(
         for per in noise_levels:
             pmf = pandas.Series(
                 binom.pmf(strata.index, len(program.noise_site_probabilities), per),
-                index=strata.index, name="P(k)"
+                index=strata.index,
+                name="P(k)",
             )
 
             total_shots = strata["total_shots"]
-            surviving_rate_k = strata["surviving_shots"] / total_shots.where(total_shots != 0.0)
-            logical_error_rate_k = strata["logical_errors"] / total_shots.where(total_shots != 0.0)
+            surviving_rate_k = strata["surviving_shots"] / total_shots.where(
+                total_shots != 0.0
+            )
+            logical_error_rate_k = strata["logical_errors"] / total_shots.where(
+                total_shots != 0.0
+            )
 
             weighted_logical_error_rate = sum(pmf * logical_error_rate_k)
             weighted_surviving_rate = sum(pmf * surviving_rate_k)
-            variance = sum(pmf**2 * logical_error_rate_k * (1.0 - logical_error_rate_k) / total_shots)
+            variance = sum(
+                pmf**2
+                * logical_error_rate_k
+                * (1.0 - logical_error_rate_k)
+                / total_shots
+            )
 
             ler.loc[len(ler)] = pandas.Series(
                 {
                     "physical_error_rate": per,
-                    "logical_error_rate": weighted_logical_error_rate / weighted_surviving_rate,
-                    "logical_error_rate_wald_ci": 1.96 * np.sqrt(variance) / weighted_surviving_rate,
+                    "logical_error_rate": weighted_logical_error_rate
+                    / weighted_surviving_rate,
+                    "logical_error_rate_wald_ci": 1.96
+                    * np.sqrt(variance)
+                    / weighted_surviving_rate,
                     "discarded_shots_rate": 1.0 - weighted_surviving_rate / sum(pmf),
                     "surviving_shots_rate": weighted_surviving_rate / sum(pmf),
                 }

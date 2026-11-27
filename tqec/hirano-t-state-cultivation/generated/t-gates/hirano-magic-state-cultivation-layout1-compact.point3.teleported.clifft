@@ -72,19 +72,18 @@ QUBIT_COORDS(5.5, 6.5) 70
 QUBIT_COORDS(5.5, 7.5) 71
 QUBIT_COORDS(5.5, 8.5) 72
 QUBIT_COORDS(6.5, 2.5) 73
-QUBIT_COORDS(6.5, 3.5) 74
-QUBIT_COORDS(6.5, 4.5) 75
-QUBIT_COORDS(6.5, 5.5) 76
-QUBIT_COORDS(6.5, 6.5) 77
-QUBIT_COORDS(6.5, 7.5) 78
-QUBIT_COORDS(7.5, 3.5) 79
-QUBIT_COORDS(7.5, 4.5) 80
-QUBIT_COORDS(7.5, 5.5) 81
-QUBIT_COORDS(7.5, 6.5) 82
-QUBIT_COORDS(7.5, 7.5) 83
-QUBIT_COORDS(7.5, 8.5) 84
-QUBIT_COORDS(8.5, 4.5) 85
-QUBIT_COORDS(8.5, 6.5) 86
+QUBIT_COORDS(6.5, 4.5) 74
+QUBIT_COORDS(6.5, 5.5) 75
+QUBIT_COORDS(6.5, 6.5) 76
+QUBIT_COORDS(6.5, 7.5) 77
+QUBIT_COORDS(7.5, 3.5) 78
+QUBIT_COORDS(7.5, 4.5) 79
+QUBIT_COORDS(7.5, 5.5) 80
+QUBIT_COORDS(7.5, 6.5) 81
+QUBIT_COORDS(7.5, 7.5) 82
+QUBIT_COORDS(7.5, 8.5) 83
+QUBIT_COORDS(8.5, 4.5) 84
+QUBIT_COORDS(8.5, 6.5) 85
 #!pragma POLYGON(1,0,0,0.125) 7 0
 #!pragma POLYGON(1,0,0,0.125) 1 8 9 2
 #!pragma POLYGON(1,0,0,0.125) 3 10 11 4
@@ -400,90 +399,60 @@ TICK
 #!pragma POLYGON(0,0,1,0.5) 43 50 51 44
 #!pragma POLYGON(0,0,1,0.5) 47 48
 #!pragma POLYGON(0,0,1,0.5) 49 50
-RX 31 22 59
-R 66 58 16 73 57 60 53 65 54 67 79
-RX 62 64 68 70 72 76 78 80 82 84
-R 55 56 61 63 69 71 75 77 81 83 85 86
+RX 31 22 16
+R 66 58 73 57 59 53 65 54 67 78
+RX 62 64 68 70 72 75 77 79 81 83
+R 55 56 61 63 69 71 74 76 80 82 84 85
 RX 17 18 19 20 21 25 26 27 28 29 33 34 35 36 37 40 41 42 43 44 47 48 49 50 51
 TICK
-CX 30 65 31 66 22 58 59 16 8 54 24 67 62 18 64 20 68 25 70 27 72 29 76 34 78 36 80 40 82 42 84 44 17 61 19 63 26 69 28 71 33 75 35 77 41 81 43 83 47 85 49 86
+CX 30 65 31 66 22 58 16 59 8 54 24 67 62 18 64 20 68 25 70 27 72 29 75 34 77 36 79 40 81 42 83 44 17 61 19 63 26 69 28 71 33 74 35 76 41 80 43 82 47 84 49 85
 TICK
-CX 8 53 66 23 58 14 65 30 25 67 40 79 62 26 64 28 68 33 70 35 72 37 76 41 78 43 80 47 82 49 84 51 18 61 20 63 27 69 29 71 34 75 36 77 42 81 44 83 48 85 50 86
+CX 8 53 66 23 58 14 65 30 17 54 25 67 40 78 62 26 64 28 68 33 70 35 72 37 75 41 77 43 79 47 81 49 83 51 18 61 20 63 27 69 29 71 34 74 36 76 42 80 44 82 48 84 50 85
 TICK
-CX 66 24 22 65 58 15 32 67 62 19 64 21 68 26 70 28 76 35 78 37 80 41 82 43 18 55 20 56 25 61 27 63 34 69 36 71 40 75 42 77 48 81 50 83
+CX 66 24 22 65 58 15 32 67 62 19 64 21 68 26 70 28 75 35 77 37 79 41 81 43 18 55 20 56 25 61 27 63 34 69 36 71 40 74 42 76 48 80 50 82
 TICK
-CX 58 23 66 32 31 65 17 54 33 67 47 79 62 27 64 29 68 34 70 36 76 42 78 44 80 48 82 50 19 55 21 56 26 61 28 63 35 69 37 71 41 75 43 77 49 81 51 83
-TICK
-XCZ 59 24 16 53 58 23 66 32 31 65
-TICK
-XCZ 66 23 22 65 58 14 59 15
-TICK
-CX 24 66 23 59 15 58 31 73 22 57 16 60
-TICK
-CX 65 30 31 66 22 58 16 59
-TICK
-CX 8 53 30 65 73 31 57 22 60 16
-TICK
-MX 73 57 60
-M 66 58 59 54 67 79
-MX 62 64 68 70 72 76 78 80 82 84
-M 55 56 61 63 69 71 75 77 81 83 85 86
-TICK
-RX 31 22 59
-R 66 58 16 73 57 60 53 65 54 67 79
-RX 62 64 68 70 72 76 78 80 82 84
-R 55 56 61 63 69 71 75 77 81 83 85 86
-TICK
-CX 30 65 31 66 22 58 59 16 8 54 24 67 62 18 64 20 68 25 70 27 72 29 76 34 78 36 80 40 82 42 84 44 17 61 19 63 26 69 28 71 33 75 35 77 41 81 43 83 47 85 49 86
-TICK
-CX 8 53 66 23 58 14 65 30 25 67 40 79 62 26 64 28 68 33 70 35 72 37 76 41 78 43 80 47 82 49 84 51 18 61 20 63 27 69 29 71 34 75 36 77 42 81 44 83 48 85 50 86
-TICK
-CX 66 24 22 65 58 15 32 67 62 19 64 21 68 26 70 28 76 35 78 37 80 41 82 43 18 55 20 56 25 61 27 63 34 69 36 71 40 75 42 77 48 81 50 83
-TICK
-CX 58 23 66 32 31 65 17 54 33 67 47 79 62 27 64 29 68 34 70 36 76 42 78 44 80 48 82 50 19 55 21 56 26 61 28 63 35 69 37 71 41 75 43 77 49 81 51 83
+CX 58 23 66 32 31 65 33 67 47 78 62 27 64 29 68 34 70 36 75 42 77 44 79 48 81 50 19 55 21 56 26 61 28 63 35 69 37 71 41 74 43 76 49 80 51 82
 TICK
 XCZ 59 24 16 53 58 23 66 32 31 65
 TICK
-XCZ 66 23 22 65 58 14 59 15
+XCZ 66 23 22 65 58 14 59 15 53 8
 TICK
-CX 24 66 23 59 15 58 31 73 22 57 16 60
-TICK
-CX 65 30 31 66 22 58 16 59
-TICK
-CX 8 53 30 65 73 31 57 22 60 16
-TICK
-MX 73 57 60
-M 66 58 59 54 67 79
-MX 62 64 68 70 72 76 78 80 82 84
-M 55 56 61 63 69 71 75 77 81 83 85 86
-TICK
-RX 31 22 59
-R 66 58 16 73 57 60 53 65 54 67 79
-RX 62 64 68 70 72 76 78 80 82 84
-R 55 56 61 63 69 71 75 77 81 83 85 86
-TICK
-CX 30 65 31 66 22 58 59 16 8 54 24 67 62 18 64 20 68 25 70 27 72 29 76 34 78 36 80 40 82 42 84 44 17 61 19 63 26 69 28 71 33 75 35 77 41 81 43 83 47 85 49 86
-TICK
-CX 8 53 66 23 58 14 65 30 25 67 40 79 62 26 64 28 68 33 70 35 72 37 76 41 78 43 80 47 82 49 84 51 18 61 20 63 27 69 29 71 34 75 36 77 42 81 44 83 48 85 50 86
-TICK
-CX 66 24 22 65 58 15 32 67 62 19 64 21 68 26 70 28 76 35 78 37 80 41 82 43 18 55 20 56 25 61 27 63 34 69 36 71 40 75 42 77 48 81 50 83
-TICK
-CX 58 23 66 32 31 65 17 54 33 67 47 79 62 27 64 29 68 34 70 36 76 42 78 44 80 48 82 50 19 55 21 56 26 61 28 63 35 69 37 71 41 75 43 77 49 81 51 83
-TICK
-XCZ 59 24 16 53 58 23 66 32 31 65
-TICK
-XCZ 66 23 22 65 58 14 59 15
-TICK
-CX 24 66 23 59 15 58 31 73 22 57 16 60
+CX 24 66 23 59 15 58 31 73 22 57 16 53
 TICK
 CX 65 30 31 66 22 58 16 59
 TICK
-CX 8 53 30 65 73 31 57 22 60 16
+CX 30 65 73 31 57 22 53 16
 TICK
-MX 73 57 60
-M 66 58 59 54 67 79
-MX 62 64 68 70 72 76 78 80 82 84
-M 55 56 61 63 69 71 75 77 81 83 85 86
+MX 73 57 53
+M 66 58 59 54 67 78
+MX 62 64 68 70 72 75 77 79 81 83
+M 55 56 61 63 69 71 74 76 80 82 84 85
+TICK
+RX 31 22 16
+R 66 58 59 73 57 53 65 54 67 78
+RX 62 64 68 70 72 75 77 79 81 83
+R 55 56 61 63 69 71 74 76 80 82 84 85
+TICK
+CX 30 65 31 66 22 58 16 59 8 54 24 67 62 18 64 20 68 25 70 27 72 29 75 34 77 36 79 40 81 42 83 44 17 61 19 63 26 69 28 71 33 74 35 76 41 80 43 82 47 84 49 85
+TICK
+CX 8 53 65 30 17 54 25 67 40 78 62 26 64 28 68 33 70 35 72 37 75 41 77 43 79 47 81 49 83 51 18 61 20 63 27 69 29 71 34 74 36 76 42 80 44 82 48 84 50 85
+TICK
+XCZ 59 24 16 53 58 14 66 23 31 65
+CX 32 67 62 19 64 21 68 26 70 28 75 35 77 37 79 41 81 43 18 55 20 56 25 61 27 63 34 69 36 71 40 74 42 76 48 80 50 82
+TICK
+XCZ 66 32 22 65 58 23 59 15 53 8
+CX 33 67 47 78 62 27 64 29 68 34 70 36 75 42 77 44 79 48 81 50 19 55 21 56 26 61 28 63 35 69 37 71 41 74 43 76 49 80 51 82
+TICK
+CX 24 66 23 59 15 58 16 53 31 73 22 57
+TICK
+CX 65 30 31 66 22 58 16 59
+TICK
+CX 53 16 30 65 73 31 57 22
+TICK
+MX 73 57 53
+M 66 58 59 54 67 78
+MX 62 64 68 70 72 75 77 79 81 83
+M 55 56 61 63 69 71 74 76 80 82 84 85
 TICK
 #!pragma POLYGON(1,0,0,0.125) 7 0
 #!pragma POLYGON(1,0,0,0.125) 1 8 9 2
@@ -533,16 +502,18 @@ TICK
 #!pragma POLYGON(0,0,1,0.125) 45 46
 #!pragma POLYGON(0,0,1,0.125) 47 48
 #!pragma POLYGON(0,0,1,0.125) 49 50
-#!pragma POLYGON(1,0,0,0.28125) 24 23 30 32
-#!pragma POLYGON(0,1,0,0.28125) 23 15 14 30
-#!pragma POLYGON(0,0,1,0.28125) 24 8 15 23
-#!pragma POLYGON(1,0,0,0.5) 25 17
+#!pragma POLYGON(1,0,0,0.5) 24 23 30 32
+#!pragma POLYGON(0,1,0,0.5) 23 15 14 30
+#!pragma POLYGON(0,0,1,0.5) 24 8 15 23
+#!pragma POLYGON(0,0,1,0.5) 8 17
+#!pragma POLYGON(0,0,1,0.5) 24 32 33 25
+#!pragma POLYGON(0,0,1,0.5) 40 47
+#!pragma POLYGON(1,0,0,0.5) 17 25
 #!pragma POLYGON(1,0,0,0.5) 18 26 27 19
 #!pragma POLYGON(1,0,0,0.5) 20 28 29 21
 #!pragma POLYGON(1,0,0,0.5) 25 33 34 26
 #!pragma POLYGON(1,0,0,0.5) 27 35 36 28
 #!pragma POLYGON(1,0,0,0.5) 29 37
-#!pragma POLYGON(1,0,0,0.5) 40 33
 #!pragma POLYGON(1,0,0,0.5) 34 41 42 35
 #!pragma POLYGON(1,0,0,0.5) 36 43 44 37
 #!pragma POLYGON(1,0,0,0.5) 40 47 48 41
@@ -560,143 +531,115 @@ TICK
 #!pragma POLYGON(0,0,1,0.5) 43 50 51 44
 #!pragma POLYGON(0,0,1,0.5) 47 48
 #!pragma POLYGON(0,0,1,0.5) 49 50
-R 59 53 58 66 65 57 52
-RX 60 62 64 68 70 72 74 76 78 80 82 84
-R 55 56 61 63 69 71 75 77 81 83 85 86
+R 59 53 58 66 65 57 52 54 67 78
+RX 60 62 64 68 70 72 75 77 79 81 83
+R 55 56 61 63 69 71 74 76 80 82 84 85
 TICK
-CX 62 18 64 20 68 25 70 27 72 29 76 34 78 36 80 40 82 42 84 44 17 61 19 63 26 69 28 71 33 75 35 77 41 81 43 83 47 85 49 86
+CX 8 54 24 67 62 18 64 20 68 25 70 27 72 29 75 34 77 36 79 40 81 42 83 44 17 61 19 63 26 69 28 71 33 74 35 76 41 80 43 82 47 84 49 85
 TICK
-CX 24 59 8 53 23 58 32 66 30 65 14 57 15 52 62 26 64 28 68 33 70 35 72 37 76 41 78 43 80 47 82 49 84 51
+CX 24 59 8 53 23 58 32 66 30 65 14 57 15 52 17 54 25 67 40 78 62 26 64 28 68 33 70 35 72 37 75 41 77 43 79 47 81 49 83 51 18 61 20 63 27 69 29 71 34 74 36 76 42 80 44 82 48 84 50 85
 TICK
-CX 60 17 62 19 64 21 68 26 70 28 74 33 76 35 78 37 80 41 82 43 18 61 20 63 27 69 29 71 34 75 36 77 42 81 44 83 48 85 50 86
+CX 32 67 60 17 62 19 64 21 68 26 70 28 75 35 77 37 79 41 81 43 18 55 20 56 25 61 27 63 34 69 36 71 40 74 42 76 48 80 50 82
 TICK
 XCZ 24 59 8 53 23 58 32 66 30 65 14 57 15 52
-CX 18 55 20 56 25 61 27 63 34 69 36 71 40 75 42 77 48 81 50 83
+CX 33 67 47 78 60 25 62 27 64 29 68 34 70 36 75 42 77 44 79 48 81 50 19 55 21 56 26 61 28 63 35 69 37 71 41 74 43 76 49 80 51 82
 TICK
-CX 60 25 62 27 64 29 68 34 70 36 74 40 76 42 78 44 80 48 82 50 19 55 21 56 26 61 28 63 35 69 37 71 41 75 43 77 49 81 51 83
+MX 59 53 58 66 65 57 52
+M 54 67 78
+MX 60 62 64 68 70 72 75 77 79 81 83
+M 55 56 61 63 69 71 74 76 80 82 84 85
 TICK
-MX 59 53 58 66 65 57 52 60 62 64 68 70 72 74 76 78 80 82 84
-M 55 56 61 63 69 71 75 77 81 83 85 86
-TICK
-DETECTOR[postselected] rec[-140]
-DETECTOR[postselected] rec[-137]
-DETECTOR[postselected] rec[-139]
-DETECTOR[postselected] rec[-136]
-DETECTOR[postselected] rec[-138]
-DETECTOR[postselected] rec[-135]
-DETECTOR[postselected] rec[-134]
-DETECTOR[postselected] rec[-133]
-DETECTOR[postselected] rec[-132]
-DETECTOR[postselected] rec[-131]
-DETECTOR[postselected] rec[-130]
-DETECTOR[postselected] rec[-128]
-DETECTOR[postselected] rec[-127]
-DETECTOR[postselected] rec[-129]
-DETECTOR[postselected] rec[-126]
-DETECTOR[postselected] rec[-125]
-DETECTOR[postselected] rec[-121] rec[-137]
-DETECTOR[postselected] rec[-90] rec[-121]
+DETECTOR[postselected] rec[-111]
+DETECTOR[postselected] rec[-108]
+DETECTOR[postselected] rec[-110]
+DETECTOR[postselected] rec[-107]
+DETECTOR[postselected] rec[-109]
+DETECTOR[postselected] rec[-106]
+DETECTOR[postselected] rec[-105]
+DETECTOR[postselected] rec[-104]
+DETECTOR[postselected] rec[-103]
+DETECTOR[postselected] rec[-102]
+DETECTOR[postselected] rec[-101]
+DETECTOR[postselected] rec[-99]
+DETECTOR[postselected] rec[-98]
+DETECTOR[postselected] rec[-100]
+DETECTOR[postselected] rec[-97]
+DETECTOR[postselected] rec[-96]
+DETECTOR[postselected] rec[-92] rec[-108]
+DETECTOR[postselected] rec[-61] rec[-92]
+DETECTOR[postselected] rec[-91] rec[-107]
+DETECTOR[postselected] rec[-60] rec[-91]
+DETECTOR[postselected] rec[-90] rec[-106]
 DETECTOR[postselected] rec[-59] rec[-90]
-DETECTOR[postselected] rec[-120] rec[-136]
-DETECTOR[postselected] rec[-89] rec[-120]
-DETECTOR[postselected] rec[-58] rec[-89]
-DETECTOR[postselected] rec[-119] rec[-135]
-DETECTOR[postselected] rec[-88] rec[-119]
-DETECTOR[postselected] rec[-57] rec[-88]
-DETECTOR[postselected] rec[-124] rec[-139]
-DETECTOR[postselected] rec[-123] rec[-140]
-DETECTOR[postselected] rec[-122]
-DETECTOR[postselected] rec[-91]
-DETECTOR[postselected] rec[-60]
-DETECTOR[postselected] rec[-93] rec[-123]
-DETECTOR[postselected] rec[-92] rec[-124]
-DETECTOR[postselected] rec[-62] rec[-92]
-DETECTOR[postselected] rec[-61] rec[-93]
-DETECTOR[postselected] rec[-31] rec[-30] rec[-29] rec[-25] rec[-24]
-DETECTOR[postselected] rec[-29] rec[-27] rec[-26] rec[-25]
+DETECTOR[postselected] rec[-95] rec[-110]
+DETECTOR[postselected] rec[-94] rec[-111]
+DETECTOR[postselected] rec[-93]
+DETECTOR[postselected] rec[-64]
+DETECTOR[postselected] rec[-63]
+DETECTOR[postselected] rec[-62]
+DETECTOR[postselected] rec[-33] rec[-32] rec[-31] rec[-27] rec[-23]
 DETECTOR[postselected] rec[-31] rec[-29] rec[-28] rec[-27]
-DETECTOR[postselected] rec[-87] rec[-118]
-DETECTOR[postselected] rec[-56] rec[-87]
-DETECTOR[postselected] rec[-86] rec[-117]
-DETECTOR[postselected] rec[-55] rec[-86]
-DETECTOR[postselected] rec[-85] rec[-116]
-DETECTOR[postselected] rec[-54] rec[-85]
-DETECTOR rec[-115]
-DETECTOR rec[-84] rec[-115]
-DETECTOR rec[-53] rec[-84]
-DETECTOR rec[-114]
-DETECTOR rec[-83] rec[-114]
-DETECTOR rec[-52] rec[-83]
-DETECTOR rec[-113]
-DETECTOR rec[-82] rec[-113]
-DETECTOR rec[-51] rec[-82]
-DETECTOR rec[-112]
-DETECTOR rec[-81] rec[-112]
-DETECTOR rec[-50] rec[-81]
-DETECTOR rec[-111]
-DETECTOR rec[-80] rec[-111]
-DETECTOR rec[-49] rec[-80]
-DETECTOR rec[-110]
-DETECTOR rec[-79] rec[-110]
-DETECTOR rec[-48] rec[-79]
-DETECTOR rec[-109]
-DETECTOR rec[-78] rec[-109]
-DETECTOR rec[-47] rec[-78]
-DETECTOR rec[-108]
-DETECTOR rec[-77] rec[-108]
-DETECTOR rec[-46] rec[-77]
-DETECTOR rec[-107]
-DETECTOR rec[-76] rec[-107]
-DETECTOR rec[-45] rec[-76]
-DETECTOR rec[-106]
-DETECTOR rec[-75] rec[-106]
-DETECTOR rec[-44] rec[-75]
-DETECTOR rec[-74] rec[-105]
-DETECTOR rec[-43] rec[-74]
-DETECTOR rec[-73] rec[-104]
-DETECTOR rec[-42] rec[-73]
-DETECTOR rec[-72] rec[-103]
-DETECTOR rec[-41] rec[-72]
-DETECTOR rec[-71] rec[-102]
-DETECTOR rec[-40] rec[-71]
-DETECTOR rec[-70] rec[-101]
-DETECTOR rec[-39] rec[-70]
-DETECTOR rec[-69] rec[-100]
-DETECTOR rec[-38] rec[-69]
-DETECTOR rec[-68] rec[-99]
-DETECTOR rec[-37] rec[-68]
-DETECTOR rec[-67] rec[-98]
-DETECTOR rec[-36] rec[-67]
-DETECTOR rec[-66] rec[-97]
-DETECTOR rec[-35] rec[-66]
-DETECTOR rec[-65] rec[-96]
-DETECTOR rec[-34] rec[-65]
-DETECTOR rec[-64] rec[-95]
-DETECTOR rec[-33] rec[-64]
-DETECTOR rec[-63] rec[-94]
-DETECTOR rec[-32] rec[-63]
-DETECTOR rec[-23] rec[-53]
-DETECTOR rec[-22] rec[-52]
-DETECTOR rec[-21] rec[-51]
-DETECTOR rec[-20] rec[-50]
-DETECTOR rec[-19] rec[-49]
-DETECTOR rec[-17] rec[-48]
-DETECTOR rec[-16] rec[-47]
-DETECTOR rec[-15] rec[-46]
-DETECTOR rec[-14] rec[-45]
-DETECTOR rec[-13] rec[-44]
-DETECTOR rec[-12] rec[-43]
-DETECTOR rec[-11] rec[-42]
-DETECTOR rec[-10] rec[-41]
-DETECTOR rec[-9] rec[-40]
-DETECTOR rec[-8] rec[-39]
-DETECTOR rec[-7] rec[-38]
-DETECTOR rec[-6] rec[-37]
-DETECTOR rec[-5] rec[-36]
-DETECTOR rec[-4] rec[-35]
-DETECTOR rec[-3] rec[-34]
-DETECTOR rec[-2] rec[-33]
-DETECTOR rec[-1] rec[-32]
+DETECTOR[postselected] rec[-33] rec[-31] rec[-30] rec[-29]
+DETECTOR[postselected,complementary-gap] rec[-58] rec[-89]
+DETECTOR[postselected,complementary-gap] rec[-26] rec[-58]
+DETECTOR[postselected,complementary-gap] rec[-57] rec[-88]
+DETECTOR[postselected,complementary-gap] rec[-25] rec[-57]
+DETECTOR[postselected,complementary-gap] rec[-56] rec[-87]
+DETECTOR[postselected,complementary-gap] rec[-24] rec[-56]
+DETECTOR[postselected,complementary-gap] rec[-86]
+DETECTOR[postselected,complementary-gap] rec[-55] rec[-86]
+DETECTOR[postselected,complementary-gap] rec[-22] rec[-55]
+DETECTOR[complementary-gap] rec[-85]
+DETECTOR[complementary-gap] rec[-54] rec[-85]
+DETECTOR[complementary-gap] rec[-21] rec[-54]
+DETECTOR[postselected,complementary-gap] rec[-84]
+DETECTOR[postselected,complementary-gap] rec[-53] rec[-84]
+DETECTOR[postselected,complementary-gap] rec[-20] rec[-53]
+DETECTOR[complementary-gap] rec[-83]
+DETECTOR[complementary-gap] rec[-52] rec[-83]
+DETECTOR[complementary-gap] rec[-19] rec[-52]
+DETECTOR[complementary-gap] rec[-82]
+DETECTOR[complementary-gap] rec[-51] rec[-82]
+DETECTOR[complementary-gap] rec[-18] rec[-51]
+DETECTOR[complementary-gap] rec[-81]
+DETECTOR[complementary-gap] rec[-50] rec[-81]
+DETECTOR[complementary-gap] rec[-17] rec[-50]
+DETECTOR[complementary-gap] rec[-80]
+DETECTOR[complementary-gap] rec[-49] rec[-80]
+DETECTOR[complementary-gap] rec[-16] rec[-49]
+DETECTOR[complementary-gap] rec[-79]
+DETECTOR[complementary-gap] rec[-48] rec[-79]
+DETECTOR[complementary-gap] rec[-15] rec[-48]
+DETECTOR[complementary-gap] rec[-78]
+DETECTOR[complementary-gap] rec[-47] rec[-78]
+DETECTOR[complementary-gap] rec[-14] rec[-47]
+DETECTOR[complementary-gap] rec[-77]
+DETECTOR[complementary-gap] rec[-46] rec[-77]
+DETECTOR[complementary-gap] rec[-13] rec[-46]
+DETECTOR[complementary-gap] rec[-45] rec[-76]
+DETECTOR[complementary-gap] rec[-12] rec[-45]
+DETECTOR[complementary-gap] rec[-44] rec[-75]
+DETECTOR[complementary-gap] rec[-11] rec[-44]
+DETECTOR[complementary-gap] rec[-43] rec[-74]
+DETECTOR[complementary-gap] rec[-10] rec[-43]
+DETECTOR[complementary-gap] rec[-42] rec[-73]
+DETECTOR[complementary-gap] rec[-9] rec[-42]
+DETECTOR[complementary-gap] rec[-41] rec[-72]
+DETECTOR[complementary-gap] rec[-8] rec[-41]
+DETECTOR[complementary-gap] rec[-40] rec[-71]
+DETECTOR[complementary-gap] rec[-7] rec[-40]
+DETECTOR[complementary-gap] rec[-39] rec[-70]
+DETECTOR[complementary-gap] rec[-6] rec[-39]
+DETECTOR[complementary-gap] rec[-38] rec[-69]
+DETECTOR[complementary-gap] rec[-5] rec[-38]
+DETECTOR[complementary-gap] rec[-37] rec[-68]
+DETECTOR[complementary-gap] rec[-4] rec[-37]
+DETECTOR[complementary-gap] rec[-36] rec[-67]
+DETECTOR[complementary-gap] rec[-3] rec[-36]
+DETECTOR[complementary-gap] rec[-35] rec[-66]
+DETECTOR[complementary-gap] rec[-2] rec[-35]
+DETECTOR[complementary-gap] rec[-34] rec[-65]
+DETECTOR[complementary-gap] rec[-1] rec[-34]
 MPP[noiseless] X25*X26*X33*X34 X27*X28*X35*X36 X29*X37 X40*X41*X47*X48 X42*X43*X49*X50 X44*X51
 TICK[noiseless]
 MPP[noiseless] X17*X25 X18*X19*X26*X27 X20*X21*X28*X29 X33*X40 X34*X35*X41*X42 X36*X37*X43*X44
@@ -705,30 +648,29 @@ MPP[noiseless] Z18*Z19 Z20*Z21 Z26*Z27*Z34*Z35 Z28*Z29*Z36*Z37 Z41*Z42*Z48*Z49 Z
 TICK[noiseless]
 MPP[noiseless] Z17*Z18*Z25*Z26 Z19*Z20*Z27*Z28 Z33*Z34*Z40*Z41 Z35*Z36*Z42*Z43 Z47*Z48 Z49*Z50
 TICK[noiseless]
-DETECTOR rec[-48] rec[-18]
-DETECTOR rec[-47] rec[-17]
-DETECTOR rec[-46] rec[-16]
-DETECTOR rec[-45] rec[-24]
-DETECTOR rec[-44] rec[-23]
-DETECTOR rec[-43] rec[-22]
-DETECTOR rec[-42] rec[-15]
-DETECTOR rec[-41] rec[-14]
-DETECTOR rec[-40] rec[-13]
-DETECTOR rec[-39] rec[-21]
-DETECTOR rec[-38] rec[-20]
-DETECTOR rec[-37] rec[-19]
-DETECTOR rec[-36] rec[-12]
-DETECTOR rec[-35] rec[-11]
-DETECTOR rec[-34] rec[-6]
-DETECTOR rec[-33] rec[-5]
-DETECTOR rec[-32] rec[-10]
-DETECTOR rec[-31] rec[-9]
-DETECTOR rec[-30] rec[-4]
-DETECTOR rec[-29] rec[-3]
-DETECTOR rec[-28] rec[-8]
-DETECTOR rec[-27] rec[-7]
-DETECTOR rec[-26] rec[-2]
-DETECTOR rec[-25] rec[-1]
+DETECTOR[complementary-gap] rec[-47] rec[-18]
+DETECTOR[postselected,complementary-gap] rec[-46] rec[-17]
+DETECTOR[complementary-gap] rec[-45] rec[-16]
+DETECTOR[postselected,complementary-gap] rec[-44] rec[-24]
+DETECTOR[complementary-gap] rec[-43] rec[-23]
+DETECTOR[complementary-gap] rec[-42] rec[-22]
+DETECTOR[complementary-gap] rec[-41] rec[-14]
+DETECTOR[complementary-gap] rec[-40] rec[-13]
+DETECTOR[complementary-gap] rec[-39] rec[-21]
+DETECTOR[complementary-gap] rec[-38] rec[-20]
+DETECTOR[complementary-gap] rec[-37] rec[-19]
+DETECTOR[complementary-gap] rec[-36] rec[-12]
+DETECTOR[complementary-gap] rec[-35] rec[-11]
+DETECTOR[complementary-gap] rec[-34] rec[-6]
+DETECTOR[complementary-gap] rec[-33] rec[-5]
+DETECTOR[complementary-gap] rec[-32] rec[-10]
+DETECTOR[complementary-gap] rec[-31] rec[-9]
+DETECTOR[complementary-gap] rec[-30] rec[-4]
+DETECTOR[complementary-gap] rec[-29] rec[-3]
+DETECTOR[complementary-gap] rec[-28] rec[-8]
+DETECTOR[complementary-gap] rec[-27] rec[-7]
+DETECTOR[complementary-gap] rec[-26] rec[-2]
+DETECTOR[complementary-gap] rec[-25] rec[-1]
 RX[noiseless] 9
 R[noiseless] 16
 TICK[noiseless]
@@ -742,11 +684,11 @@ CX[noiseless] 40 16 9 18
 TICK[noiseless]
 CX[noiseless] 47 16 9 17
 TICK[noiseless]
-CX[noiseless] 16 9 rec[-80] 16 rec[-79] 16 rec[-78] 16
+CX[noiseless] 16 9 rec[-50] 16 rec[-49] 16 rec[-48] 16
 TICK[noiseless]
 T_DAG[noiseless,proxy:T_DAG] 16
 TICK[noiseless]
 MX[noiseless] 16
 M[noiseless] 9
 TICK[noiseless]
-OBSERVABLE_INCLUDE(0) rec[-2] rec[-56] rec[-52] rec[-51]
+OBSERVABLE_INCLUDE(0) rec[-2] rec[-58] rec[-54] rec[-53]

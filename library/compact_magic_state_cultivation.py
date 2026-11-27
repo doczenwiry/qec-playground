@@ -361,6 +361,7 @@ class MagicStateCultivation:
             rounds=3,
             prepared=Pauli.X,
             prefix="SRC:TPT",
+            inactive=self.__inactive_source,
             postselected_stabilizer=self.critical_on_seam,
         )
 
@@ -410,3 +411,25 @@ class MagicStateCultivation:
                 prefix="TGT:EXP:R",
                 postselected_stabilizer=self.critical_on_seam,
             )
+
+    def expansion_byproducts(
+        self, prefix: str = "TGT:EXP:R0"
+    ) -> tuple[list[str], list[str]]:
+        """Produces the byproducts operators resulting from the expansion.
+
+        The Z-type ones flip the Z_L row (apply them as corrections of the decode measurement),
+        the X-type ones flip the X_L column (attach them to the observable).
+        """
+        tx, ty = self.target.anchor
+        width = self.target.distance - self.source.distance
+        byproducts: dict[str, list[str]] = {"X": [], "Z": []}
+        for stabilizer in "XZ":
+            for (px, py), (qa, qi) in self.target.qubits[stabilizer].items():
+                across = px - tx if stabilizer == "X" else py - ty
+                prepared = (
+                    (px - tx > py - ty) if stabilizer == "X" else (px - tx < py - ty)
+                )
+                inherited = self.source.get_qubit_index(stabilizer, qa) != -1
+                if 0 < across < width and not prepared and not inherited:
+                    byproducts[stabilizer].append(f"{prefix}:{stabilizer}{qi}")
+        return byproducts["Z"], byproducts["X"]
